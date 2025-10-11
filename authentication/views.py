@@ -1,3 +1,6 @@
+# Edited By
+# -> Ahmed Looth Adam, UWE ID: 24050761
+
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect

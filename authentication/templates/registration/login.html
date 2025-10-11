@@ -1,3 +1,7 @@
+<!-- Edited by 
+ -> Ahmed Looth Adam, UWE ID: 24050761
+ -->
+
 <h2>Login</h2>
 <form method="post">
   {% csrf_token %}
@@ -5,7 +9,13 @@
   <button type="submit">Login</button>
 </form>
 
-<p>Don't have an account? <a href="{% url 'register' %}">Register</a></p>
+<p>Forgot your password? 
+  <a href="{% url 'password_reset' %}">Reset it here</a>
+</p>
+
+<p>Don't have an account? 
+  <a href="{% url 'register' %}">Register</a>
+</p>
 
 {% for message in messages %}
   <p style="color:red;">{{ message }}</p>
