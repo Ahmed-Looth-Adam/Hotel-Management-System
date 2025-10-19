@@ -77,16 +77,33 @@ WSGI_APPLICATION = 'hotel_management.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 import os
-import dj_database_url
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
+DB_NAME = os.environ.get('RDS_DB_NAME')
+DB_USERNAME = os.environ.get('RDS_USERNAME')
+DB_PASSWORD = os.environ.get('RDS_PASSWORD')
+DB_HOST = os.environ.get('RDS_HOST')
+DB_PORT = os.environ.get('PORT')
+
+
 DATABASES = {
-    'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': DB_NAME,
+        'USER': DB_USERNAME,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
+        'OPTIONS': {
+            'connect_timeout': 5
+        }
+    }
 }
 
+print("connection details:", DATABASES)
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
