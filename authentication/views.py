@@ -18,6 +18,8 @@ def register(request):
             form.save()
             messages.success(request, "Account created successfully!")
             return redirect('login')
+        # else:
+            # messages.error(request, "Please correct the errors below.")
     else:
         form = CustomUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
