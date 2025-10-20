@@ -89,6 +89,8 @@ coverage/
 # Celery
 celerybeat-schedule*
 celerybeat.pid
+celerybeat-schedule-shm
+celerybeat-schedule-wal
 
 # SageMath
 *.sage.py
