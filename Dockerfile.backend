@@ -20,13 +20,13 @@ RUN pip install --upgrade pip
 RUN pip install pipenv
 
 # Copy Pipfile and Pipfile.lock
-COPY Pipfile Pipfile.lock ./
+COPY backend/Pipfile backend/Pipfile.lock ./
 
 # Install Python dependencies
 RUN pipenv install --system --deploy --ignore-pipfile
 
-# Copy project
-COPY . .
+# Copy backend project files
+COPY backend/ .
 
 # Create directories for static and media files
 RUN mkdir -p /app/staticfiles /app/media
