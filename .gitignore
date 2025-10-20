@@ -87,7 +87,7 @@ coverage/
 .python-version
 
 # Celery
-celerybeat-schedule
+celerybeat-schedule*
 celerybeat.pid
 
 # SageMath
