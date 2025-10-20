@@ -5,11 +5,24 @@ name = "pypi"
 
 [packages]
 django = "*"
-psycopg2-binary = "*"
 python-dotenv = "*"
 dj-database-url = "*"
+djangorestframework = "*"
+django-cors-headers = "*"
+djangorestframework-simplejwt = "*"
+python-decouple = "*"
+psycopg2-binary = "*"
+pillow = "*"
+django-filter = "*"
+drf-spectacular = "*"
+celery = "*"
+redis = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-django = "*"
+black = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.13"
