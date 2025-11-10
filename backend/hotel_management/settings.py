@@ -1,5 +1,6 @@
 # Edited By
 # -> Ahmed Looth Adam, UWE ID: 24050761
+# -> Ismail Wasiu Abdul Samad, UWE ID: 24050765
 
 """
 Django settings for hotel_management project.
