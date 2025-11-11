@@ -32,7 +32,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+
+      - name: Cache Pipenv virtualenv
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/virtualenvs
+          key: ${{ runner.os }}-pipenv-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pipenv-
 
       - name: Install pipenv
         run: |
@@ -41,7 +48,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pipenv install --dev --system
+          pipenv install --dev --system --deploy
 
       - name: Run Black (code formatter check)
         run: black --check backend/
@@ -97,7 +104,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+
+      - name: Cache Pipenv virtualenv
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/virtualenvs
+          key: ${{ runner.os }}-pipenv-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pipenv-
 
       - name: Install pipenv
         run: |
@@ -106,7 +120,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pipenv install --dev --system
+          pipenv install --dev --system --deploy
 
       - name: Run migrations
         working-directory: backend
@@ -132,7 +146,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+
+      - name: Cache Pipenv virtualenv
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/virtualenvs
+          key: ${{ runner.os }}-pipenv-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pipenv-
 
       - name: Install pipenv
         run: |
@@ -141,7 +162,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pipenv install --dev --system
+          pipenv install --dev --system --deploy
 
       - name: Run Django security checks
         working-directory: backend
