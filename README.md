@@ -264,6 +264,34 @@ GET    /api/reports/revenue/
 
 ## 🔄 Git Workflow
 
+### Git Configuration Setup
+
+**IMPORTANT:** Configure your Git identity before making commits. This ensures your name and UWE ID are included in all commits.
+
+```bash
+# Set your name with UWE ID
+git config user.name "Your Full Name (UWE ID: XXXXXXXX)"
+
+# Set your UWE email
+git config user.email "your.name@live.uwe.ac.uk"
+
+# Verify configuration
+git config user.name
+git config user.email
+```
+
+**Example:**
+```bash
+git config user.name "Ismail Wasiu Abdul Samad (UWE ID: 24050765)"
+git config user.email "Ismail2.Abdulsamad@live.uwe.ac.uk"
+```
+
+**Note:** Use `--global` flag to set configuration for all repositories:
+```bash
+git config --global user.name "Your Full Name (UWE ID: XXXXXXXX)"
+git config --global user.email "your.name@live.uwe.ac.uk"
+```
+
 ### Branch Strategy
 
 ```
