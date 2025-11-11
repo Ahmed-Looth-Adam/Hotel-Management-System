@@ -1,0 +1,155 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ development, staging, main ]
+    paths:
+      - 'backend/**'
+      - 'Pipfile'
+      - 'Pipfile.lock'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ development, staging, main ]
+    paths:
+      - 'backend/**'
+      - 'Pipfile'
+      - 'Pipfile.lock'
+      - '.github/workflows/backend-ci.yml'
+
+env:
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  lint:
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install pipenv
+        run: |
+          python -m pip install --upgrade pip
+          pip install pipenv
+
+      - name: Install dependencies
+        run: |
+          pipenv install --dev --system
+
+      - name: Run Black (code formatter check)
+        run: black --check backend/
+
+      - name: Run Flake8 (linting)
+        run: flake8 backend/ --max-line-length=120 --exclude=migrations,__pycache__,venv
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_hotel_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DEBUG: 'False'
+      SECRET_KEY: 'test-secret-key-for-ci'
+      RDS_DB_NAME: test_hotel_db
+      RDS_USERNAME: postgres
+      RDS_PASSWORD: postgres
+      RDS_HOST: localhost
+      RDS_PORT: 5432
+      REDIS_URL: redis://localhost:6379/0
+      ALLOWED_HOSTS: localhost,127.0.0.1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install pipenv
+        run: |
+          python -m pip install --upgrade pip
+          pip install pipenv
+
+      - name: Install dependencies
+        run: |
+          pipenv install --dev --system
+
+      - name: Run migrations
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
+      - name: Run tests with pytest
+        working-directory: backend
+        run: pytest --verbose --tb=short
+
+      - name: Check for missing migrations
+        working-directory: backend
+        run: python manage.py makemigrations --check --dry-run
+
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install pipenv
+        run: |
+          python -m pip install --upgrade pip
+          pip install pipenv
+
+      - name: Install dependencies
+        run: |
+          pipenv install --dev --system
+
+      - name: Run Django security checks
+        working-directory: backend
+        run: python manage.py check --deploy --fail-level WARNING
+        env:
+          SECRET_KEY: 'test-secret-key-for-ci'
+          DEBUG: 'False'
+
+      - name: Check for known security vulnerabilities
+        run: pipenv check
+        continue-on-error: true

@@ -51,6 +51,7 @@ env/
 *.swo
 *~
 .DS_Store
+.claude/
 
 # Django migrations (optional - uncomment if you want to ignore migration files)
 # */migrations/*.py
