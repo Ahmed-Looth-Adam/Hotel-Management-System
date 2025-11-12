@@ -1,58 +1,115 @@
-import './App.css'
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  Grid,
+  Chip,
+  Stack,
+} from '@mui/material';
+import {
+  Hotel as HotelIcon,
+  Lock as LockIcon,
+  Analytics as AnalyticsIcon,
+} from '@mui/icons-material';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', py: 8 }}>
+      <Container maxWidth="lg">
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Typography variant="h1" color="primary" gutterBottom>
             🏨 Hotel Management System
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Tailwind CSS v3 is working perfectly! ✨
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                🔐 Authentication
-              </h3>
-              <p className="text-blue-700 text-sm">
-                Secure login & registration
-              </p>
-            </div>
-            
-            <div className="bg-green-50 border-l-4 border-green-500 p-6 rounded-r-lg">
-              <h3 className="text-lg font-semibold text-green-900 mb-2">
-                🛏️ Room Management
-              </h3>
-              <p className="text-green-700 text-sm">
-                Manage rooms & bookings
-              </p>
-            </div>
-            
-            <div className="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-r-lg">
-              <h3 className="text-lg font-semibold text-purple-900 mb-2">
-                📊 Analytics
-              </h3>
-              <p className="text-purple-700 text-sm">
-                Revenue & occupancy reports
-              </p>
-            </div>
-          </div>
-          
-          <div className="mt-8 flex gap-4">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-200">
+          </Typography>
+          <Typography variant="h5" color="text.secondary" sx={{ mb: 2 }}>
+            Material-UI v7 Minimalist Theme
+          </Typography>
+          <Chip label="White-Based Design" color="primary" sx={{ mr: 1 }} />
+          <Chip label="Luxury Aesthetic" color="secondary" />
+        </Box>
+
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <LockIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
+                  <Typography variant="h5" color="primary">
+                    Authentication
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Secure login & registration with JWT authentication
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <HotelIcon color="success" sx={{ fontSize: 40, mr: 2 }} />
+                  <Typography variant="h5" color="success.main">
+                    Room Management
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Manage rooms, bookings, and availability in real-time
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <AnalyticsIcon color="info" sx={{ fontSize: 40, mr: 2 }} />
+                  <Typography variant="h5" color="info.main">
+                    Analytics
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Revenue insights and occupancy reports with charts
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        <Card sx={{ mb: 4, p: 3 }}>
+          <Typography variant="h4" gutterBottom>
+            Color Palette Preview
+          </Typography>
+          <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+            <Chip label="Primary (Navy)" color="primary" />
+            <Chip label="Secondary (Gold)" color="secondary" />
+            <Chip label="Success (Available)" color="success" />
+            <Chip label="Warning (Pending)" color="warning" />
+            <Chip label="Error (Unavailable)" color="error" />
+            <Chip label="Info (Teal)" color="info" />
+          </Stack>
+        </Card>
+
+        <Box sx={{ textAlign: 'center' }}>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button variant="contained" color="primary" size="large">
               Get Started
-            </button>
-            <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition duration-200">
+            </Button>
+            <Button variant="outlined" color="primary" size="large">
               Learn More
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+            </Button>
+            <Button variant="contained" color="secondary" size="large">
+              Premium Features
+            </Button>
+          </Stack>
+        </Box>
+      </Container>
+    </Box>
+  );
 }
 
-export default App
+export default App;
