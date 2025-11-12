@@ -20,7 +20,7 @@ RUN pip install --upgrade pip
 RUN pip install pipenv
 
 # Copy Pipfile and Pipfile.lock
-COPY backend/Pipfile backend/Pipfile.lock ./
+COPY Pipfile Pipfile.lock ./
 
 # Install Python dependencies
 RUN pipenv install --system --deploy --ignore-pipfile
