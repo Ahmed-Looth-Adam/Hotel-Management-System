@@ -10,5 +10,5 @@ urlpatterns = [
     path('register/', views.RegisterAPIView.as_view(), name='register-api'),
 
     # Template-based views (optional)
-    path('register-form/', views.register_template, name='register-template'),
+    path('register-form/', views.register_template, name='register'),
 ]
