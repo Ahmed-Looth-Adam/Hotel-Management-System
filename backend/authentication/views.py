@@ -5,11 +5,17 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.utils import timezone
+from datetime import timedelta
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
+from django.contrib.auth import authenticate
 from .forms import CustomUserCreationForm
-from .serializers import UserRegistrationSerializer, UserSerializer
+from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer
 
 
 @login_required
@@ -55,3 +61,170 @@ class RegisterAPIView(generics.CreateAPIView):
             },
             status=status.HTTP_201_CREATED
         )
+    
+
+class LoginAPIView(APIView):
+    """
+    API endpoint for user login with JWT token generation
+    
+    POST /auth/login/
+    Required fields: username, password
+    
+    Returns:
+    - access: JWT access token (15 mins lifetime)
+    - refresh: JWT refresh token (7 days lifetime)
+    - user: User details
+    
+    Security Features:
+    - Account lockout after 5 failed attempts (15 mins)
+    - Failed login attempt tracking
+    """
+    permission_classes = [AllowAny]
+    serializer_class = UserLoginSerializer
+
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
+        
+        # Get user from database
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        # Check if account is locked
+        if user.is_account_locked():
+            locked_until = user.account_locked_until.strftime('%Y-%m-%d %H:%M:%S UTC')
+            return Response(
+                {
+                    "error": "Account is locked due to multiple failed login attempts",
+                    "locked_until": locked_until
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Check if account is active
+        if not user.is_active:
+            return Response(
+                {"error": "Account is disabled"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Authenticate user
+        authenticated_user = authenticate(username=username, password=password)
+        
+        if authenticated_user is not None:
+            # Reset failed login attempts on successful login
+            user.failed_login_attempts = 0
+            user.account_locked_until = None
+            user.last_login = timezone.now()
+            user.save(update_fields=['failed_login_attempts', 'account_locked_until', 'last_login'])
+            
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            
+            return Response(
+                {
+                    "message": "Login successful",
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                    "user": UserSerializer(user).data,
+                    "token_type": "Bearer"
+                },
+                status=status.HTTP_200_OK
+            )
+        else:
+            # Increment failed login attempts
+            user.failed_login_attempts += 1
+            
+            # Lock account after 5 failed attempts
+            if user.failed_login_attempts >= 5:
+                user.account_locked_until = timezone.now() + timedelta(minutes=15)
+                user.save(update_fields=['failed_login_attempts', 'account_locked_until'])
+                
+                return Response(
+                    {
+                        "error": "Account locked due to multiple failed login attempts",
+                        "locked_until": user.account_locked_until.strftime('%Y-%m-%d %H:%M:%S UTC'),
+                        "message": "Please try again after 15 minutes"
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            user.save(update_fields=['failed_login_attempts'])
+            
+            remaining_attempts = 5 - user.failed_login_attempts
+            return Response(
+                {
+                    "error": "Invalid credentials",
+                    "remaining_attempts": remaining_attempts
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+
+class LogoutAPIView(APIView):
+    """
+    API endpoint for user logout
+    
+    POST /auth/logout/
+    Required: refresh token in request body
+    
+    Blacklists the refresh token to prevent further use
+    """
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
+            
+            if not refresh_token:
+                return Response(
+                    {"error": "Refresh token is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            
+            return Response(
+                {"message": "Logout successful"},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": "Invalid token or token already blacklisted"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class TokenRefreshAPIView(TokenRefreshView):
+    """
+    API endpoint to refresh access token
+    
+    POST /auth/token/refresh/
+    Required: refresh token in request body
+    
+    Returns new access token
+    """
+    pass
+
+
+class UserProfileAPIView(APIView):
+    """
+    API endpoint to get current user profile
+    
+    GET /auth/profile/
+    Requires: Valid JWT access token in Authorization header
+    """
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

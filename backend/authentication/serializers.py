@@ -1,7 +1,3 @@
-# Edited By
-# -> Ahmed Looth Adam, UWE ID: 24050761
-# -> Ismail Wasiu Abdul Samad, UWE ID: 24050765
-
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -65,6 +61,16 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Create user with the validated data
         user = User.objects.create_user(**validated_data)
         return user
+
+
+class UserLoginSerializer(serializers.Serializer):
+    """Serializer for user login"""
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(
+        required=True,
+        write_only=True,
+        style={'input_type': 'password'}
+    )
 
 
 class UserSerializer(serializers.ModelSerializer):
