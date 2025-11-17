@@ -18,7 +18,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate
 from .forms import CustomUserCreationForm
 from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer
-from .utils import LoginAttemptTracker
+from .utils import LoginAttemptTracker, AuditLogger
 
 
 @login_required
@@ -116,6 +116,10 @@ class LoginAPIView(APIView):
         except User.DoesNotExist:
             # Record failed attempt even for non-existent users (prevent username enumeration attacks)
             LoginAttemptTracker.record_failed_attempt(username)
+
+            # Audit log: failed login for non-existent user
+            AuditLogger.log_login_failed(request, username, reason='User does not exist')
+
             return Response(
                 {"error": "Incorrect username or password"},
                 status=status.HTTP_401_UNAUTHORIZED
@@ -123,6 +127,9 @@ class LoginAPIView(APIView):
 
         # Check if account is active
         if not user.is_active:
+            # Audit log: login attempt on disabled account
+            AuditLogger.log_login_failed(request, username, reason='Account is disabled')
+
             return Response(
                 {"error": "Account is disabled"},
                 status=status.HTTP_403_FORBIDDEN
@@ -140,6 +147,9 @@ class LoginAPIView(APIView):
             user.account_locked_until = None
             user.last_login = timezone.now()
             user.save(update_fields=['failed_login_attempts', 'account_locked_until', 'last_login'])
+
+            # Audit log: successful login
+            AuditLogger.log_login_success(request, user)
 
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
@@ -164,6 +174,9 @@ class LoginAPIView(APIView):
                 user.account_locked_until = attempt_result['locked_until']
                 user.save(update_fields=['failed_login_attempts', 'account_locked_until'])
 
+                # Audit log: account locked
+                AuditLogger.log_account_locked(request, username, failed_attempts=attempt_result['attempts'])
+
                 return Response(
                     {
                         "error": "Account locked due to multiple failed login attempts",
@@ -174,6 +187,14 @@ class LoginAPIView(APIView):
                 )
 
             user.save(update_fields=['failed_login_attempts'])
+
+            # Audit log: failed login attempt
+            AuditLogger.log_login_failed(
+                request,
+                username,
+                reason='Incorrect password',
+                failed_attempts=attempt_result['attempts']
+            )
 
             return Response(
                 {
@@ -207,7 +228,11 @@ class LogoutAPIView(APIView):
             
             token = RefreshToken(refresh_token)
             token.blacklist()
-            
+
+            # Audit log: successful logout
+            if request.user.is_authenticated:
+                AuditLogger.log_logout(request, request.user)
+
             return Response(
                 {"message": "Logout successful"},
                 status=status.HTTP_200_OK
