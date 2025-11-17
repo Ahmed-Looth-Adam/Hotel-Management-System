@@ -58,6 +58,10 @@ const Navbar = () => {
   // Define navigation items based on user role
   const getNavigationItems = () => {
     if (!isAuthenticated || !user) {
+      // Don't show Home button when already on home page
+      if (location.pathname === '/') {
+        return [];
+      }
       return [
         { label: 'Home', path: '/', icon: <HotelIcon /> },
       ];
