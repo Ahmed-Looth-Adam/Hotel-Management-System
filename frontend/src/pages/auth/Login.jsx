@@ -40,18 +40,23 @@ const Login = () => {
     },
     validationSchema,
     onSubmit: async (values, { setSubmitting }) => {
-      setError('');
+      try {
+        setError('');
 
-      const result = await login(values.username, values.password);
+        const result = await login(values.username, values.password);
 
-      if (result.success) {
-        // Redirect to the page they tried to visit or dashboard
-        navigate(from, { replace: true });
-      } else {
-        setError(result.error || 'Login failed. Please try again.');
+        if (result.success) {
+          // Redirect to the page they tried to visit or dashboard
+          navigate(from, { replace: true });
+        } else {
+          setError(result.error || 'Incorrect username or password. Please try again.');
+        }
+      } catch (err) {
+        setError('An unexpected error occurred. Please try again.');
+        console.error('Login error:', err);
+      } finally {
+        setSubmitting(false);
       }
-
-      setSubmitting(false);
     },
   });
 

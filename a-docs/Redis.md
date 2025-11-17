@@ -57,12 +57,15 @@ docker-compose logs -f backend
    ```bash
    docker-compose exec redis redis-cli
 
-   # In Redis CLI:
-   127.0.0.1:6379> KEYS hms:login_*
-   # Should show: hms:login_attempts:youruser, hms:login_lockout:youruser
+   # Get login attempts for a user
+   127.0.0.1:6379> GET "hms:1:login_attempts:admin"
+   # Returns: 3  (current failed attempts)
 
-   127.0.0.1:6379> GET hms:login_attempts:youruser
-   # Shows: "5"
+   # Check all login keys
+   127.0.0.1:6379> KEYS "hms:1:login_*"
+
+   # Check for lockouts
+   127.0.0.1:6379> KEYS "hms:1:login_lockout:*"
 
    127.0.0.1:6379> exit
    ```

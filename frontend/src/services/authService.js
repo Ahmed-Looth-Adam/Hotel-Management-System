@@ -57,14 +57,13 @@ authAPI.interceptors.response.use(
         // Retry the original request
         return authAPI(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, clear tokens and redirect to login
+        // Refresh failed, clear tokens
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
 
-        // Redirect to login page
-        window.location.href = '/login';
-
+        // Don't redirect here - let ProtectedRoute handle it
+        // This prevents hard page reloads that clear error messages
         return Promise.reject(refreshError);
       }
     }
@@ -125,9 +124,22 @@ const authService = {
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
 
+      // Extract error details from response
+      const errorData = error.response?.data || {};
+      const errorMessage = errorData.error || errorData.detail || errorData.message || 'Incorrect username or password';
+
+      // Include additional context if available
+      let fullErrorMessage = errorMessage;
+      if (errorData.remaining_attempts !== undefined) {
+        fullErrorMessage += ` (${errorData.remaining_attempts} attempts remaining)`;
+      } else if (errorData.locked_until) {
+        fullErrorMessage = `${errorMessage}. Locked until ${errorData.locked_until}`;
+      }
+
       return {
         success: false,
-        error: error.response?.data?.error || error.response?.data?.detail || error.response?.data?.message || 'Login failed',
+        error: fullErrorMessage,
+        errorData: errorData, // Pass full error data for additional handling
       };
     }
   },

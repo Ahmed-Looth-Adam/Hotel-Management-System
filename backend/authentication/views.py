@@ -117,7 +117,7 @@ class LoginAPIView(APIView):
             # Record failed attempt even for non-existent users (prevent username enumeration attacks)
             LoginAttemptTracker.record_failed_attempt(username)
             return Response(
-                {"error": "Invalid credentials"},
+                {"error": "Incorrect username or password"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
@@ -177,7 +177,7 @@ class LoginAPIView(APIView):
 
             return Response(
                 {
-                    "error": "Invalid credentials",
+                    "error": "Incorrect username or password",
                     "remaining_attempts": attempt_result['remaining_attempts'],
                     "message": f"{attempt_result['remaining_attempts']} attempt(s) remaining before account lockout"
                 },

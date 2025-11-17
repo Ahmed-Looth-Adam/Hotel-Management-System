@@ -22,11 +22,17 @@ export const AuthProvider = ({ children }) => {
           setUser(result.data);
           setIsAuthenticated(true);
         } else {
-          // Token is invalid or expired, clear everything
-          await authService.logout();
+          // Token is invalid or expired, clear everything (without API call to avoid redirect)
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
           setUser(null);
           setIsAuthenticated(false);
         }
+      } else {
+        // No token or user data, ensure clean state
+        setUser(null);
+        setIsAuthenticated(false);
       }
       setLoading(false);
     };
