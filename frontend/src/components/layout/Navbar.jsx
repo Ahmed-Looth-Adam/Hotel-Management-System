@@ -111,8 +111,8 @@ const Navbar = () => {
   const handleLogout = async () => {
     handleCloseUserMenu();
     setMobileMenuOpen(false);
+    navigate('/');
     await logout();
-    navigate('/login');
   };
 
   const handleNavigate = (path) => {

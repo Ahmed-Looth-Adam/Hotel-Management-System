@@ -23,8 +23,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    navigate('/');
     await logout();
-    navigate('/login');
   };
 
   const dashboardCards = [
