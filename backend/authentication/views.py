@@ -18,6 +18,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate
 from .forms import CustomUserCreationForm
 from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer
+from .utils import LoginAttemptTracker
 
 
 @login_required
@@ -89,53 +90,60 @@ class LoginAPIView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         username = serializer.validated_data['username']
         password = serializer.validated_data['password']
-        
+
+        # Check Redis cache for lockout status first (faster than DB)
+        lockout_status = LoginAttemptTracker.is_locked(username)
+        if lockout_status['locked']:
+            locked_until = lockout_status['locked_until'].strftime('%Y-%m-%d %H:%M:%S UTC')
+            return Response(
+                {
+                    "error": "Account is temporarily locked due to multiple failed login attempts",
+                    "locked_until": locked_until,
+                    "message": f"Please try again after {LoginAttemptTracker.LOCKOUT_DURATION} minutes"
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         # Get user from database
         from django.contrib.auth import get_user_model
         User = get_user_model()
-        
+
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
+            # Record failed attempt even for non-existent users (prevent username enumeration attacks)
+            LoginAttemptTracker.record_failed_attempt(username)
             return Response(
                 {"error": "Invalid credentials"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        
-        # Check if account is locked
-        if user.is_account_locked():
-            locked_until = user.account_locked_until.strftime('%Y-%m-%d %H:%M:%S UTC')
-            return Response(
-                {
-                    "error": "Account is locked due to multiple failed login attempts",
-                    "locked_until": locked_until
-                },
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
+
         # Check if account is active
         if not user.is_active:
             return Response(
                 {"error": "Account is disabled"},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         # Authenticate user
         authenticated_user = authenticate(username=username, password=password)
-        
+
         if authenticated_user is not None:
-            # Reset failed login attempts on successful login
+            # Successful login - reset Redis tracking
+            LoginAttemptTracker.reset_attempts(username)
+
+            # Also clear database tracking for consistency
             user.failed_login_attempts = 0
             user.account_locked_until = None
             user.last_login = timezone.now()
             user.save(update_fields=['failed_login_attempts', 'account_locked_until', 'last_login'])
-            
+
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
-            
+
             return Response(
                 {
                     "message": "Login successful",
@@ -147,30 +155,31 @@ class LoginAPIView(APIView):
                 status=status.HTTP_200_OK
             )
         else:
-            # Increment failed login attempts
-            user.failed_login_attempts += 1
-            
-            # Lock account after 5 failed attempts
-            if user.failed_login_attempts >= 5:
-                user.account_locked_until = timezone.now() + timedelta(minutes=15)
+            # Failed login - record in Redis
+            attempt_result = LoginAttemptTracker.record_failed_attempt(username)
+
+            # Also update database for backup/audit trail
+            user.failed_login_attempts = attempt_result['attempts']
+            if attempt_result['locked']:
+                user.account_locked_until = attempt_result['locked_until']
                 user.save(update_fields=['failed_login_attempts', 'account_locked_until'])
-                
+
                 return Response(
                     {
                         "error": "Account locked due to multiple failed login attempts",
-                        "locked_until": user.account_locked_until.strftime('%Y-%m-%d %H:%M:%S UTC'),
-                        "message": "Please try again after 15 minutes"
+                        "locked_until": attempt_result['locked_until'].strftime('%Y-%m-%d %H:%M:%S UTC'),
+                        "message": f"Please try again after {LoginAttemptTracker.LOCKOUT_DURATION} minutes"
                     },
                     status=status.HTTP_403_FORBIDDEN
                 )
-            
+
             user.save(update_fields=['failed_login_attempts'])
-            
-            remaining_attempts = 5 - user.failed_login_attempts
+
             return Response(
                 {
                     "error": "Invalid credentials",
-                    "remaining_attempts": remaining_attempts
+                    "remaining_attempts": attempt_result['remaining_attempts'],
+                    "message": f"{attempt_result['remaining_attempts']} attempt(s) remaining before account lockout"
                 },
                 status=status.HTTP_401_UNAUTHORIZED
             )

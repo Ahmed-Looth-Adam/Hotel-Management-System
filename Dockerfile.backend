@@ -22,8 +22,11 @@ RUN pip install pipenv
 # Copy Pipfile and Pipfile.lock
 COPY Pipfile Pipfile.lock ./
 
-# Install Python dependencies
-RUN pipenv install --system --deploy --ignore-pipfile
+# Install Python dependencies from Pipfile
+RUN pipenv install --system
+
+# Ensure django-redis is installed (workaround for lock file issue)
+RUN pip install django-redis
 
 # Copy backend project files
 COPY backend/ .
