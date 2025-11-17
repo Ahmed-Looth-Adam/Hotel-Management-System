@@ -27,7 +27,7 @@ docker-compose down
 git pull
 
 # Rebuild backend (pulls new dependency)
-docker-compose build backend celery celery-beat
+docker-compose build frontend backend celery celery-beat
 
 # Start all services
 docker-compose up -d
