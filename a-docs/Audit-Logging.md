@@ -305,7 +305,7 @@ suspicious = AuditLogger.get_suspicious_activity(threshold=5, hours=1)
 for activity in suspicious:
     username = activity['username']
     count = activity['attempt_count']
-    print(f"⚠️ Suspicious: {username} has {count} failed attempts in last hour")
+    print(f"Suspicious: {username} has {count} failed attempts in last hour")
 ```
 
 ### Querying Logs with Django ORM
