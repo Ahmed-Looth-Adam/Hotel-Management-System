@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from datetime import timedelta
 from rest_framework import status, generics
 from rest_framework.response import Response
@@ -37,6 +39,7 @@ def register_template(request):
 
 
 # API Views
+@method_decorator(csrf_exempt, name='dispatch')
 class RegisterAPIView(generics.CreateAPIView):
     """
     API endpoint for user registration
@@ -61,20 +64,21 @@ class RegisterAPIView(generics.CreateAPIView):
             },
             status=status.HTTP_201_CREATED
         )
-    
 
+
+@method_decorator(csrf_exempt, name='dispatch')
 class LoginAPIView(APIView):
     """
     API endpoint for user login with JWT token generation
-    
+
     POST /auth/login/
     Required fields: username, password
-    
+
     Returns:
     - access: JWT access token (15 mins lifetime)
     - refresh: JWT refresh token (7 days lifetime)
     - user: User details
-    
+
     Security Features:
     - Account lockout after 5 failed attempts (15 mins)
     - Failed login attempt tracking
@@ -172,13 +176,14 @@ class LoginAPIView(APIView):
             )
         
 
+@method_decorator(csrf_exempt, name='dispatch')
 class LogoutAPIView(APIView):
     """
     API endpoint for user logout
-    
+
     POST /auth/logout/
     Required: refresh token in request body
-    
+
     Blacklists the refresh token to prevent further use
     """
     def post(self, request):

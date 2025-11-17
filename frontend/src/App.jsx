@@ -12,8 +12,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Public pages
 import Home from './pages/Home';
 import ComponentDemo from './components/ComponentDemo';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
