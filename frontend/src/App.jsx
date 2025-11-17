@@ -29,6 +29,7 @@ import Dashboard from './pages/Dashboard';
 
 // Examples
 import NotificationExample from './examples/NotificationExample';
+import LoadingExample from './examples/LoadingExample';
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/demo" element={<ComponentDemo />} />
               <Route path="/notification-demo" element={<NotificationExample />} />
+              <Route path="/loading-demo" element={<LoadingExample />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
