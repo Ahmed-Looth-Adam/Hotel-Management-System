@@ -120,9 +120,14 @@ const authService = {
 
       return { success: true, data: response.data };
     } catch (error) {
+      // Clear any existing tokens on failed login
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+
       return {
         success: false,
-        error: error.response?.data?.detail || error.response?.data || 'Login failed',
+        error: error.response?.data?.error || error.response?.data?.detail || error.response?.data?.message || 'Login failed',
       };
     }
   },

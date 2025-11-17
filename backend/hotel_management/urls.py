@@ -29,11 +29,12 @@ urlpatterns = [
     # Dashboard
     path('', auth_views.dashboard, name='dashboard'),
 
-    # Built-in Django auth
-    path('auth/', include('django.contrib.auth.urls')),
-
-    # app-specific auth endpoints
+    # API auth endpoints (JSON-based for frontend)
     path('auth/', include('authentication.urls')),
+
+    # Built-in Django auth template views (for admin/password reset)
+    # Moved to different path to avoid conflicts with API endpoints
+    path('accounts/', include('django.contrib.auth.urls')),
 
     # JWT endpoints
     path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

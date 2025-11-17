@@ -8,15 +8,25 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Load user from localStorage on mount
+  // Load user from localStorage on mount and verify token validity
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       const currentUser = authService.getCurrentUser();
       const token = authService.getAccessToken();
 
       if (token && currentUser) {
-        setUser(currentUser);
-        setIsAuthenticated(true);
+        // Verify token is valid by attempting to fetch profile
+        const result = await authService.getProfile();
+
+        if (result.success) {
+          setUser(result.data);
+          setIsAuthenticated(true);
+        } else {
+          // Token is invalid or expired, clear everything
+          await authService.logout();
+          setUser(null);
+          setIsAuthenticated(false);
+        }
       }
       setLoading(false);
     };
@@ -31,6 +41,10 @@ export const AuthProvider = ({ children }) => {
       const userData = result.data?.user || authService.getCurrentUser();
       setUser(userData);
       setIsAuthenticated(true);
+    } else {
+      // Ensure we clear auth state on failed login
+      setUser(null);
+      setIsAuthenticated(false);
     }
 
     return result;
