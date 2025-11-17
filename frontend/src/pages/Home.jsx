@@ -12,8 +12,10 @@
  * -> Ismail Wasiu Abdul Samad, UWE ID: 24050765
  */
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LoginModal from '../components/auth/LoginModal';
 import {
   Box,
   Container,
@@ -55,6 +57,7 @@ function Home() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const theme = useTheme();
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   // Room types data
   const roomTypes = [
@@ -182,7 +185,7 @@ function Home() {
               <Button
                 variant="outlined"
                 size="large"
-                onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
+                onClick={() => isAuthenticated ? navigate('/dashboard') : setLoginModalOpen(true)}
                 sx={{
                   py: 1.5,
                   px: 4,
@@ -427,7 +430,7 @@ function Home() {
                 <Button
                   color="inherit"
                   sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                  onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
+                  onClick={() => isAuthenticated ? navigate('/dashboard') : setLoginModalOpen(true)}
                 >
                   {isAuthenticated ? 'Dashboard' : 'Sign In'}
                 </Button>
@@ -466,6 +469,13 @@ function Home() {
           </Typography>
         </Container>
       </Box>
+
+      {/* Login Modal */}
+      <LoginModal
+        open={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        onSwitchToRegister={() => navigate('/register')}
+      />
     </Box>
   );
 }

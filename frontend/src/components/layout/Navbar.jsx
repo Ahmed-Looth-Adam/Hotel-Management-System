@@ -13,6 +13,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import LoginModal from '../auth/LoginModal';
 import {
   AppBar,
   Toolbar,
@@ -54,6 +55,7 @@ const Navbar = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [anchorElUser, setAnchorElUser] = useState(null);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   // Define navigation items based on user role
   const getNavigationItems = () => {
@@ -128,6 +130,7 @@ const Navbar = () => {
   const isActivePath = (path) => location.pathname === path;
 
   return (
+    <>
     <AppBar position="sticky" elevation={2}>
       <Container maxWidth="xl">
         <Toolbar disableGutters>
@@ -254,8 +257,7 @@ const Navbar = () => {
             !isMobile && (
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button
-                  component={Link}
-                  to="/login"
+                  onClick={() => setLoginModalOpen(true)}
                   variant="outlined"
                   sx={{
                     color: 'white',
@@ -346,6 +348,14 @@ const Navbar = () => {
         </Box>
       </Drawer>
     </AppBar>
+
+      {/* Login Modal */}
+      <LoginModal
+        open={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        onSwitchToRegister={() => navigate('/register')}
+      />
+    </>
   );
 };
 
