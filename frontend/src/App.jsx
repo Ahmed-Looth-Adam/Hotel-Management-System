@@ -9,6 +9,7 @@
  *
  * Edited By:
  * -> Ismail Wasiu Abdul Samad, UWE ID: 24050765
+ * -> Ibrahim Waseem, UWE ID: 24053101
  */
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -26,6 +27,7 @@ import Register from './pages/auth/Register';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/profile/profile'; // Added import for Profile
 
 // Examples
 import NotificationExample from './examples/NotificationExample';
@@ -60,6 +62,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route // Added route for Profile
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
                   </ProtectedRoute>
                 }
               />
