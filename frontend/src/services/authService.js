@@ -247,6 +247,27 @@ const authService = {
   },
 
   /**
+   * Change user password
+   * @param {Object} passwordData - Contains old and new passwords
+   * @returns {Promise} API response
+   */
+  changePassword: async (passwordData) => {
+    try {
+      const response = await authAPI.post('/change-password/', passwordData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      const errorData = error.response?.data || {};
+      const errorMessage = errorData.error || errorData.detail || errorData.message || 'Failed to change password';
+
+      return {
+        success: false,
+        error: errorMessage,
+        errorData: errorData, // Pass full error data for additional handling
+      };
+    }
+  },
+
+  /**
    * Check if user is authenticated
    * @returns {boolean} Authentication status
    */
@@ -283,6 +304,8 @@ const authService = {
   getRefreshToken: () => {
     return localStorage.getItem('refresh_token');
   },
+
+
 };
 
 export default authService;

@@ -17,8 +17,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate
 from .forms import CustomUserCreationForm
-from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer
+from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer, PasswordChangeSerializer
 from .utils import LoginAttemptTracker, AuditLogger
+from django.contrib.auth import update_session_auth_hash
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
+
 
 
 @login_required
@@ -91,8 +95,10 @@ class LoginAPIView(APIView):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        username = serializer.validated_data['username']
-        password = serializer.validated_data['password']
+        user = serializer.validated_data
+        
+        username = user.username
+        password = request.data['password']
 
         # Check Redis cache for lockout status first (faster than DB)
         lockout_status = LoginAttemptTracker.is_locked(username)
@@ -267,3 +273,28 @@ class UserProfileAPIView(APIView):
         user = request.user
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    def put(self, request):
+        user = request.user
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class PasswordChangeAPIView(APIView):
+    """
+    API endpoint to change user password
+
+    Post /auth/change-password/
+    Required fields: current_password, new_password, confirm_new_password
+    """
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        user = request.user
+        serializer = PasswordChangeSerializer(instance=user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            update_session_auth_hash(request, request.user) 
+            return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    

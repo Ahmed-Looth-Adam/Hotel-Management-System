@@ -13,7 +13,6 @@ urlpatterns = [
     path('logout/', csrf_exempt(views.LogoutAPIView.as_view()), name='logout-api'),
     path('token/refresh/', csrf_exempt(views.TokenRefreshAPIView.as_view()), name='token-refresh'),
     path('profile/', csrf_exempt(views.UserProfileAPIView.as_view()), name='user-profile'),
-
-    # Template-based views (optional)
+    path('change-password/', csrf_exempt(views.PasswordChangeAPIView.as_view()), name='change-password'),
     path('register-form/', views.register_template, name='register'),
 ]
