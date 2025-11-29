@@ -87,6 +87,9 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'date_joined', 'created_at', 'updated_at', 'role']
 
 
+#  Password change serializer
+# Edited By:
+# -> Ibrahim Waseem, UWE ID: 24050771
 class PasswordChangeSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True)

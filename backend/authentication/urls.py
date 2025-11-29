@@ -1,6 +1,7 @@
 # Edited By
 # -> Ahmed Looth Adam, UWE ID: 24050761
 # -> Ismail Wasiu Abdul Samad, UWE ID: 24050765
+# -> Ibrahim Waseem, UWE ID: 24050771
 
 from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
