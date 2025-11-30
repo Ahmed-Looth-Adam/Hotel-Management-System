@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from django.contrib.auth import authenticate, update_session_auth_hash
-from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
-
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import authenticate, update_session_auth_hash
 
 User = get_user_model()
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer for user registration"""
@@ -20,6 +20,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         style={'input_type': 'password'},
         label='Confirm Password'
     )
+
     class Meta:
         model = User
         fields = [
@@ -39,7 +40,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'postal_code': {'required': False},
         }
 
-
     def validate(self, attrs):
         """Validate that passwords match"""
         if attrs['password'] != attrs['password2']:
@@ -47,7 +47,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 {"password": "Password fields didn't match."}
             )
         return attrs
-
 
     def validate_email(self, value):
         """Check if email is already registered"""
@@ -64,6 +63,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         return user
 
+
 class UserLoginSerializer(serializers.Serializer):
     """Serializer for user login"""
     username = serializers.CharField(required=True)
@@ -72,6 +72,7 @@ class UserLoginSerializer(serializers.Serializer):
         write_only=True,
         style={'input_type': 'password'}
     )
+
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user details"""
@@ -85,6 +86,13 @@ class UserSerializer(serializers.ModelSerializer):
             'date_joined', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'date_joined', 'created_at', 'updated_at', 'role']
+
+    def validate_email(self, value):
+        """Check if email is already registered by another user"""
+        user = self.context['request'].user
+        if User.objects.exclude(pk=user.pk).filter(email=value).exists():
+            raise serializers.ValidationError("This email is already registered by another user.")
+        return value
 
 
 #  Password change serializer

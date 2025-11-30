@@ -276,9 +276,15 @@ class UserProfileAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     def put(self, request):
         user = request.user
+        changed_fields = list(request.data.keys())
         serializer = UserSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            AuditLogger.log_profile_update(
+                request= request,
+                user= user,
+                changed_fields_list= changed_fields
+            )
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -296,6 +302,7 @@ class PasswordChangeAPIView(APIView):
         if serializer.is_valid():
             serializer.save()
             update_session_auth_hash(request, request.user) 
+            AuditLogger.log_password_change(request, user)
             return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

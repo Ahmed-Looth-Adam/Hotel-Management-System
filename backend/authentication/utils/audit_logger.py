@@ -120,6 +120,65 @@ class AuditLogger:
             success=True
         )
 
+    
+    @classmethod
+    def log_password_change(cls, request, user):
+        """
+        Log password change event
+
+        Args:
+            request: Django request object
+            user: User instance
+        """
+        LoginAuditLog.objects.create(
+            event_type='password_change',
+            username=user.username,
+            user=user,
+            ip_address=cls._get_client_ip(request),
+            user_agent=cls._get_user_agent(request),
+            success=True,
+            failure_reason='password changed successfully changed by the user'
+        )
+
+    @classmethod
+    def log_profile_update(cls, request, user, changed_fields_list):
+        """
+        Log profile update event
+
+        Args:
+            request: Django request object
+            user: User instance
+        """
+        message = f'Profile updated. Changed fields: {", ".join(changed_fields_list)}'
+
+        LoginAuditLog.objects.create(
+            event_type='profile_update',
+            username=user.username,
+            user=user,
+            ip_address=cls._get_client_ip(request),
+            user_agent=cls._get_user_agent(request),
+            success=True,
+            failure_reason=message
+        )
+
+    '''
+    @classmethod
+    def log_profile_update_signal(cls, user, source, details):
+        """
+        Log profile update triggered by a signal (no request object available).
+        """
+        LoginAuditLog.objects.create(
+            event_type='profile_update', 
+            username=user.username,
+            user=user,
+            # ip_address and user_agent will be NULL/blank as request is not available
+            success=True,
+            failure_reason=f'Source: {source}. Details: {details}'
+        )
+    '''
+
+
+
     @classmethod
     def log_token_refresh(cls, request, user):
         """

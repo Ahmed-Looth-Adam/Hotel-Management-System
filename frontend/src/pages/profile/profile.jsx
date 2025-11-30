@@ -1,27 +1,32 @@
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import React, { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
-import * as Yup from 'yup';
 import {
   Box,
   Container,
   Typography,
   Paper,
   Button,
+  Grid,
+  Card,
+  CardContent,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   TextField,
   CircularProgress,
-  Alert,
-  Grid, 
-  List, 
-  ListItem,
-  ListItemText,
-  ListItemIcon,
+  Alert
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import LockIcon from '@mui/icons-material/Lock';
+import PhoneIcon from '@mui/icons-material/Phone';
+import CakeIcon from '@mui/icons-material/Cake';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import WorkIcon from '@mui/icons-material/Work';
 import { ProfileSchema, PasswordChangeSchema } from './validationSchema';
 import authService from '../../services/authService';
 
@@ -38,6 +43,11 @@ const Profile = () => {
     name: '',
     email: '',
     phone_number: '',
+    date_of_birth: '',
+    address: '',
+    city: '',
+    country: '',
+    postal_code: '',
   });
 
   useEffect(() => {
@@ -47,6 +57,11 @@ const Profile = () => {
           name: data.first_name || '',
           email: data.email || '',
           phone_number: data.phone_number || '',
+          date_of_birth: data.date_of_birth || '',
+          address: data.address || '',
+          city: data.city || '',
+          country: data.country || '',
+          postal_code: data.postal_code || '',
         });
         setLoading(false);
       }).catch(error => {
@@ -170,21 +185,25 @@ const Profile = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h3" component="h1" gutterBottom sx={{ color: 'text.primary' }}>
-        Welcome, {user?.username || initialValues.name}!
-      </Typography>
-      <Typography variant="subtitle1" gutterBottom sx={{ mb: 4, color: 'text.secondary' }}>
-        This is your user profile dashboard. Update your personal details and manage your security settings.
-      </Typography>
-      {/* Dashboard grid */}
-      <Grid container spacing={4}> 
-        {/* New: user Information card */}
+      <Grid container spacing={4}>
+        {/* User Info Card - Left side */}
         <Grid item xs={12} md={4}>
-          <Paper elevation={3} sx={{ p: 4, height: '100%' }}>
-            <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
-                Account Status
-            </Typography>
+          <Paper elevation={3} sx={{ p: 4, mb: 4, height: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box>
+                <Typography variant="h4" component="h1" gutterBottom>
+                  This is user profile customization page in development
+                </Typography>
+              </Box>
+            </Box>
             <List disablePadding>
+              <ListItem disableGutters>
+                <ListItemIcon><PersonIcon color="primary" /></ListItemIcon>
+                <ListItemText 
+                    primary="name" 
+                    secondary={user?.name || 'N/A'} 
+                />
+              </ListItem>
               <ListItem disableGutters>
                 <ListItemIcon><PersonIcon color="primary" /></ListItemIcon>
                 <ListItemText 
@@ -199,19 +218,61 @@ const Profile = () => {
                     secondary={user?.email || initialValues.email} 
                 />
               </ListItem>
-              {/* Assuming your 'user' object from context or the fetched data has a date_joined field */}
+              <ListItem disableGutters>
+                <ListItemIcon><WorkIcon color="primary" /></ListItemIcon>
+                <ListItemText 
+                    primary="Role" 
+                    secondary={user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A'} 
+                />
+              </ListItem>
+              <ListItem disableGutters>
+                <ListItemIcon><PhoneIcon color="primary" /></ListItemIcon>
+                <ListItemText 
+                    primary="Phone Number" 
+                    secondary={user?.phone_number || initialValues.phone_number || 'N/A'} 
+                />
+              </ListItem>
+              <ListItem disableGutters>
+                <ListItemIcon><CakeIcon color="primary" /></ListItemIcon>
+                <ListItemText 
+                    primary="Date of Birth" 
+                    secondary={user?.date_of_birth || initialValues.date_of_birth || 'N/A'} 
+                />
+              </ListItem>
               <ListItem disableGutters>
                 <ListItemIcon><CalendarMonthIcon color="primary" /></ListItemIcon>
                 <ListItemText 
                     primary="Member Since" 
-                    secondary={formatJoinDate(user?.date_joined || user?.created_at)}
+                    secondary={formatJoinDate(user?.created_at)}
+                />
+              </ListItem>
+              <ListItem disableGutters>
+                <ListItemIcon><CalendarMonthIcon color="primary" /></ListItemIcon>
+                <ListItemText 
+                    primary="Last Updated" 
+                    secondary={formatJoinDate(user?.updated_at)}
+                />
+              </ListItem>
+              <ListItem disableGutters>
+                <ListItemIcon><LocationOnIcon color="primary" /></ListItemIcon>
+                <ListItemText 
+                    primary="Address" 
+                    secondary={
+                      <>
+                        {user?.address || initialValues.address || 'N/A'}
+                        <br />
+                        {[user?.city || initialValues.city, user?.postal_code || initialValues.postal_code].filter(Boolean).join(', ') || 'N/A'}
+                        <br />
+                        {user?.country || initialValues.country || 'N/A'}
+                      </>
+                    } 
                 />
               </ListItem>
             </List>
           </Paper>
         </Grid>
 
-        {/* Profile Details Card (editable) - Moved to the right */}
+        {/* Profile Details Card (editable) - Right side */}
         <Grid item xs={12} md={8}>
           <Paper elevation={3} sx={{ p: 4, mb: 4, height: '100%' }}>
             <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
@@ -267,6 +328,82 @@ const Profile = () => {
                 error={profileFormik.touched.phone_number && Boolean(profileFormik.errors.phone_number)}
                 helperText={profileFormik.touched.phone_number && profileFormik.errors.phone_number}
               />
+              
+              <TextField
+                fullWidth
+                id="date_of_birth"
+                name="date_of_birth"
+                label="Date of Birth"
+                type="date"
+                margin="normal"
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                value={profileFormik.values.date_of_birth}
+                onChange={profileFormik.handleChange}
+                onBlur={profileFormik.handleBlur}
+                error={profileFormik.touched.date_of_birth && Boolean(profileFormik.errors.date_of_birth)}
+                helperText={profileFormik.touched.date_of_birth && profileFormik.errors.date_of_birth}
+              />
+              
+              <TextField
+                fullWidth
+                id="address"
+                name="address"
+                label="Address"
+                margin="normal"
+                multiline
+                rows={3}
+                value={profileFormik.values.address}
+                onChange={profileFormik.handleChange}
+                onBlur={profileFormik.handleBlur}
+                error={profileFormik.touched.address && Boolean(profileFormik.errors.address)}
+                helperText={profileFormik.touched.address && profileFormik.errors.address}
+              />
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    id="city"
+                    name="city"
+                    label="City"
+                    margin="normal"
+                    value={profileFormik.values.city}
+                    onChange={profileFormik.handleChange}
+                    onBlur={profileFormik.handleBlur}
+                    error={profileFormik.touched.city && Boolean(profileFormik.errors.city)}
+                    helperText={profileFormik.touched.city && profileFormik.errors.city}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    id="postal_code"
+                    name="postal_code"
+                    label="Postal Code"
+                    margin="normal"
+                    value={profileFormik.values.postal_code}
+                    onChange={profileFormik.handleChange}
+                    onBlur={profileFormik.handleBlur}
+                    error={profileFormik.touched.postal_code && Boolean(profileFormik.errors.postal_code)}
+                    helperText={profileFormik.touched.postal_code && profileFormik.errors.postal_code}
+                  />
+                </Grid>
+              </Grid>
+              
+              <TextField
+                fullWidth
+                id="country"
+                name="country"
+                label="Country"
+                margin="normal"
+                value={profileFormik.values.country}
+                onChange={profileFormik.handleChange}
+                onBlur={profileFormik.handleBlur}
+                error={profileFormik.touched.country && Boolean(profileFormik.errors.country)}
+                helperText={profileFormik.touched.country && profileFormik.errors.country}
+              />
 
               <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button 
@@ -282,6 +419,8 @@ const Profile = () => {
           </Paper>
         </Grid>
       </Grid>
+      
+      {/* Security Section */}
       <Box sx={{ mt: 4 }}>
         <Grid container spacing={4}>
           {/* Security Card */}
