@@ -41,6 +41,7 @@ const Profile = () => {
 
   const [initialValues, setInitialValues] = useState({
     name: '',
+    lastName: '',
     email: '',
     phone_number: '',
     date_of_birth: '',
@@ -55,6 +56,7 @@ const Profile = () => {
       fetchProfileData().then(data => {
         setInitialValues({
           name: data.first_name || '',
+          lastName: data.last_name || '',
           email: data.email || '',
           phone_number: data.phone_number || '',
           date_of_birth: data.date_of_birth || '',
@@ -94,14 +96,34 @@ const Profile = () => {
         setProfileError('');
         setProfileSuccess('');
         const updateData = {};
+        
+        // Check all fields for changes
         if (values.name !== initialValues.name) {
           updateData.first_name = values.name;
+        }
+        if (values.lastName !== initialValues.lastName) {
+          updateData.last_name = values.lastName;
         }
         if (values.email !== initialValues.email) {
           updateData.email = values.email;
         }
         if (values.phone_number !== initialValues.phone_number) {
           updateData.phone_number = values.phone_number;
+        }
+        if (values.date_of_birth !== initialValues.date_of_birth) {
+          updateData.date_of_birth = values.date_of_birth;
+        }
+        if (values.address !== initialValues.address) {
+          updateData.address = values.address;
+        }
+        if (values.city !== initialValues.city) {
+          updateData.city = values.city;
+        }
+        if (values.country !== initialValues.country) {
+          updateData.country = values.country;
+        }
+        if (values.postal_code !== initialValues.postal_code) {
+          updateData.postal_code = values.postal_code;
         }
 
         if (Object.keys(updateData).length === 0) {
@@ -115,13 +137,21 @@ const Profile = () => {
         if (result.success) {
           setProfileSuccess('Profile updated successfully!');
           await updateUser();
+          // Update all initialValues to reflect current state
           setInitialValues({
             name: result.data.first_name || '',
+            lastName: result.data.last_name || '',
             email: result.data.email || '',
             phone_number: result.data.phone_number || '',
+            date_of_birth: result.data.date_of_birth || '',
+            address: result.data.address || '',
+            city: result.data.city || '',
+            country: result.data.country || '',
+            postal_code: result.data.postal_code || '',
           });
         } else {
-          setProfileError(result.error || 'Failed to update profile.');
+            const errorMsg = result.error?.email || result.error || 'Failed to update profile.';
+            setProfileError(errorMsg);
         }
       } catch (error) {
         setProfileError('An unexpected error occurred. Please try again.');
@@ -200,8 +230,8 @@ const Profile = () => {
               <ListItem disableGutters>
                 <ListItemIcon><PersonIcon color="primary" /></ListItemIcon>
                 <ListItemText 
-                    primary="name" 
-                    secondary={user?.name || 'N/A'} 
+                    primary="Name" 
+                    secondary={`${(user?.first_name || initialValues.name) || ''} ${(user?.last_name || initialValues.lastName) || ''}`.trim() || 'N/A'} 
                 />
               </ListItem>
               <ListItem disableGutters>
@@ -292,7 +322,7 @@ const Profile = () => {
                 fullWidth
                 id="name"
                 name="name"
-                label="Name"
+                label="First Name"
                 margin="normal"
                 value={profileFormik.values.name}
                 onChange={profileFormik.handleChange}
@@ -301,6 +331,19 @@ const Profile = () => {
                 helperText={profileFormik.touched.name && profileFormik.errors.name}
               />
               
+              <TextField
+                fullWidth
+                id="lastName"
+                name="lastName"
+                label="Last Name"
+                margin="normal"
+                value={profileFormik.values.lastName}
+                onChange={profileFormik.handleChange}
+                onBlur={profileFormik.handleBlur}
+                error={profileFormik.touched.lastName && Boolean(profileFormik.errors.lastName)}
+                helperText={profileFormik.touched.lastName && profileFormik.errors.lastName}
+              />
+
               <TextField
                 fullWidth
                 id="email"
