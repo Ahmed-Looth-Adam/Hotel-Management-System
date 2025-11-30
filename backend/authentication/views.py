@@ -96,10 +96,9 @@ class LoginAPIView(APIView):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.validated_data
-        
-        username = user.username
-        password = request.data['password']
+        # Extract username and password from validated_data
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
 
         # Check Redis cache for lockout status first (faster than DB)
         lockout_status = LoginAttemptTracker.is_locked(username)
