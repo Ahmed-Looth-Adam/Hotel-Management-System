@@ -305,6 +305,51 @@ const authService = {
     return localStorage.getItem('refresh_token');
   },
 
+  /**
+   * Request a password reset email
+   * @param {string} email - User's email address
+   * @returns {Promise} API response
+   */
+  requestPasswordReset: async (email) => {
+    try {
+      console.log('Requesting password reset for email:', email);
+      const payload = {email};
+      const response = await authAPI.post('/password-reset/', payload );
+      console.log('Password reset response:', response.data);
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to request password reset.',
+      };
+    }
+  },
+
+  /**
+   * Confirms password reset using UID/Token and sets the new password
+   * @param {string} uid - User ID encoded in base64
+   * @param {string} token - The secure, time-sensitive token
+   * @param {string} new_password - The user's desired new password
+   * @returns {Promise} API response
+   */
+  confirmPasswordReset: async (uid, token, new_password) => {
+    try {
+      // Matches the backend endpoint: path('password-reset-confirm/', ...)
+      const response = await authAPI.post('/password-reset-confirm/', { 
+        uid, 
+        token, 
+        new_password // This matches the key expected by the Django view
+      });
+      return { success: true, message: response.data.detail };
+    } catch (error) {
+      // The backend returns a specific error for invalid/expired tokens
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to complete password reset.',
+      };
+    }
+  },
+
 
 };
 

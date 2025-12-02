@@ -16,4 +16,6 @@ urlpatterns = [
     path('profile/', csrf_exempt(views.UserProfileAPIView.as_view()), name='user-profile'),
     path('change-password/', csrf_exempt(views.PasswordChangeAPIView.as_view()), name='change-password'),
     path('register-form/', views.register_template, name='register'),
+    path('password-reset/', csrf_exempt(views.PasswordResetRequestAPIview.as_view()), name='password-reset'),
+    path('password-reset-confirm/', csrf_exempt(views.PasswordResetConfirmAPIview.as_view()), name='password-reset-confirm'),
 ]

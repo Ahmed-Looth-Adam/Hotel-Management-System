@@ -28,6 +28,8 @@ import Register from './pages/auth/Register';
 // Protected pages
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/profile/profile'; // Added import for Profile
+import PasswordReset from './pages/profile/PasswordReset';
+import PasswordResetConfirm from './pages/profile/PasswordResetConfirm';
 
 // Examples
 import NotificationExample from './examples/NotificationExample';
@@ -56,6 +58,18 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
+              {/* === PASSWORD RESET ROUTES (MUST BE PUBLIC) === */}
+              <Route 
+                path="/auth/password-reset" 
+                element={<PasswordReset />} 
+              /> 
+              <Route 
+                path="/auth/password-reset-confirm/:uid/:token" 
+                element={<PasswordResetConfirm />} 
+              />
+              
+              {/* ============================================== */}
+
               {/* Protected Routes */}
               <Route
                 path="/dashboard"
@@ -72,8 +86,8 @@ function App() {
                     <Profile />
                   </ProtectedRoute>
                 }
-              />
-
+              />        
+  
               {/* Catch-all redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

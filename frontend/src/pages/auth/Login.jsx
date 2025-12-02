@@ -15,6 +15,8 @@ import {
   Checkbox,
   FormControlLabel,
 } from '@mui/material';
+
+import { Link as RouterLink } from 'react-router-dom';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 
@@ -150,7 +152,7 @@ const Login = () => {
           </Button>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Link to="/forgot-password" style={{ textDecoration: 'none', fontSize: '0.875rem' }}>
+            <Link component={RouterLink} to="/auth/password-reset" variant="body2">
               Forgot password?
             </Link>
             <Typography variant="body2">
