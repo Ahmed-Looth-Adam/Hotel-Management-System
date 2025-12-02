@@ -270,3 +270,5 @@ CELERY_TIMEZONE = 'UTC'
 
 # Custom User Model
 AUTH_USER_MODEL = 'authentication.User'
+
+PASSWORD_RESET_TIMEOUT = 60 * 60
