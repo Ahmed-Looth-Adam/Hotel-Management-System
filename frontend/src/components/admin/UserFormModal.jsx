@@ -59,7 +59,7 @@ const UserSchema = (isNewUser) => Yup.object().shape({
     )
 });
 
-const ROLES = ['manager', 'staff', 'guest', 'admin'];
+const ROLES = ['manager', 'staff'];
 
 const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
   const [loading, setLoading] = useState(false);
@@ -181,6 +181,10 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
                         fullWidth
                     />
                 </Box>
+
+
+
+                
                 
                 {/* Role Assignment Dropdown */}
                 <Field
@@ -222,6 +226,7 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
                     required={isNewUser}
                     error={touched.password2 && Boolean(errors.password2)}
                     helperText={touched.password2 && errors.password2}
+                    inputProps={{ autoComplete: 'new-password' }}
                   />
                 )}
                 

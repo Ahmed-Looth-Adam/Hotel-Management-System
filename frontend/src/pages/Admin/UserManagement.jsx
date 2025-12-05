@@ -169,7 +169,7 @@ const UserManagement = () => {
             onChange={() => handleStatusChange(params.row.id, params.value)}
             color="primary"
             size="small"
-            disabled={params.row.id === authService.getCurrentUser()?.id} // Cannot toggle self
+            disabled={params.row.id === authService.getCurrentUser()?.id}
           />
         </Tooltip>
       ),
@@ -178,7 +178,15 @@ const UserManagement = () => {
       field: 'created_at', 
       headerName: 'Joined', 
       width: 180,
-      valueFormatter: (params) => new Date(params.value).toLocaleDateString()
+      valueFormatter: (params) => {
+        if (!params.value) return 'N/A';
+        try {
+          const date = new Date(params.value);
+          return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString();
+        } catch (e) {
+          return 'Invalid Date';
+        }
+      }
     },
     {
       field: 'actions',

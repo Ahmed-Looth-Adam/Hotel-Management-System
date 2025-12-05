@@ -18,7 +18,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate
 from .forms import CustomUserCreationForm
-from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer, PasswordChangeSerializer
+from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer, PasswordChangeSerializer, AdminUserUpdateSerializer
 from .utils import LoginAttemptTracker, AuditLogger
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -459,19 +459,24 @@ class AdminUserListAPIView(APIView):
         User = get_user_model()
         role_filter = request.query_params.get('role')
         users = User.objects.all().order_by('-created_at')
+        print(f"you accessed AdminUserListAPIView with role {role_filter}")
+        print(f"you accessed AdminUserListAPIView with users {users}")
 
         if role_filter:
             users = users.filter(role=role_filter)
 
         serializer = UserSerializer(users, many=True)
+        print(f"you accessed AdminUserListAPIView with serializer {serializer}")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         # US-18: Admin can create staff/manager accounts
         
         serializer = UserRegistrationSerializer(data=request.data)
+        print(f"you accessed AdminUserListAPIView post with serializer {serializer}")  
         if serializer.is_valid():
             user = serializer.save()
+            print(f"you accessed AdminUserListAPIView with user {user}")
             AuditLogger.log_profile_update(
                 request, 
                 request.user, 
@@ -490,6 +495,7 @@ class AdminUserDetailAPIView(APIView):
 
     def get_object(self, user_id):
         User = get_user_model()
+        print(f"you accessed AdminUserDetailAPIView with user_id {user_id}")
         try:
             return User.objects.get(id=user_id)
         except User.DoesNotExist:
@@ -509,12 +515,14 @@ class AdminUserDetailAPIView(APIView):
             return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
 
         # US-18: Admin can change roles and activate/deactivate
-        serializer = UserSerializer(target_user, data=request.data, partial=True)
+        serializer = AdminUserUpdateSerializer(target_user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            print(f"you accessed AdminUserDetailAPIView with serializer.data {serializer.data}")
             
             # Log what changed
             changed_fields = list(request.data.keys())
+            print(f"you accessed AdminUserDetailAPIView with changed_fields {changed_fields}")
             AuditLogger.log_profile_update(
                 request, 
                 request.user, 

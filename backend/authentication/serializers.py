@@ -26,7 +26,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'password', 'password2',
             'first_name', 'last_name', 'phone_number',
-            'date_of_birth', 'address', 'city', 'country', 'postal_code'
+            'date_of_birth', 'address', 'city', 'country', 'postal_code', 'role'
         ]
         extra_kwargs = {
             'email': {'required': True},
@@ -38,6 +38,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'city': {'required': False},
             'country': {'required': False},
             'postal_code': {'required': False},
+            'role':  {'required': False},
         }
 
     def validate(self, attrs):
@@ -58,9 +59,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         """Create and return a new user"""
         # Remove password2 as it's not needed for user creation
         validated_data.pop('password2')
-
         # Create user with the validated data
-        user = User.objects.create_user(**validated_data)
+        role = validated_data.pop('role', 'guest') 
+        if not role:
+            role = 'guest'
+        user = User.objects.create_user(role = role, **validated_data)
         return user
 
 
@@ -119,3 +122,22 @@ class PasswordChangeSerializer(serializers.Serializer):
         instance.set_password(validated_data['new_password'])
         instance.save()
         return instance
+    
+
+
+
+class AdminUserUpdateSerializer(serializers.ModelSerializer):
+    """
+    Specific serializer for Admin actions.
+    Explicitly allows updating 'role' and 'is_active'.
+    """
+    class Meta:
+        model = User
+        print(model)
+        fields = ['role', 'is_active', 'first_name', 'last_name', 'email', 'username']
+        extra_kwargs = {
+            'role': {'required': False},
+            'is_active': {'required': False},
+            'username': {'required': False},
+            'email': {'required': False}
+        }
