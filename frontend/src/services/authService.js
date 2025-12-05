@@ -349,6 +349,60 @@ const authService = {
       };
     }
   },
+  
+/**
+   * Admin: Get all users (with optional role filter)
+   * @param {string} role - Optional role filter ('admin', 'manager', 'staff', 'guest')
+   * @returns {Promise} API response
+   */
+  getUsers: async (role = '') => {
+    try {
+      const query = role ? `?role=${role}` : '';
+      const response = await authAPI.get(`/admin/users/${query}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to fetch users',
+      };
+    }
+  },
+
+  /**
+   * Admin: Create a new staff/manager account
+   * @param {Object} userData - Registration data
+   * @returns {Promise} API response
+   */
+  createUser: async (userData) => {
+    try {
+      const response = await authAPI.post('/admin/users/', userData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      // Return full error object to handle field-specific validation errors
+      return {
+        success: false,
+        error: error.response?.data || 'Failed to create user',
+      };
+    }
+  },
+
+  /**
+   * Admin: Update user details (role, active status, or password reset)
+   * @param {number} userId - ID of user to update
+   * @param {Object} updateData - Fields to update (role, is_active, password)
+   * @returns {Promise} API response
+   */
+  updateUser: async (userId, updateData) => {
+    try {
+      const response = await authAPI.patch(`/admin/users/${userId}/`, updateData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to update user',
+      };
+    }
+  },
 
 
 };

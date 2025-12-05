@@ -31,6 +31,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
+from .permissions import IsAdminUserCustom
+from django.db.models import Q
 
 
 
@@ -446,3 +448,78 @@ class PasswordResetConfirmAPIview(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
             
+class AdminUserListAPIView(APIView):
+    """
+    GET: List all users (with optional role filtering)
+    POST: Create a new staff/manager account
+    """
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
+
+    def get(self, request):
+        User = get_user_model()
+        role_filter = request.query_params.get('role')
+        users = User.objects.all().order_by('-created_at')
+
+        if role_filter:
+            users = users.filter(role=role_filter)
+
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        # US-18: Admin can create staff/manager accounts
+        
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            AuditLogger.log_profile_update(
+                request, 
+                request.user, 
+                [f"Created user: {user.username} with role: {user.role}"]
+            )
+            
+            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminUserDetailAPIView(APIView):
+    """
+    PATCH: Update user role, status (activate/deactivate), or reset password
+    """
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
+
+    def get_object(self, user_id):
+        User = get_user_model()
+        try:
+            return User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return None
+
+    def patch(self, request, user_id):
+        target_user = self.get_object(user_id)
+        if not target_user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if target_user.id == request.user.id and 'is_active' in request.data:
+             return Response({"error": "You cannot deactivate your own account."}, status=status.HTTP_400_BAD_REQUEST)
+        if 'password' in request.data:
+            target_user.set_password(request.data['password'])
+            target_user.save()
+            AuditLogger.log_profile_update(request, request.user, [f"Reset password for user: {target_user.username}"])
+            return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
+
+        # US-18: Admin can change roles and activate/deactivate
+        serializer = UserSerializer(target_user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            
+            # Log what changed
+            changed_fields = list(request.data.keys())
+            AuditLogger.log_profile_update(
+                request, 
+                request.user, 
+                [f"Updated user {target_user.username}: {', '.join(changed_fields)}"]
+            )
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

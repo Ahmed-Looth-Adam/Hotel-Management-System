@@ -18,4 +18,6 @@ urlpatterns = [
     path('register-form/', views.register_template, name='register'),
     path('password-reset/', csrf_exempt(views.PasswordResetRequestAPIview.as_view()), name='password-reset'),
     path('password-reset-confirm/', csrf_exempt(views.PasswordResetConfirmAPIview.as_view()), name='password-reset-confirm'),
+    path('admin/users/', views.AdminUserListAPIView.as_view(), name='admin-user-list'),
+    path('admin/users/<int:user_id>/', views.AdminUserDetailAPIView.as_view(), name='admin-user-detail'),
 ]

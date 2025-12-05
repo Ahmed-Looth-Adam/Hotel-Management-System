@@ -34,6 +34,7 @@ import PasswordResetConfirm from './pages/profile/PasswordResetConfirm';
 // Examples
 import NotificationExample from './examples/NotificationExample';
 import LoadingExample from './examples/LoadingExample';
+import UserManagement from './pages/admin/UserManagement';
 
 function App() {
   return (
@@ -86,7 +87,19 @@ function App() {
                     <Profile />
                   </ProtectedRoute>
                 }
-              />        
+              />
+
+              {/* Admin Route - User Management */}
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    {/* You might want to add a role check inside ProtectedRoute later, 
+                        but the backend already secures the data. */}
+                    <UserManagement />
+                  </ProtectedRoute>
+                }
+              />    
   
               {/* Catch-all redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />

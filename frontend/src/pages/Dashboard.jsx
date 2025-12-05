@@ -16,6 +16,7 @@ import {
   EventAvailable,
   Payment,
   Assessment,
+  SupervisorAccount, 
 } from '@mui/icons-material';
 
 const Dashboard = () => {
@@ -60,6 +61,19 @@ const Dashboard = () => {
     },
   ];
 
+  const adminCards = [
+    {
+      title: 'User Management',
+      icon: <SupervisorAccount sx={{ fontSize: 40 }} />,
+      description: 'Manage staff and user accounts',
+      link: '/admin/users',
+    },
+  ];
+
+  const finalCards = user?.role === 'admin' 
+      ? [...adminCards, ...dashboardCards] 
+      : dashboardCards;
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
@@ -81,7 +95,8 @@ const Dashboard = () => {
         </Box>
 
         <Grid container spacing={3} sx={{ mt: 2 }}>
-          {dashboardCards.map((card, index) => (
+          {/*  Dashboard Cards */}
+          {finalCards.map((card, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
               <Card
                 sx={{

@@ -84,7 +84,7 @@ const Navbar = () => {
       { label: 'Staff', path: '/staff', icon: <PeopleIcon />, roles: ['manager', 'admin'] },
 
       // Admin items
-      { label: 'Users', path: '/users', icon: <PeopleIcon />, roles: ['admin'] },
+      { label: 'Users', path: '/admin/users', icon: <PeopleIcon />, roles: ['admin'] },
       { label: 'Settings', path: '/settings', icon: <SettingsIcon />, roles: ['admin'] },
     ];
 
