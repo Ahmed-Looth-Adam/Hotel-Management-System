@@ -495,7 +495,6 @@ class AdminUserDetailAPIView(APIView):
 
     def get_object(self, user_id):
         User = get_user_model()
-        print(f"you accessed AdminUserDetailAPIView with user_id {user_id}")
         try:
             return User.objects.get(id=user_id)
         except User.DoesNotExist:
@@ -508,6 +507,14 @@ class AdminUserDetailAPIView(APIView):
 
         if target_user.id == request.user.id and 'is_active' in request.data:
              return Response({"error": "You cannot deactivate your own account."}, status=status.HTTP_400_BAD_REQUEST)
+        if 'role' in request.data:
+            new_role = request.data.get('role')
+            if new_role == "admin" and not request.user.is_superuser:
+                return Response({"error": "You do not have permission to change the role of an admin."}, status=status.HTTP_403_FORBIDDEN)
+            if new_role == "admin":
+                target_user.is_staff = True
+            else:
+                target_user.is_staff = False
         if 'password' in request.data:
             target_user.set_password(request.data['password'])
             target_user.save()
@@ -518,11 +525,9 @@ class AdminUserDetailAPIView(APIView):
         serializer = AdminUserUpdateSerializer(target_user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            print(f"you accessed AdminUserDetailAPIView with serializer.data {serializer.data}")
             
             # Log what changed
             changed_fields = list(request.data.keys())
-            print(f"you accessed AdminUserDetailAPIView with changed_fields {changed_fields}")
             AuditLogger.log_profile_update(
                 request, 
                 request.user, 
