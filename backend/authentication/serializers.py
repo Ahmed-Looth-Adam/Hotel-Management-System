@@ -88,9 +88,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         """Check if email is already registered by another user"""
-        user = self.context['request'].user
-        if User.objects.exclude(pk=user.pk).filter(email=value).exists():
-            raise serializers.ValidationError("This email is already registered by another user.")
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is already registered.")
         return value
 
 

@@ -17,7 +17,8 @@ import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { 
   Edit as EditIcon, 
   Refresh as RefreshIcon,
-  Add as AddIcon
+  Add as AddIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import authService from '../../services/authService';
 import UserFormModal from '../../components/admin/UserFormModal';
@@ -59,6 +60,7 @@ const UserManagement = () => {
     setUserToEdit(user);
     setModalOpen(true);
   };
+  
 
   const handleCloseModal = () => {
     setModalOpen(false);
@@ -67,33 +69,29 @@ const UserManagement = () => {
 
   const handleSaveUser = async (userId, payload) => {
     let result;
-    if (!userId) { // Create new user
+    if (!userId) {
       result = await authService.createUser(payload);
       if (result.success) {
         setSuccess(`User ${result.data.username} created successfully.`);
-        fetchUsers(); // Refresh list to show new user
+        fetchUsers();
       }
-    } else { // Update existing user
+    } else {
       result = await authService.updateUser(userId, payload);
       if (result.success) {
         setSuccess(`User ${result.data.username} updated successfully.`);
-        fetchUsers(); // Refresh list to show updated role/data
+        fetchUsers();
       }
     }
     setTimeout(() => setSuccess(''), 3000);
     return result;
   };
-  // ----------------------
 
-  // Handle Account Activation/Deactivation
   const handleStatusChange = async (userId, currentStatus) => {
     const isCurrentUser = users.find(u => u.id === userId)?.id === authService.getCurrentUser()?.id;
     if (isCurrentUser) {
       setError('You cannot deactivate your own account.');
       return;
     }
-    
-    // Optimistic update
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: !currentStatus } : u));
 
     const result = await authService.updateUser(userId, { is_active: !currentStatus });
@@ -101,26 +99,21 @@ const UserManagement = () => {
     if (result.success) {
       setSuccess('User status updated successfully');
     } else {
-      // Revert on failure
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: currentStatus } : u));
       setError(result.error || 'Failed to update status');
     }
     setTimeout(() => { setError(''); setSuccess(''); }, 3000);
   };
 
-  // Handle Role Change
+
   const handleRoleChange = async (userId, newRole) => {
     const isCurrentUser = users.find(u => u.id === userId)?.id === authService.getCurrentUser()?.id;
     if (isCurrentUser) {
       setError('You cannot change your own role.');
       return;
     }
-
-    // Optimistic update
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-
     const result = await authService.updateUser(userId, { role: newRole });
-    
     if (result.success) {
       setSuccess(`User role changed to ${newRole}.`);
     } else {
@@ -128,6 +121,32 @@ const UserManagement = () => {
       const oldRole = users.find(u => u.id === userId)?.role;
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: oldRole } : u));
       setError(result.error || 'Failed to update role');
+    }
+    setTimeout(() => { setError(''); setSuccess(''); }, 3000);
+  };
+
+// src/pages/admin/UserManagement.jsx
+
+// ... (after handleRoleChange) ...
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm("Are you sure you want to soft-delete (deactivate) this user?")) {
+        return;
+    }
+
+    const isCurrentUser = users.find(u => u.id === userId)?.id === authService.getCurrentUser()?.id;
+    if (isCurrentUser) {
+        setError('You cannot soft-delete your own account.');
+        return;
+    }
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: false } : u));
+    const result = await authService.deleteUser(userId); 
+    
+    if (result.success) {
+        setSuccess(`User soft-deleted successfully.`);
+    } else {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: true } : u));
+        setError(result.error || 'Failed to soft-delete user');
     }
     setTimeout(() => { setError(''); setSuccess(''); }, 3000);
   };
@@ -194,11 +213,23 @@ const UserManagement = () => {
       sortable: false,
       width: 100,
       renderCell: (params) => (
-        <Tooltip title="Edit User Details / Reset Password">
-          <IconButton size="small" onClick={() => handleOpenEdit(params.row)}>
-            <EditIcon fontSize="small" color="primary" />
-          </IconButton>
-        </Tooltip>
+        <>
+          <Tooltip title="Edit User Details / Reset Password">
+            <IconButton size="small" onClick={() => handleOpenEdit(params.row)}>
+              <EditIcon fontSize="small" color="primary" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Soft Delete (Deactivate)">
+            <IconButton 
+              size="small" 
+              color="error"
+              onClick={() => handleDeleteUser(params.row.id)}
+              disabled={params.row.id === authService.getCurrentUser()?.id}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </>
       ),
     },
   ];

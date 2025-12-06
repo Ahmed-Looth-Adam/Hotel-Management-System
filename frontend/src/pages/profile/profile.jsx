@@ -356,7 +356,7 @@ const Profile = () => {
                 onBlur={profileFormik.handleBlur}
                 error={profileFormik.touched.email && Boolean(profileFormik.errors.email)}
                 helperText={profileFormik.touched.email && profileFormik.errors.email}
-                disabled={true}
+                disabled={false}
               />
               
               <TextField

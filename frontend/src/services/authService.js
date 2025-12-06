@@ -404,6 +404,23 @@ const authService = {
     }
   },
 
+  /**
+   * Admin: Update user details (role, active status, or password reset)
+   * @param {number} userId - ID of user to update
+   * @returns {Promise} API response
+   */
+  deleteUser: async (userId) => { 
+    try {
+      const response = await authAPI.delete(`/admin/users/${userId}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to delete user',
+      };
+    }
+  },
+
 
 };
 

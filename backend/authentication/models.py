@@ -56,9 +56,7 @@ class LoginAuditLog(models.Model):
         ('login_failed', 'Login Failed'),
         ('account_locked', 'Account Locked'),
         ('logout', 'Logout'),
-        ('token_refresh', 'Token Refresh'),
-        ('password_change', 'Password Change'),
-        ('profile_update', 'Profile Update'),
+        ('token_refresh', 'Token Refresh')
     ]
 
     # Event details
