@@ -18,7 +18,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate
 from .forms import CustomUserCreationForm
-from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer, PasswordChangeSerializer, AdminUserUpdateSerializer
+from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer, PasswordChangeSerializer, AdminUserUpdateSerializer, AdminUserRegistrationSerializer
 from .utils import LoginAttemptTracker, AuditLogger
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -472,7 +472,7 @@ class AdminUserListAPIView(APIView):
     def post(self, request):
         # US-18: Admin can create staff/manager accounts
         
-        serializer = UserRegistrationSerializer(data=request.data)
+        serializer = AdminUserRegistrationSerializer(data=request.data)
         print(f"you accessed AdminUserListAPIView post with serializer {serializer}")  
         if serializer.is_valid():
             user = serializer.save()
