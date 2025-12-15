@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import authenticate, update_session_auth_hash
 
 User = get_user_model()
 
@@ -85,3 +86,36 @@ class UserSerializer(serializers.ModelSerializer):
             'date_joined', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'date_joined', 'created_at', 'updated_at', 'role']
+
+    def validate_email(self, value):
+        """Check if email is already registered by another user"""
+        user = self.context['request'].user
+        if User.objects.exclude(pk=user.pk).filter(email=value).exists():
+            raise serializers.ValidationError("This email is already registered by another user.")
+        return value
+
+
+#  Password change serializer
+# Edited By:
+# -> Ibrahim Waseem, UWE ID: 24050771
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    confirm_new_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_new_password']:
+            raise serializers.ValidationError({"password": "New passwords must match."})
+        return data
+
+    def update(self, instance, validated_data):
+        if not instance.check_password(validated_data['current_password']):
+            raise serializers.ValidationError({"current_password": "Current password is incorrect."})
+        
+        instance.set_password(validated_data['new_password'])
+        instance.save()
+        return instance

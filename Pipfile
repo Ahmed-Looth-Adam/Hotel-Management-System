@@ -17,6 +17,7 @@ django-filter = "*"
 drf-spectacular = "*"
 celery = "*"
 redis = "*"
+django-redis = "*"
 
 [dev-packages]
 pytest = "*"

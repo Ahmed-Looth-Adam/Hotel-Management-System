@@ -40,3 +40,52 @@ class User(AbstractUser):
         if self.account_locked_until:
             return timezone.now() < self.account_locked_until
         return False
+
+
+class LoginAuditLog(models.Model):
+    """
+    Audit log for login events
+    Tracks all authentication attempts for security monitoring and compliance
+
+    Edited By:
+    -> Ismail Wasiu Abdul Samad, UWE ID: 24050765
+    """
+
+    EVENT_TYPES = [
+        ('login_success', 'Login Success'),
+        ('login_failed', 'Login Failed'),
+        ('account_locked', 'Account Locked'),
+        ('logout', 'Logout'),
+        ('token_refresh', 'Token Refresh'),
+        ('password_change', 'Password Change'),
+        ('profile_update', 'Profile Update'),
+    ]
+
+    # Event details
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES, db_index=True)
+    username = models.CharField(max_length=150, db_index=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_logs')
+
+    # Request information
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+
+    # Additional context
+    success = models.BooleanField(default=False)
+    failure_reason = models.CharField(max_length=255, blank=True)
+    failed_attempts_count = models.IntegerField(null=True, blank=True)
+
+    # Timestamp
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['-timestamp', 'event_type']),
+            models.Index(fields=['username', '-timestamp']),
+        ]
+        verbose_name = 'Login Audit Log'
+        verbose_name_plural = 'Login Audit Logs'
+
+    def __str__(self):
+        return f"{self.event_type} - {self.username} at {self.timestamp}"
