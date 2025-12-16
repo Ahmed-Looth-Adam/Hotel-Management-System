@@ -174,6 +174,7 @@ const LoginModal = ({ open, onClose, onSwitchToRegister }) => {
               },
             }}
           />
+          
 
           <FormControlLabel
             control={

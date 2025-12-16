@@ -305,6 +305,122 @@ const authService = {
     return localStorage.getItem('refresh_token');
   },
 
+  /**
+   * Request a password reset email
+   * @param {string} email - User's email address
+   * @returns {Promise} API response
+   */
+  requestPasswordReset: async (email) => {
+    try {
+      console.log('Requesting password reset for email:', email);
+      const payload = {email};
+      const response = await authAPI.post('/password-reset/', payload );
+      console.log('Password reset response:', response.data);
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to request password reset.',
+      };
+    }
+  },
+
+  /**
+   * Confirms password reset using UID/Token and sets the new password
+   * @param {string} uid - User ID encoded in base64
+   * @param {string} token - The secure, time-sensitive token
+   * @param {string} new_password - The user's desired new password
+   * @returns {Promise} API response
+   */
+  confirmPasswordReset: async (uid, token, new_password) => {
+    try {
+      // Matches the backend endpoint: path('password-reset-confirm/', ...)
+      const response = await authAPI.post('/password-reset-confirm/', { 
+        uid, 
+        token, 
+        new_password // This matches the key expected by the Django view
+      });
+      return { success: true, message: response.data.detail };
+    } catch (error) {
+      // The backend returns a specific error for invalid/expired tokens
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to complete password reset.',
+      };
+    }
+  },
+  
+/**
+   * Admin: Get all users (with optional role filter)
+   * @param {string} role - Optional role filter ('admin', 'manager', 'staff', 'guest')
+   * @returns {Promise} API response
+   */
+  getUsers: async (role = '') => {
+    try {
+      const query = role ? `?role=${role}` : '';
+      const response = await authAPI.get(`/admin/users/${query}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to fetch users',
+      };
+    }
+  },
+
+  /**
+   * Admin: Create a new staff/manager account
+   * @param {Object} userData - Registration data
+   * @returns {Promise} API response
+   */
+  createUser: async (userData) => {
+    try {
+      const response = await authAPI.post('/admin/users/', userData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      // Return full error object to handle field-specific validation errors
+      return {
+        success: false,
+        error: error.response?.data || 'Failed to create user',
+      };
+    }
+  },
+
+  /**
+   * Admin: Update user details (role, active status, or password reset)
+   * @param {number} userId - ID of user to update
+   * @param {Object} updateData - Fields to update (role, is_active, password)
+   * @returns {Promise} API response
+   */
+  updateUser: async (userId, updateData) => {
+    try {
+      const response = await authAPI.patch(`/admin/users/${userId}/`, updateData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to update user',
+      };
+    }
+  },
+
+  /**
+   * Admin: Update user details (role, active status, or password reset)
+   * @param {number} userId - ID of user to update
+   * @returns {Promise} API response
+   */
+  deleteUser: async (userId) => { 
+    try {
+      const response = await authAPI.delete(`/admin/users/${userId}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to delete user',
+      };
+    }
+  },
+
 
 };
 

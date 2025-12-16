@@ -28,4 +28,23 @@ const ProfileSchema = Yup.object().shape({
     .nullable(true),
 });
 
+export const PasswordResetRequestSchema = Yup.object().shape({
+  email: Yup.string()
+    .email('Please enter a valid email address')
+    .required('Email is required'),
+});
+
+export const PasswordResetConfirmSchema = Yup.object().shape({
+  new_password: Yup.string()
+    .min(8, 'Password must be at least 8 characters')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+    )
+    .required('New password is required'),
+  confirm_new_password: Yup.string()
+    .oneOf([Yup.ref('new_password'), null], 'Passwords must match')
+    .required('Confirm new password is required'),
+});
+
 export { ProfileSchema, PasswordChangeSchema };

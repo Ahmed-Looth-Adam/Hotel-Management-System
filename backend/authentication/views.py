@@ -18,11 +18,22 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate
 from .forms import CustomUserCreationForm
-from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer, PasswordChangeSerializer
+from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer, PasswordChangeSerializer, AdminUserUpdateSerializer, AdminUserRegistrationSerializer
 from .utils import LoginAttemptTracker, AuditLogger
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.permissions import AllowAny, IsAuthenticated
-
+from django.conf import settings
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
+from .permissions import IsAdminUserCustom
+from django.db.models import Q
+from core.signals import admin_action_performed, profile_updated
 
 
 
@@ -279,10 +290,10 @@ class UserProfileAPIView(APIView):
         serializer = UserSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            AuditLogger.log_profile_update(
-                request= request,
-                user= user,
-                changed_fields_list= changed_fields
+            profile_updated.send(
+                sender=self.__class__,
+                user = user,
+                description=f"user changed fields:{changed_fields}"
             )
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -301,7 +312,251 @@ class PasswordChangeAPIView(APIView):
         if serializer.is_valid():
             serializer.save()
             update_session_auth_hash(request, request.user) 
-            AuditLogger.log_password_change(request, user)
+            profile_updated.send(
+                sender=self.__class__,
+                user = user,
+                description=f"user {user} changed password field"
+            )
             return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
+class PasswordResetRequestAPIview(APIView):
+    """
+    API endpoint to request password reset
+
+    POST /auth/password-reset/
+    Required fields: email
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        User = get_user_model()
+        email = request.data.get("email")
+        if not email:
+            return Response(
+                {"error": "Email is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            user = User.objects.get(email=email, is_active=True)
+        except User.DoesNotExist:
+            return Response(
+                {"message": "If an account with that email exists, a password reset link has been sent."},
+                status=status.HTTP_200_OK
+            )
+        #step 2: generate UID and token and send email
+        # use urlsafe_base64_encode to encode the UID
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+        reset_link = f"{frontend_url}/auth/password-reset-confirm/{uid}/{token}/"
+        subject = "Password Reset Request"
+        message = (f"We have sent you a link to reset your password. Please check your email {user.email}.\n"
+                   f"If you did not make this request, please ignore this email.\n"
+                   f"If you have any questions, please contact us at {getattr(settings, 'SUPPORT_EMAIL', '')}.\n"
+                   f"Thank you for using our service.\n"
+                   f"The {getattr(settings, 'APP_NAME', 'Hotel Management')} Team\n"
+                   f"Reset Link: {reset_link}"
+                   )
+        recipient_list = [user.email]
+        try:
+            send_mail(
+                subject,
+                message,
+                getattr(settings, 'DEFAULT_FROM_EMAIL', getattr(settings, 'EMAIL_HOST_USER', '')),
+                recipient_list,
+                fail_silently=False,
+            )
+            return Response(
+                {"message": "Password reset email sent successfully"},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            print(f"Error sending password reset email: {user.email}: {e}")
+            return Response(
+                {"error": "Error sending password reset email"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+class PasswordResetConfirmAPIview(APIView):
+    """
+    View for confirming a password reset request.
+    """
+
+    permission_classes = [AllowAny]
+    def post(self, request):
+        """
+        POST request to confirm a password reset request.
+        """
+        User = get_user_model()
+        uidb64  = request.data.get('uid')
+        token = request.data.get('token')
+        new_password = request.data.get('new_password')
+
+
+        if not all([uidb64, token, new_password]):
+            return Response({'error': 'Please provide all required fields.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+            return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if user is not None and default_token_generator.check_token(user, token):
+            try:           
+                validate_password(new_password, user)
+                user.set_password(new_password)
+                user.save()
+
+                if not user.is_active:
+                    user.is_active = True
+                    user.save()
+                
+                profile_updated.send(
+                    sender=self.__class__,
+                    user = user,
+                    description=f"user {user} changed password field"
+                )
+
+
+                return Response(
+                    {'detail': 'Password reset successful. You can now log in with your new password.'},
+                    status=status.HTTP_200_OK
+                )
+
+            except ValidationError as e:
+                return Response(
+                    {'error': list(e.messages)}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            except Exception as e:
+                print(f"Error resetting password for user {uid}: {e}")
+                return Response(
+                    {'error': 'An unexpected error occurred during password change.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        else:
+            # 4. Handle Invalid Token/UID
+            return Response(
+                {'error': 'Invalid or expired password reset link/token. Please request a new reset.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+class AdminUserListAPIView(APIView):
+    """
+    GET: List all users (with optional role filtering)
+    POST: Create a new staff/manager account
+    """
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
+
+    def get(self, request):
+        User = get_user_model()
+        role_filter = request.query_params.get('role')
+        users = User.objects.all().order_by('-created_at')
+        if role_filter:
+            users = users.filter(role=role_filter)
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = AdminUserRegistrationSerializer(data=request.data)
+        print(f"you accessed AdminUserListAPIView post with serializer {serializer}")  
+        if serializer.is_valid():
+            user = serializer.save()
+            print(f"you accessed AdminUserListAPIView with user {user}")
+            admin_action_performed.send (
+                sender=self.__class__,
+                actor=request.user,
+                target_user=user,  
+                description=f"Created user {user}"
+            )
+            
+            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminUserDetailAPIView(APIView):
+    """
+    PATCH: Update user role, status (activate/deactivate), or reset password
+    """
+    permission_classes = [IsAuthenticated, IsAdminUserCustom]
+
+    def get_object(self, user_id):
+        User = get_user_model()
+        try:
+            return User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return None
+
+    def patch(self, request, user_id):
+        target_user = self.get_object(user_id)
+        if not target_user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if target_user.id == request.user.id and 'is_active' in request.data:
+             return Response({"error": "You cannot deactivate your own account."}, status=status.HTTP_400_BAD_REQUEST)
+        if 'role' in request.data:
+            new_role = request.data.get('role')
+            if new_role == "admin" and not request.user.is_superuser:
+                return Response({"error": "You do not have permission to change the role of an admin."}, status=status.HTTP_403_FORBIDDEN)
+            if new_role == "admin":
+                target_user.is_staff = True
+            else:
+                target_user.is_staff = False
+        if 'password' in request.data:
+            target_user.set_password(request.data['password'])
+            target_user.save()
+            admin_action_performed.send (
+                sender=self.__class__,
+                actor=request.user,
+                target_user=target_user,
+                description= f"Changed password for user {target_user.username}."             
+            )
+            return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
+
+        # US-18: Admin can change roles and activate/deactivate
+        serializer = AdminUserUpdateSerializer(target_user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            
+            # Log what changed
+            changed_fields = list(request.data.keys())
+            admin_action_performed.send (
+                sender=self.__class__,
+                actor=request.user,
+                target_user=target_user,
+                description= f'Updated user profile for {target_user.username}. Changed fields: {changed_fields}'
+            )
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, user_id):
+        print('delete')
+        target_user = self.get_object(user_id)
+        print(target_user)
+        if not target_user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if target_user.id == request.user.id:
+            return Response({"error": "You cannot soft-delete your own account."}, status=status.HTTP_400_BAD_REQUEST)
+
+        target_user.is_active = False
+        target_user.save()
+        print('Deleted user')
+        
+        admin_action_performed.send (
+            sender=self.__class__,
+            actor=request.user,
+            target_user=target_user,
+            description=f"Soft-deleted user {target_user.username}."
+        )
+
+        print('Sent signal')
+        
+        
+        return Response({"message": f"User {target_user.username} has been soft-deleted (deactivated)."}, status=status.HTTP_204_NO_CONTENT)
