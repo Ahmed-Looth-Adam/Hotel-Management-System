@@ -82,7 +82,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name',
             'role', 'phone_number', 'date_of_birth', 'address',
             'city', 'country', 'postal_code', 'is_active',
-            'date_joined', 'created_at', 'updated_at'
+            'profile_picture', 'date_joined', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'date_joined', 'created_at', 'updated_at', 'role']
 
@@ -128,17 +128,21 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        print(model)
-        fields = ['role', 'is_active', 'first_name', 'last_name', 'email', 'username']
+        fields = [
+            'role', 'is_active', 'first_name', 'last_name', 'email', 'username',
+            'phone_number', 'profile_picture'
+        ]
         extra_kwargs = {
             'role': {'required': False},
             'is_active': {'required': False},
             'username': {'required': False},
-            'email': {'required': False}
+            'email': {'required': False},
+            'phone_number': {'required': False},
+            'profile_picture': {'required': False}
         }
 
 class AdminUserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for user registration"""
+    """Serializer for admin to create staff/manager users"""
     password = serializers.CharField(
         write_only=True,
         required=True,
@@ -157,19 +161,21 @@ class AdminUserRegistrationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'password', 'password2',
             'first_name', 'last_name', 'phone_number',
-            'date_of_birth', 'address', 'city', 'country', 'postal_code', 'role'
+            'date_of_birth', 'address', 'city', 'country', 'postal_code', 'role',
+            'profile_picture'
         ]
         extra_kwargs = {
             'email': {'required': True},
-            'first_name': {'required': False},
-            'last_name': {'required': False},
+            'first_name': {'required': True},
+            'last_name': {'required': True},
             'phone_number': {'required': False},
             'date_of_birth': {'required': False},
             'address': {'required': False},
             'city': {'required': False},
             'country': {'required': False},
             'postal_code': {'required': False},
-            'role':  {'required': False},
+            'role': {'required': False},
+            'profile_picture': {'required': False},
         }
 
     def validate(self, attrs):

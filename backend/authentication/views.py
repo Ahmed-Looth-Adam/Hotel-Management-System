@@ -14,6 +14,7 @@ from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate
@@ -452,6 +453,7 @@ class AdminUserListAPIView(APIView):
     POST: Create a new staff/manager account
     """
     permission_classes = [IsAuthenticated, IsAdminUserCustom]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
         User = get_user_model()
@@ -484,6 +486,7 @@ class AdminUserDetailAPIView(APIView):
     PATCH: Update user role, status (activate/deactivate), or reset password
     """
     permission_classes = [IsAuthenticated, IsAdminUserCustom]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_object(self, user_id):
         User = get_user_model()

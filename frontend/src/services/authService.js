@@ -370,12 +370,15 @@ const authService = {
 
   /**
    * Admin: Create a new staff/manager account
-   * @param {Object} userData - Registration data
+   * @param {Object|FormData} userData - Registration data (supports FormData for file uploads)
    * @returns {Promise} API response
    */
   createUser: async (userData) => {
     try {
-      const response = await authAPI.post('/admin/users/', userData);
+      const config = userData instanceof FormData
+        ? { headers: { 'Content-Type': 'multipart/form-data' } }
+        : {};
+      const response = await authAPI.post('/admin/users/', userData, config);
       return { success: true, data: response.data };
     } catch (error) {
       // Return full error object to handle field-specific validation errors
@@ -389,12 +392,15 @@ const authService = {
   /**
    * Admin: Update user details (role, active status, or password reset)
    * @param {number} userId - ID of user to update
-   * @param {Object} updateData - Fields to update (role, is_active, password)
+   * @param {Object|FormData} updateData - Fields to update (supports FormData for file uploads)
    * @returns {Promise} API response
    */
   updateUser: async (userId, updateData) => {
     try {
-      const response = await authAPI.patch(`/admin/users/${userId}/`, updateData);
+      const config = updateData instanceof FormData
+        ? { headers: { 'Content-Type': 'multipart/form-data' } }
+        : {};
+      const response = await authAPI.patch(`/admin/users/${userId}/`, updateData, config);
       return { success: true, data: response.data };
     } catch (error) {
       return {

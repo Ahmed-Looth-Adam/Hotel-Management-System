@@ -19,6 +19,9 @@ class User(AbstractUser):
     city = models.CharField(max_length=100, blank=True)
     country = models.CharField(max_length=100, blank=True)
     postal_code = models.CharField(max_length=20, blank=True)
+
+    # Staff/User profile fields
+    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True, help_text="Profile photo")
     
     # Security fields
     failed_login_attempts = models.IntegerField(default=0)
