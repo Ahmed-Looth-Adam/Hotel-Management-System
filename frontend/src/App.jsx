@@ -40,6 +40,7 @@ import { PricingDashboard } from './pages/pricing';
 
 // Admin pages
 import UserManagement from './pages/admin/UserManagement';
+import HotelManagement from './pages/Admin/HotelManagement';
 
 // Examples
 import NotificationExample from './examples/NotificationExample';
@@ -104,6 +105,16 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin Route - Hotel Management */}
+              <Route
+                path="/admin/hotels"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <HotelManagement />
                   </ProtectedRoute>
                 }
               />

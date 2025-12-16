@@ -10,7 +10,7 @@ from .models import (
     AmenityCategory, Amenity, RoomAmenity,
     RoomTypePricing, ViewPricing, SeasonalPricing, DayTypePricing,
     PromotionalDiscount, HotelPolicy, Gallery, GalleryImage,
-    LateCheckoutRequest
+    LateCheckoutRequest, AncillaryService
 )
 from .serializers import (
     HotelSerializer, HotelListSerializer, HotelDetailSerializer,
@@ -22,7 +22,8 @@ from .serializers import (
     PromotionalDiscountSerializer, HotelPolicySerializer,
     GallerySerializer, GalleryImageSerializer,
     LateCheckoutRequestSerializer, LateCheckoutRequestCreateSerializer,
-    PricingCalculationRequestSerializer, RoomAvailabilityRequestSerializer
+    PricingCalculationRequestSerializer, RoomAvailabilityRequestSerializer,
+    AncillaryServiceSerializer
 )
 from .permissions import (
     IsStaffOrReadOnly, IsHotelManager, HotelObjectPermission
@@ -475,3 +476,32 @@ class OperationsDashboardView(APIView):
                 'requests': LateCheckoutRequestSerializer(pending_late_checkouts, many=True).data
             }
         })
+
+
+# ============== Ancillary Service ViewSets ==============
+
+class AncillaryServiceViewSet(viewsets.ModelViewSet):
+    """ViewSet for Ancillary Services (Airport Transfer, Breakfast, Spa, Late Checkout, etc.)"""
+    queryset = AncillaryService.objects.all()
+    serializer_class = AncillaryServiceSerializer
+    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+
+    def get_queryset(self):
+        queryset = AncillaryService.objects.select_related('hotel')
+
+        # Filter by hotel
+        hotel_id = self.request.query_params.get('hotel')
+        if hotel_id:
+            queryset = queryset.filter(hotel_id=hotel_id)
+
+        # Filter by service type
+        service_type = self.request.query_params.get('service_type')
+        if service_type:
+            queryset = queryset.filter(service_type=service_type)
+
+        # Filter by active status
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+
+        return queryset.order_by('hotel', 'name')

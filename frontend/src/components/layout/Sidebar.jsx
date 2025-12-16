@@ -115,7 +115,13 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent' }) => {
     {
       title: 'Users',
       icon: <PeopleIcon />,
-      path: '/users',
+      path: '/admin/users',
+      roles: ['admin'],
+    },
+    {
+      title: 'Hotel Management',
+      icon: <HotelIcon />,
+      path: '/admin/hotels',
       roles: ['admin'],
     },
     {

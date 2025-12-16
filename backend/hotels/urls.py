@@ -6,7 +6,7 @@ from .views import (
     RoomTypePricingViewSet, ViewPricingViewSet, SeasonalPricingViewSet,
     DayTypePricingViewSet, PromotionalDiscountViewSet, RoomRateViewSet,
     HotelPolicyViewSet, GalleryViewSet, GalleryImageViewSet,
-    LateCheckoutRequestViewSet,
+    LateCheckoutRequestViewSet, AncillaryServiceViewSet,
     PricingCalculationView, RoomAvailabilityView, OperationsDashboardView
 )
 
@@ -40,6 +40,9 @@ router.register(r'gallery-images', GalleryImageViewSet, basename='gallery-image'
 
 # Late checkout
 router.register(r'late-checkout-requests', LateCheckoutRequestViewSet, basename='late-checkout-request')
+
+# Ancillary Services
+router.register(r'ancillary-services', AncillaryServiceViewSet, basename='ancillary-service')
 
 urlpatterns = [
     # Router URLs

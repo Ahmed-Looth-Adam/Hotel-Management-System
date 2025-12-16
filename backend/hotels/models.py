@@ -503,6 +503,61 @@ class HotelPolicy(models.Model):
         return f"{self.title} - {self.hotel.name}"
 
 
+class AncillaryService(models.Model):
+    """Additional services available at the hotel (airport transfer, breakfast, spa, etc.)"""
+    SERVICE_TYPE_CHOICES = [
+        ('airport_transfer', 'Airport Transfer'),
+        ('breakfast', 'Breakfast'),
+        ('spa', 'Spa Access'),
+        ('late_checkout', 'Late Checkout'),
+        ('parking', 'Parking'),
+        ('minibar', 'Minibar'),
+        ('laundry', 'Laundry'),
+        ('room_service', 'Room Service'),
+        ('other', 'Other'),
+    ]
+
+    PRICING_TYPE_CHOICES = [
+        ('per_booking', 'Per Booking'),
+        ('per_person', 'Per Person'),
+        ('per_person_per_day', 'Per Person Per Day'),
+        ('per_day', 'Per Day'),
+        ('one_time', 'One Time'),
+    ]
+
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='ancillary_services')
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    service_type = models.CharField(max_length=50, choices=SERVICE_TYPE_CHOICES)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='GBP')
+    pricing_type = models.CharField(max_length=30, choices=PRICING_TYPE_CHOICES, default='one_time')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['service_type', 'name']
+        verbose_name_plural = 'ancillary services'
+
+    def __str__(self):
+        return f"{self.name} - {self.hotel.name} ({self.currency} {self.price})"
+
+    def calculate_charge(self, quantity=1, days=1, persons=1):
+        """Calculate the total charge based on pricing type"""
+        base_price = float(self.price)
+        if self.pricing_type == 'per_booking':
+            return base_price
+        elif self.pricing_type == 'per_person':
+            return base_price * persons
+        elif self.pricing_type == 'per_person_per_day':
+            return base_price * persons * days
+        elif self.pricing_type == 'per_day':
+            return base_price * days
+        else:  # one_time
+            return base_price * quantity
+
+
 class LateCheckoutRequest(models.Model):
     """Late checkout management"""
     STATUS_CHOICES = [

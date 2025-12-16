@@ -4,7 +4,7 @@ from .models import (
     AmenityCategory, Amenity, RoomAmenity,
     RoomTypePricing, ViewPricing, SeasonalPricing, DayTypePricing,
     PromotionalDiscount, HotelPolicy, Gallery, GalleryImage,
-    LateCheckoutRequest
+    LateCheckoutRequest, AncillaryService
 )
 
 
@@ -351,3 +351,21 @@ class RoomAvailabilityRequestSerializer(serializers.Serializer):
         if data['check_out'] <= data['check_in']:
             raise serializers.ValidationError("Check-out date must be after check-in date")
         return data
+
+
+# ============== Ancillary Service Serializers ==============
+
+class AncillaryServiceSerializer(serializers.ModelSerializer):
+    """Serializer for ancillary services"""
+    service_type_display = serializers.CharField(source='get_service_type_display', read_only=True)
+    pricing_type_display = serializers.CharField(source='get_pricing_type_display', read_only=True)
+    hotel_name = serializers.CharField(source='hotel.name', read_only=True)
+
+    class Meta:
+        model = AncillaryService
+        fields = [
+            'id', 'hotel', 'hotel_name', 'name', 'service_type', 'service_type_display',
+            'description', 'price', 'currency', 'pricing_type', 'pricing_type_display',
+            'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']

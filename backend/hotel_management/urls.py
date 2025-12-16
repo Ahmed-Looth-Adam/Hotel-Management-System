@@ -46,6 +46,12 @@ urlpatterns = [
     # Hotels API
     path('api/hotels/', include('hotels.urls')),
 
+    # Reports API
+    path('api/reports/', include('reports.urls')),
+
+    # Payments API
+    path('api/payments/', include('payments.urls')),
+
     # API Schema
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

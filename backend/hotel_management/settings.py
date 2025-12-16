@@ -272,3 +272,15 @@ CELERY_TIMEZONE = 'UTC'
 AUTH_USER_MODEL = 'authentication.User'
 
 PASSWORD_RESET_TIMEOUT = 60 * 60
+
+# Security Settings
+# HSTS (HTTP Strict Transport Security) - only active in production (when DEBUG is False)
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    CSRF_COOKIE_SECURE = True
