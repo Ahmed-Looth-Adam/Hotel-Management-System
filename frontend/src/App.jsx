@@ -27,14 +27,23 @@ import Register from './pages/auth/Register';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
-import Profile from './pages/profile/profile'; // Added import for Profile
+import Profile from './pages/profile/profile';
 import PasswordReset from './pages/profile/PasswordReset';
 import PasswordResetConfirm from './pages/profile/PasswordResetConfirm';
+
+// Hotel management pages
+import { HotelsList, HotelDetail, HotelForm } from './pages/hotels';
+import { RoomsList, RoomDetail, RoomForm } from './pages/rooms';
+import { BookingsList, BookingDetail, BookingForm } from './pages/bookings';
+import { OperationsDashboard } from './pages/operations';
+import { PricingDashboard } from './pages/pricing';
+
+// Admin pages
+import UserManagement from './pages/admin/UserManagement';
 
 // Examples
 import NotificationExample from './examples/NotificationExample';
 import LoadingExample from './examples/LoadingExample';
-import UserManagement from './pages/admin/UserManagement';
 
 function App() {
   return (
@@ -60,15 +69,15 @@ function App() {
               <Route path="/register" element={<Register />} />
 
               {/* === PASSWORD RESET ROUTES (MUST BE PUBLIC) === */}
-              <Route 
-                path="/auth/password-reset" 
-                element={<PasswordReset />} 
-              /> 
-              <Route 
-                path="/auth/password-reset-confirm/:uid/:token" 
-                element={<PasswordResetConfirm />} 
+              <Route
+                path="/auth/password-reset"
+                element={<PasswordReset />}
               />
-              
+              <Route
+                path="/auth/password-reset-confirm/:uid/:token"
+                element={<PasswordResetConfirm />}
+              />
+
               {/* ============================================== */}
 
               {/* Protected Routes */}
@@ -80,7 +89,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route // Added route for Profile
+              <Route
                 path="/profile"
                 element={
                   <ProtectedRoute>
@@ -94,13 +103,125 @@ function App() {
                 path="/admin/users"
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    {/* You might want to add a role check inside ProtectedRoute later, 
-                        but the backend already secures the data. */}
                     <UserManagement />
                   </ProtectedRoute>
                 }
-              />    
-  
+              />
+
+              {/* Hotels Management */}
+              <Route
+                path="/hotels"
+                element={
+                  <ProtectedRoute>
+                    <HotelsList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/hotels/new"
+                element={
+                  <ProtectedRoute>
+                    <HotelForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/hotels/:id"
+                element={
+                  <ProtectedRoute>
+                    <HotelDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/hotels/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <HotelForm />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Rooms Management */}
+              <Route
+                path="/rooms"
+                element={
+                  <ProtectedRoute>
+                    <RoomsList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/rooms/new"
+                element={
+                  <ProtectedRoute>
+                    <RoomForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/rooms/:id"
+                element={
+                  <ProtectedRoute>
+                    <RoomDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/rooms/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <RoomForm />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Bookings Management */}
+              <Route
+                path="/bookings"
+                element={
+                  <ProtectedRoute>
+                    <BookingsList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookings/new"
+                element={
+                  <ProtectedRoute>
+                    <BookingForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookings/:id"
+                element={
+                  <ProtectedRoute>
+                    <BookingDetail />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Operations Dashboard */}
+              <Route
+                path="/operations"
+                element={
+                  <ProtectedRoute>
+                    <OperationsDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Pricing Management */}
+              <Route
+                path="/pricing"
+                element={
+                  <ProtectedRoute>
+                    <PricingDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Catch-all redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

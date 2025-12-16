@@ -20,18 +20,26 @@ export default {
         '2xl': '1536px',
       },
 
-      // Match MUI theme colors (optional - for consistency)
+      // Match MUI theme colors
       colors: {
         primary: {
-          main: '#1e3a5f',
-          light: '#3d5a7e',
-          dark: '#152840',
+          main: '#00A699',
+          light: '#33b8ae',
+          dark: '#00746b',
         },
         secondary: {
-          main: '#d4af37',
-          light: '#e0c05f',
-          dark: '#b8941f',
+          main: '#FF5A5F',
+          light: '#ff7b7f',
+          dark: '#b33f42',
         },
+        background: {
+          default: '#f7f7f7',
+          paper: '#ffffff',
+        },
+        text: {
+          primary: '#222222',
+          secondary: '#717171',
+        }
       },
     },
   },

@@ -2,10 +2,11 @@
  * Material-UI v7 Theme Configuration for Hotel Management System
  *
  * Design Philosophy:
- * - Minimalist white-based design for cleanliness and sophistication
- * - Navy blue primary color for trust and professionalism
- * - Gold accents for luxury and premium feel
- * - Generous spacing for comfortable user experience
+ * - "Modern Luxury" / "Minimalist Premium"
+ * - Monochrome Palette: Black (`#222222`), White (`#ffffff`), Greys (`#717171`)
+ * - No heavy accent colors. The content (images) should provide the color.
+ * - Flat design, subtle borders instead of shadows.
+ * - Maximize whitespace.
  *
  * Edited By:
  * -> Ismail Wasiu Abdul Samad, UWE ID: 24050765
@@ -18,234 +19,101 @@ const theme = createTheme({
     mode: 'light',
 
     primary: {
-      main: '#1e3a5f',      // Deep Navy Blue - trust, professionalism
-      light: '#3d5a7e',     // Lighter navy for hover states
-      dark: '#152840',      // Darker navy for active states
+      main: '#000000',      // Pure Black for primary actions/text
+      light: '#333333',
+      dark: '#000000',
       contrastText: '#ffffff',
     },
 
     secondary: {
-      main: '#d4af37',      // Elegant Gold - luxury, premium
-      light: '#e0c05f',     // Lighter gold
-      dark: '#b8941f',      // Darker gold
-      contrastText: '#1e3a5f',
-    },
-
-    success: {
-      main: '#10b981',      // Fresh Green - available rooms, success states
-      light: '#34d399',
-      dark: '#059669',
-      contrastText: '#ffffff',
-    },
-
-    warning: {
-      main: '#f59e0b',      // Warm Amber - pending bookings, warnings
-      light: '#fbbf24',
-      dark: '#d97706',
-      contrastText: '#ffffff',
-    },
-
-    error: {
-      main: '#ef4444',      // Soft Red - unavailable, errors
-      light: '#f87171',
-      dark: '#dc2626',
-      contrastText: '#ffffff',
-    },
-
-    info: {
-      main: '#0891b2',      // Elegant Teal - information, notifications
-      light: '#06b6d4',
-      dark: '#0e7490',
+      main: '#717171',      // Dark Gray for secondary actions
+      light: '#999999',
+      dark: '#484848',
       contrastText: '#ffffff',
     },
 
     background: {
-      default: '#fafafa',   // Off-white for main background
-      paper: '#ffffff',     // Pure white for cards and surfaces
+      default: '#ffffff',   // Pure white background
+      paper: '#ffffff',     // Pure white cards
     },
 
     text: {
-      primary: '#1f2937',   // Dark gray for primary text
-      secondary: '#6b7280', // Medium gray for secondary text
-      disabled: '#9ca3af',  // Light gray for disabled text
+      primary: '#222222',   // Soft black for text
+      secondary: '#717171', // Airbnb gray
+      disabled: '#dddddd',
     },
 
-    divider: '#e5e7eb',     // Light gray for dividers
+    divider: '#dddddd',     // Very light gray
+
+    action: {
+      hover: 'rgba(0, 0, 0, 0.04)',
+    }
   },
 
   typography: {
     fontFamily: [
+      'Circular',
       'Inter',
       '-apple-system',
       'BlinkMacSystemFont',
-      '"Segoe UI"',
       'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
       'sans-serif',
     ].join(','),
 
-    h1: {
-      fontSize: '2.5rem',
-      fontWeight: 600,
-      letterSpacing: '-0.02em',
-      lineHeight: 1.2,
-    },
-
-    h2: {
-      fontSize: '2rem',
-      fontWeight: 600,
-      letterSpacing: '-0.01em',
-      lineHeight: 1.3,
-    },
-
-    h3: {
-      fontSize: '1.75rem',
-      fontWeight: 600,
-      letterSpacing: '-0.01em',
-      lineHeight: 1.3,
-    },
-
-    h4: {
-      fontSize: '1.5rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-
-    h5: {
-      fontSize: '1.25rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-
-    h6: {
-      fontSize: '1.125rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-
-    subtitle1: {
-      fontSize: '1rem',
-      fontWeight: 500,
-      lineHeight: 1.5,
-    },
-
-    subtitle2: {
-      fontSize: '0.875rem',
-      fontWeight: 500,
-      lineHeight: 1.5,
-    },
-
-    body1: {
-      fontSize: '1rem',
-      lineHeight: 1.6,
-    },
-
-    body2: {
-      fontSize: '0.875rem',
-      lineHeight: 1.6,
-    },
-
-    button: {
-      fontSize: '0.875rem',
-      fontWeight: 500,
-      textTransform: 'none', // Remove uppercase transformation for modern look
-      letterSpacing: '0.02em',
-    },
+    h1: { fontSize: '2rem', fontWeight: 800, color: '#222222' },
+    h2: { fontSize: '1.75rem', fontWeight: 700, color: '#222222' },
+    h3: { fontSize: '1.5rem', fontWeight: 600, color: '#222222' },
+    h4: { fontSize: '1.25rem', fontWeight: 600, color: '#222222' },
+    subtitle1: { fontSize: '1rem', fontWeight: 500, color: '#222222' },
+    body1: { fontSize: '1rem', lineHeight: 1.5, color: '#222222' },
+    button: { fontWeight: 600, textTransform: 'none', fontSize: '1rem' },
   },
 
-  spacing: 8, // Base spacing unit (8px)
+  spacing: 8,
 
   shape: {
-    borderRadius: 8, // Moderate rounded corners for modern, clean look
+    borderRadius: 8, // Standard refined radius
   },
 
-  shadows: [
-    'none',
-    '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-    '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-    '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-  ],
+  shadows: Array(25).fill('none'), // COMPLETELY FLAT DESIGN (No elevation shadows)
 
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
           borderRadius: 8,
-          padding: '10px 20px',
+          padding: '12px 24px',
           boxShadow: 'none',
           '&:hover': {
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            boxShadow: 'none',
+            backgroundColor: '#f7f7f7', // Subtle gray hover
           },
         },
-        contained: {
+        containedPrimary: {
+          backgroundColor: '#000000',
+          color: '#ffffff',
           '&:hover': {
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            backgroundColor: '#333333',
           },
         },
+        outlinedPrimary: {
+          borderColor: '#222222',
+          color: '#222222',
+          '&:hover': {
+            backgroundColor: '#f7f7f7',
+            borderColor: '#000000',
+          },
+        }
       },
     },
 
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          boxShadow: 'none',
+          border: 'none', // Removed border for cleaner look
           borderRadius: 12,
-          '&:hover': {
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-          },
-        },
-      },
-    },
-
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none', // Remove default MUI gradient
-        },
-        elevation1: {
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-        },
-      },
-    },
-
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
-            backgroundColor: '#ffffff',
-          },
-        },
-      },
-    },
-
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          borderRadius: 6,
-          fontWeight: 500,
+          backgroundColor: 'transparent', // Transparent by default
         },
       },
     },
@@ -253,39 +121,25 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-        },
-      },
-    },
-
-    MuiDrawer: {
-      styleOverrides: {
-        paper: {
-          borderRight: '1px solid #e5e7eb',
+          backgroundColor: '#ffffff',
+          color: '#222222',
           boxShadow: 'none',
+          borderBottom: 'none', // Clean header
         },
       },
     },
 
-    MuiTableCell: {
+    MuiOutlinedInput: {
       styleOverrides: {
-        head: {
-          fontWeight: 600,
-          backgroundColor: '#f9fafb',
-        },
-      },
-    },
-  },
-
-  // Breakpoints for responsive design
-  breakpoints: {
-    values: {
-      xs: 0,
-      sm: 640,
-      md: 768,
-      lg: 1024,
-      xl: 1280,
-    },
+        root: {
+          borderRadius: 32, // Pill shape
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderWidth: '1px',
+            borderColor: '#000000',
+          }
+        }
+      }
+    }
   },
 });
 

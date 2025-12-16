@@ -1,13 +1,13 @@
 /**
- * Navbar Component - Navigation bar with role-based menu items
+ * Navbar Component - Modern Minimalist
  *
- * Features:
- * - React Router v7 integration for navigation
- * - Role-based menu items (guest, staff, manager, admin)
- * - Responsive design with mobile menu
- * - Authentication state management
+ * Design:
+ * - Pure White / Transparent
+ * - Minimal Links (Just text, no buttons)
+ * - User Menu Avatar only
+ * - Logo text only (Black)
  *
- * Created By: Ismail Wasiu Abdul Samad, UWE ID: 24050765
+ * Refactored By: Agent
  */
 
 import { useState } from 'react';
@@ -37,19 +37,13 @@ import {
 import {
   Menu as MenuIcon,
   AccountCircle,
-  Dashboard as DashboardIcon,
-  Hotel as HotelIcon,
-  EventNote as BookingIcon,
-  People as PeopleIcon,
-  Assessment as ReportIcon,
-  Settings as SettingsIcon,
   Logout as LogoutIcon,
+  Language as LanguageIcon, // Global icon often used
 } from '@mui/icons-material';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -57,299 +51,182 @@ const Navbar = () => {
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
-  // Define navigation items based on user role
-  const getNavigationItems = () => {
-    if (!isAuthenticated || !user) {
-      // Don't show Home button when already on home page
-      if (location.pathname === '/') {
-        return [];
-      }
-      return [
-        { label: 'Home', path: '/', icon: <HotelIcon /> },
-      ];
-    }
-
-    const commonItems = [
-      { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, roles: ['guest', 'staff', 'manager', 'admin'] },
-      { label: 'My Bookings', path: '/bookings', icon: <BookingIcon />, roles: ['guest', 'staff', 'manager', 'admin'] },
-    ];
-
-    const roleBasedItems = [
-      // Staff items
-      { label: 'Manage Bookings', path: '/bookings/manage', icon: <BookingIcon />, roles: ['staff', 'manager', 'admin'] },
-      { label: 'Rooms', path: '/rooms', icon: <HotelIcon />, roles: ['staff', 'manager', 'admin'] },
-
-      // Manager items
-      { label: 'Reports', path: '/reports', icon: <ReportIcon />, roles: ['manager', 'admin'] },
-      { label: 'Staff', path: '/staff', icon: <PeopleIcon />, roles: ['manager', 'admin'] },
-
-      // Admin items
-      { label: 'Users', path: '/admin/users', icon: <PeopleIcon />, roles: ['admin'] },
-      { label: 'Settings', path: '/settings', icon: <SettingsIcon />, roles: ['admin'] },
-    ];
-
-    // Filter items based on user role
-    const userRole = user.role || 'guest';
-    const filteredItems = [...commonItems, ...roleBasedItems].filter(
-      item => item.roles && item.roles.includes(userRole)
-    );
-
-    return filteredItems;
-  };
-
-  const navigationItems = getNavigationItems();
-
   // User menu handlers
-  const handleOpenUserMenu = (event) => {
-    setAnchorElUser(event.currentTarget);
-  };
-
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
-
+  const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
+  const handleCloseUserMenu = () => setAnchorElUser(null);
   const handleLogout = async () => {
     handleCloseUserMenu();
-    setMobileMenuOpen(false);
     navigate('/');
     await logout();
   };
 
-  const handleNavigate = (path) => {
-    navigate(path);
-    setMobileMenuOpen(false);
-    handleCloseUserMenu();
-  };
-
-  // Mobile drawer toggle
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  // Check if current path matches
-  const isActivePath = (path) => location.pathname === path;
-
   return (
     <>
-    <AppBar position="sticky" elevation={2}>
-      <Container maxWidth="xl">
-        <Toolbar disableGutters>
-          {/* Logo / Brand */}
-          <HotelIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
-          <Typography
-            variant="h6"
-            noWrap
-            component={Link}
-            to="/"
-            sx={{
-              mr: 2,
-              display: { xs: 'none', md: 'flex' },
-              fontWeight: 700,
-              color: 'inherit',
-              textDecoration: 'none',
-            }}
-          >
-            Hotel Management
-          </Typography>
+      <AppBar
+        position="sticky"
+        sx={{
+          bgcolor: 'white',
+          color: 'text.primary',
+          borderBottom: '1px solid #f2f2f2',
+          boxShadow: 'none'
+        }}
+      >
+        <Container maxWidth="xl">
+          <Toolbar disableGutters sx={{ minHeight: '80px', display: 'flex', justifyContent: 'space-between' }}>
 
-          {/* Mobile Menu Icon */}
-          {isMobile && (
-            <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
-              <IconButton
-                size="large"
-                aria-label="menu"
-                aria-controls="mobile-menu"
-                aria-haspopup="true"
-                onClick={toggleMobileMenu}
-                color="inherit"
-              >
-                <MenuIcon />
-              </IconButton>
-            </Box>
-          )}
+            {/* Left: Logo */}
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {/* Mobile Menu Icon */}
+              {isMobile && (
+                <IconButton
+                  size="large"
+                  onClick={() => setMobileMenuOpen(true)}
+                  color="inherit"
+                  sx={{ mr: 1 }}
+                >
+                  <MenuIcon />
+                </IconButton>
+              )}
 
-          {/* Mobile Logo */}
-          <HotelIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
-          <Typography
-            variant="h6"
-            noWrap
-            component={Link}
-            to="/"
-            sx={{
-              mr: 2,
-              display: { xs: 'flex', md: 'none' },
-              flexGrow: 1,
-              fontWeight: 700,
-              color: 'inherit',
-              textDecoration: 'none',
-            }}
-          >
-            HMS
-          </Typography>
-
-          {/* Desktop Navigation */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 1 }}>
-            {navigationItems.map((item) => (
-              <Button
-                key={item.path}
+              <Typography
+                variant="h5"
+                noWrap
                 component={Link}
-                to={item.path}
-                startIcon={item.icon}
-                onClick={() => handleNavigate(item.path)}
+                to="/"
                 sx={{
-                  color: 'white',
-                  display: 'flex',
-                  backgroundColor: isActivePath(item.path) ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  },
+                  fontWeight: 800,
+                  color: '#ff385c', // Keep slight brand color or use black
+                  textDecoration: 'none',
+                  letterSpacing: '-0.5px'
                 }}
               >
-                {item.label}
-              </Button>
-            ))}
-          </Box>
+                <Box component="span" sx={{ color: 'primary.main' }}>hotel</Box>
+                <Box component="span" sx={{ color: 'primary.main', fontWeight: 400 }}>mgmt</Box>
+              </Typography>
+            </Box>
 
-          {/* User Menu / Auth Buttons */}
-          {isAuthenticated && user ? (
-            <Box sx={{ flexGrow: 0 }}>
-              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar alt={user.username || 'User'} sx={{ bgcolor: 'secondary.main' }}>
-                  {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
-                </Avatar>
+            {/* Center: Links (Desktop) */}
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 3 }}>
+              <Button
+                color="inherit"
+                component={Link}
+                to="/"
+                sx={{ fontWeight: 600, fontSize: '1rem', '&:hover': { bgcolor: 'transparent', opacity: 0.7 } }}
+                disableRipple
+              >
+                Stays
+              </Button>
+              <Button
+                color="inherit"
+                component={Link}
+                to="/bookings"
+                sx={{ fontWeight: 400, fontSize: '1rem', color: 'text.secondary', '&:hover': { bgcolor: 'transparent', color: 'text.primary' } }}
+                disableRipple
+              >
+                Experiences
+              </Button>
+            </Box>
+
+            {/* Right: User Menu */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+
+              {!isMobile && (
+                <Button
+                  color="inherit"
+                  sx={{ borderRadius: 4, textTransform: 'none', color: 'text.primary' }}
+                  onClick={() => navigate('/hotels')} // Example link
+                >
+                  Browse Hotels
+                </Button>
+              )}
+
+              <IconButton size="small">
+                <LanguageIcon fontSize="small" />
               </IconButton>
+
+              <Box
+                sx={{
+                  border: '1px solid #dddddd',
+                  borderRadius: 30,
+                  p: '4px',
+                  pl: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  cursor: 'pointer',
+                  '&:hover': { boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }
+                }}
+                onClick={isAuthenticated ? handleOpenUserMenu : () => setLoginModalOpen(true)}
+              >
+                <MenuIcon fontSize="small" />
+                <Avatar
+                  sx={{ width: 32, height: 32, bgcolor: 'text.secondary' }}
+                  src={user?.avatar}
+                >
+                  {user ? user.username[0].toUpperCase() : null}
+                </Avatar>
+              </Box>
+
+              {/* Dropdown Menu */}
               <Menu
                 sx={{ mt: '45px' }}
                 id="user-menu"
                 anchorEl={anchorElUser}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                 keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                 open={Boolean(anchorElUser)}
                 onClose={handleCloseUserMenu}
+                PaperProps={{
+                  elevation: 0,
+                  sx: {
+                    overflow: 'visible',
+                    filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
+                    mt: 1.5,
+                    borderRadius: 3,
+                    minWidth: 200
+                  }
+                }}
               >
-                <MenuItem disabled>
-                  <Box>
-                    <Typography variant="subtitle2">{user.username}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest'}
-                    </Typography>
-                  </Box>
-                </MenuItem>
+                <Box sx={{ px: 2, py: 1 }}>
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    {isAuthenticated ? `Hi, ${user?.username}` : 'Welcome'}
+                  </Typography>
+                </Box>
                 <Divider />
-                <MenuItem onClick={() => handleNavigate('/profile')}>
-                  <AccountCircle sx={{ mr: 1 }} fontSize="small" />
-                  Profile
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>
-                  <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
-                  Logout
-                </MenuItem>
+                <MenuItem onClick={() => navigate('/dashboard')}>Dashboard</MenuItem>
+                <MenuItem onClick={() => navigate('/bookings')}>My Trips</MenuItem>
+                <MenuItem onClick={() => navigate('/profile')}>Account</MenuItem>
+                <Divider />
+                <MenuItem onClick={handleLogout}>Log out</MenuItem>
               </Menu>
             </Box>
-          ) : (
-            !isMobile && (
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  onClick={() => setLoginModalOpen(true)}
-                  variant="outlined"
-                  sx={{
-                    color: 'white',
-                    borderColor: 'white',
-                    '&:hover': {
-                      borderColor: 'white',
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                  }}
-                >
-                  Login
-                </Button>
-                <Button
-                  component={Link}
-                  to="/register"
-                  variant="contained"
-                  color="secondary"
-                >
-                  Register
-                </Button>
-              </Box>
-            )
-          )}
-        </Toolbar>
-      </Container>
 
-      {/* Mobile Drawer */}
+          </Toolbar>
+        </Container>
+      </AppBar>
+
+      {/* Mobile Menu Drawer */}
       <Drawer
         anchor="left"
         open={mobileMenuOpen}
-        onClose={toggleMobileMenu}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-        }}
+        onClose={() => setMobileMenuOpen(false)}
       >
-        <Box sx={{ width: 250 }} role="presentation">
-          <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white' }}>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              Hotel Management
-            </Typography>
-            {isAuthenticated && user && (
-              <Typography variant="caption">
-                {user.username} ({user.role})
-              </Typography>
-            )}
-          </Box>
-          <Divider />
+        <Box sx={{ width: 250, p: 2 }}>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Menu</Typography>
+          <Divider sx={{ mb: 2 }} />
           <List>
-            {navigationItems.map((item) => (
-              <ListItem key={item.path} disablePadding>
-                <ListItemButton
-                  component={Link}
-                  to={item.path}
-                  selected={isActivePath(item.path)}
-                  onClick={() => handleNavigate(item.path)}
-                >
-                  <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
-                    {item.icon}
-                  </Box>
-                  <ListItemText primary={item.label} />
-                </ListItemButton>
-              </ListItem>
-            ))}
+            <ListItemButton onClick={() => navigate('/')}><ListItemText primary="Home" /></ListItemButton>
+            <ListItemButton onClick={() => navigate('/bookings')}><ListItemText primary="My Bookings" /></ListItemButton>
+            {isAuthenticated ? (
+              <ListItemButton onClick={handleLogout}><ListItemText primary="Log out" /></ListItemButton>
+            ) : (
+              <ListItemButton onClick={() => setLoginModalOpen(true)}><ListItemText primary="Log in" /></ListItemButton>
+            )}
           </List>
-          {isAuthenticated && user && (
-            <>
-              <Divider />
-              <List>
-                <ListItem disablePadding>
-                  <ListItemButton onClick={() => handleNavigate('/profile')}>
-                    <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
-                      <AccountCircle />
-                    </Box>
-                    <ListItemText primary="Profile" />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                  <ListItemButton onClick={handleLogout}>
-                    <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
-                      <LogoutIcon />
-                    </Box>
-                    <ListItemText primary="Logout" />
-                  </ListItemButton>
-                </ListItem>
-              </List>
-            </>
-          )}
         </Box>
       </Drawer>
-    </AppBar>
 
-      {/* Login Modal */}
       <LoginModal
         open={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
