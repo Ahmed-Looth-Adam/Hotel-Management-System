@@ -38,7 +38,7 @@ const Footer = () => {
       <Container maxWidth="lg">
         <Grid container spacing={4}>
           {/* Brand Section */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <HotelIcon sx={{ fontSize: 32, mr: 1 }} />
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
@@ -51,7 +51,7 @@ const Footer = () => {
           </Grid>
 
           {/* Quick Links Section */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
               Quick Links
             </Typography>
@@ -88,7 +88,7 @@ const Footer = () => {
           </Grid>
 
           {/* Contact Section */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
               Contact Us
             </Typography>

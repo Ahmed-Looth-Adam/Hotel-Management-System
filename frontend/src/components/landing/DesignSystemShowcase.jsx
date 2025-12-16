@@ -35,25 +35,25 @@ const DesignSystemShowcase = () => {
                 <Paper sx={{ p: 4, mb: 4, borderRadius: 3 }}>
                     <Typography variant="h6" gutterBottom fontWeight="bold">Color Palette</Typography>
                     <Grid container spacing={4}>
-                        <Grid item xs={6} md={3}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <ColorSwatch color="primary.main" name="Primary (Emerald)" hex={theme.palette.primary.main} />
                         </Grid>
-                        <Grid item xs={6} md={3}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <ColorSwatch color="primary.light" name="Primary Light" hex={theme.palette.primary.light} />
                         </Grid>
-                        <Grid item xs={6} md={3}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <ColorSwatch color="primary.dark" name="Primary Dark" hex={theme.palette.primary.dark} />
                         </Grid>
-                        <Grid item xs={6} md={3}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <ColorSwatch color="secondary.main" name="Secondary (Coral)" hex={theme.palette.secondary.main} />
                         </Grid>
-                        <Grid item xs={6} md={3}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <ColorSwatch color="#F2A900" name="Accent (Sand)" hex="#F2A900" />
                         </Grid>
-                        <Grid item xs={6} md={3}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <ColorSwatch color="text.primary" name="Text Primary" hex={theme.palette.text.primary} />
                         </Grid>
-                        <Grid item xs={6} md={3}>
+                        <Grid size={{ xs: 6, md: 3 }}>
                             <ColorSwatch color="text.secondary" name="Text Secondary" hex={theme.palette.text.secondary} />
                         </Grid>
                     </Grid>
@@ -63,13 +63,13 @@ const DesignSystemShowcase = () => {
                 <Paper sx={{ p: 4, mb: 4, borderRadius: 3 }}>
                     <Typography variant="h6" gutterBottom fontWeight="bold" sx={{ mb: 3 }}>Typography</Typography>
                     <Grid container spacing={4} alignItems="center">
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <Typography variant="h1" gutterBottom>Heading 1</Typography>
                             <Typography variant="h2" gutterBottom>Heading 2</Typography>
                             <Typography variant="h3" gutterBottom>Heading 3</Typography>
                             <Typography variant="h4" gutterBottom>Heading 4</Typography>
                         </Grid>
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <Typography variant="subtitle1" gutterBottom>Subtitle 1 - Used for emphasizing text</Typography>
                             <Typography variant="body1" gutterBottom>Body 1 - The quick brown fox jumps over the lazy dog. Standard body text for paragraphs.</Typography>
                             <Typography variant="body2" gutterBottom>Body 2 - Smaller text for descriptions and secondary information.</Typography>

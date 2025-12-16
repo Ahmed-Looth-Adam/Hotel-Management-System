@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, Container, Typography, Card, CardMedia, CardContent, IconButton, useTheme, useMediaQuery } from '@mui/material';
-import { FavoriteBorder, Star, ArrowForward } from '@mui/icons-material';
+import { Box, Container, Typography, Card, CardMedia, CardContent, useTheme, useMediaQuery } from '@mui/material';
+import { Star } from '@mui/icons-material';
 
 const ListingCard = ({ room, isMobile }) => (
     <Card
@@ -43,20 +43,6 @@ const ListingCard = ({ room, isMobile }) => (
                     }
                 }}
             />
-            <IconButton
-                sx={{
-                    position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    color: 'white',
-                    backdropFilter: 'blur(4px)',
-                    bgcolor: 'rgba(0,0,0,0.2)',
-                    '&:hover': { bgcolor: 'rgba(0,0,0,0.4)' },
-                    padding: '8px',
-                }}
-            >
-                <FavoriteBorder sx={{ fontSize: '1.2rem' }} />
-            </IconButton>
         </Box>
 
         <CardContent sx={{ p: 0 }}>
@@ -122,6 +108,38 @@ const FeaturedListings = () => {
             price: '£450',
             image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&auto=format&fit=crop',
             features: ['3 Beds', '6 Guests', 'Pool', 'Ocean Front'],
+        },
+        {
+            id: 5,
+            name: 'Forest Retreat',
+            description: 'Secluded cabin in the woods',
+            price: '£180',
+            image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=800&auto=format&fit=crop',
+            features: ['Queen Bed', '2 Guests', 'Fireplace', 'Nature View'],
+        },
+        {
+            id: 6,
+            name: 'Urban Loft',
+            description: 'Modern loft in the heart of the city',
+            price: '£220',
+            image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop',
+            features: ['King Bed', '2 Guests', 'Workspace', 'Skyline View'],
+        },
+        {
+            id: 7,
+            name: 'Mountain Cabin',
+            description: 'Cozy cabin with mountain views',
+            price: '£250',
+            image: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&auto=format&fit=crop',
+            features: ['2 Beds', '4 Guests', 'Hot Tub', 'Mountain View'],
+        },
+        {
+            id: 8,
+            name: 'Lakeside Bungalow',
+            description: 'Peaceful bungalow by the lake',
+            price: '£300',
+            image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop',
+            features: ['King Bed', '3 Guests', 'Private Dock', 'Lake View'],
         }
     ];
 
@@ -136,11 +154,6 @@ const FeaturedListings = () => {
                         Curated selection of professionally designed stays.
                     </Typography>
                 </Box>
-                {!isMobile && (
-                    <IconButton sx={{ border: '1px solid #ddd' }}>
-                        <ArrowForward />
-                    </IconButton>
-                )}
             </Box>
 
             {isMobile ? (
@@ -157,14 +170,14 @@ const FeaturedListings = () => {
                     '&::-webkit-scrollbar': { display: 'none' },
                     scrollbarWidth: 'none',
                     flexWrap: 'nowrap',
-                    WebkitOverflowScrolling: 'touch', // Smooth scroll
+                    WebkitOverflowScrolling: 'touch',
                 }}>
                     {roomTypes.map((room) => (
                         <ListingCard key={room.id} room={room} isMobile={true} />
                     ))}
                 </Box>
             ) : (
-                /* Desktop: CSS Grid - More robust than MUI Grid for this use case */
+                /* Desktop: CSS Grid */
                 <Box sx={{
                     display: 'grid',
                     gridTemplateColumns: {
