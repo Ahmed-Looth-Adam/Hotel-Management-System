@@ -3,7 +3,6 @@ import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
@@ -15,8 +14,26 @@ import {
   Typography,
   Avatar,
   IconButton,
+  InputAdornment,
+  Divider,
+  alpha,
+  Chip,
 } from '@mui/material';
-import { PhotoCamera } from '@mui/icons-material';
+import {
+  PhotoCamera,
+  Close as CloseIcon,
+  Person as PersonIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  Lock as LockIcon,
+  Badge as BadgeIcon,
+  AdminPanelSettings as AdminIcon,
+  SupervisorAccount as ManagerIcon,
+  Person as StaffIcon,
+  Visibility,
+  VisibilityOff,
+  CloudUpload as UploadIcon,
+} from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 
 
@@ -73,18 +90,22 @@ const UserSchema = (isNewUser) => Yup.object().shape({
     )
 });
 
-const ROLES = ['manager', 'staff'];
+const ROLES = [
+  { value: 'manager', label: 'Manager', icon: ManagerIcon, color: '#1976d2', description: 'Can manage hotel operations' },
+  { value: 'staff', label: 'Staff', icon: StaffIcon, color: '#388e3c', description: 'Front desk operations' },
+];
 
 const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [profilePicture, setProfilePicture] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(userToEdit?.profile_picture || null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
   const fileInputRef = useRef(null);
   const { user: currentUser } = useAuth();
 
   const isNewUser = !userToEdit;
-  const title = isNewUser ? 'Create New User' : `Edit User: ${userToEdit?.username}`;
 
   // Parse existing phone number into country code and number
   const parsePhoneNumber = (phone) => {
@@ -116,6 +137,8 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
       setError(null);
       setProfilePicture(null);
       setPreviewUrl(userToEdit?.profile_picture || null);
+      setShowPassword(false);
+      setShowPassword2(false);
     }
   }, [open, userToEdit]);
 
@@ -211,181 +234,437 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
       setProfilePicture(null);
       setPreviewUrl(null);
     } else {
-      // Handle Django's detailed error structure (e.g., email already exists)
-      const detailError = result.error?.email?.[0] || result.error?.username?.[0] || result.error?.password2?.[0] || result.error?.error || 'An unexpected error occurred.';
+      // Handle Django's detailed error structure
+      let detailError = 'An unexpected error occurred.';
+
+      if (result.error) {
+        // Check for specific field errors
+        if (result.error.password?.[0]) {
+          detailError = `Password: ${result.error.password[0]}`;
+        } else if (result.error.email?.[0]) {
+          detailError = result.error.email[0];
+        } else if (result.error.username?.[0]) {
+          detailError = result.error.username[0];
+        } else if (result.error.password2?.[0]) {
+          detailError = result.error.password2[0];
+        } else if (result.error.first_name?.[0]) {
+          detailError = `First name: ${result.error.first_name[0]}`;
+        } else if (result.error.last_name?.[0]) {
+          detailError = `Last name: ${result.error.last_name[0]}`;
+        } else if (result.error.phone_number?.[0]) {
+          detailError = `Phone: ${result.error.phone_number[0]}`;
+        } else if (result.error.error) {
+          detailError = result.error.error;
+        } else if (typeof result.error === 'string') {
+          detailError = result.error;
+        }
+      }
+
       setError(detailError);
     }
     setLoading(false);
   };
 
+  const SectionHeader = ({ icon: Icon, title }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
+      <Icon sx={{ fontSize: 16, color: 'primary.main' }} />
+      <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {title}
+      </Typography>
+    </Box>
+  );
+
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>{title}</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          overflow: 'hidden',
+        }
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          background: 'linear-gradient(180deg, #1a1f37 0%, #0f1225 100%)',
+          color: '#ffffff',
+          px: 3,
+          py: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              width: 36,
+              height: 36,
+            }}
+          >
+            {isNewUser ? <PersonIcon fontSize="small" /> : <BadgeIcon fontSize="small" />}
+          </Avatar>
+          <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#ffffff' }}>
+            {isNewUser ? 'Create New User' : `Edit User: ${userToEdit?.username}`}
+          </Typography>
+        </Box>
+        <IconButton onClick={handleClose} sx={{ color: '#ffffff' }} size="small">
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+
       <Formik
         initialValues={initialValues}
         validationSchema={UserSchema(isNewUser)}
         onSubmit={handleSubmit}
+        enableReinitialize
       >
         {({ errors, touched, values, setFieldValue }) => (
           <Form>
-            <DialogContent dividers>
-              {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            <DialogContent sx={{ px: 3, py: 2 }}>
+              {error && (
+                <Alert
+                  severity="error"
+                  sx={{ mb: 2, borderRadius: 2 }}
+                  onClose={() => setError(null)}
+                >
+                  {error}
+                </Alert>
+              )}
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-
-                {/* Profile Picture Upload */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              {/* Profile Picture Section - Compact Inline */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  mb: 2,
+                  pb: 2,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Box sx={{ position: 'relative' }}>
                   <Avatar
                     src={previewUrl}
-                    sx={{ width: 80, height: 80 }}
+                    sx={{
+                      width: 64,
+                      height: 64,
+                      fontSize: '1.5rem',
+                      bgcolor: 'primary.main',
+                      border: '3px solid',
+                      borderColor: 'primary.light',
+                    }}
                   >
-                    {values.first_name?.[0] || values.username?.[0] || '?'}
+                    {values.first_name?.[0]?.toUpperCase() || values.username?.[0]?.toUpperCase() || '?'}
                   </Avatar>
-                  <Box>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                    />
-                    <Button
-                      variant="outlined"
-                      startIcon={<PhotoCamera />}
-                      onClick={() => fileInputRef.current?.click()}
-                      size="small"
-                    >
-                      Upload Photo
-                    </Button>
-                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-                      Optional: JPG, PNG (max 2MB)
-                    </Typography>
-                  </Box>
+                  <IconButton
+                    onClick={() => fileInputRef.current?.click()}
+                    sx={{
+                      position: 'absolute',
+                      bottom: -4,
+                      right: -4,
+                      bgcolor: 'primary.main',
+                      color: 'white',
+                      '&:hover': { bgcolor: 'primary.dark' },
+                      width: 24,
+                      height: 24,
+                    }}
+                    size="small"
+                  >
+                    <PhotoCamera sx={{ fontSize: 14 }} />
+                  </IconButton>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                  />
                 </Box>
+                <Box>
+                  <Typography variant="body2" fontWeight={500}>Profile Photo</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    JPG, PNG (max 2MB)
+                  </Typography>
+                </Box>
+              </Box>
 
-                {/* Username */}
+              {/* Account Information */}
+              <SectionHeader icon={PersonIcon} title="Account Information" />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Field
+                    as={TextField}
+                    name="first_name"
+                    label="First Name"
+                    fullWidth
+                    required
+                    size="small"
+                    error={touched.first_name && Boolean(errors.first_name)}
+                    helperText={touched.first_name && errors.first_name}
+                    InputProps={{
+                      sx: { borderRadius: 2 }
+                    }}
+                  />
+                  <Field
+                    as={TextField}
+                    name="last_name"
+                    label="Last Name"
+                    fullWidth
+                    required
+                    size="small"
+                    error={touched.last_name && Boolean(errors.last_name)}
+                    helperText={touched.last_name && errors.last_name}
+                    InputProps={{
+                      sx: { borderRadius: 2 }
+                    }}
+                  />
+                </Box>
                 <Field
                   as={TextField}
                   name="username"
                   label="Username"
                   fullWidth
                   required={isNewUser}
+                  size="small"
                   error={touched.username && Boolean(errors.username)}
                   helperText={touched.username && errors.username}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 2 }
+                  }}
                 />
-                
-                {/* Email */}
                 <Field
                   as={TextField}
                   name="email"
-                  label="Email"
+                  label="Email Address"
                   fullWidth
                   required={isNewUser}
+                  size="small"
                   error={touched.email && Boolean(errors.email)}
                   helperText={touched.email && errors.email}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 2 }
+                  }}
                 />
+              </Box>
 
-                {/* First Name & Last Name */}
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Field
-                        as={TextField}
-                        name="first_name"
-                        label="First Name"
-                        fullWidth
-                        required
-                        error={touched.first_name && Boolean(errors.first_name)}
-                        helperText={touched.first_name && errors.first_name}
-                    />
-                    <Field
-                        as={TextField}
-                        name="last_name"
-                        label="Last Name"
-                        fullWidth
-                        required
-                        error={touched.last_name && Boolean(errors.last_name)}
-                        helperText={touched.last_name && errors.last_name}
-                    />
-                </Box>
-
-                {/* Phone Number - Country Code and Number */}
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Field
-                    as={TextField}
-                    name="country_code"
-                    label="Country Code"
-                    placeholder="+44"
-                    sx={{ width: '30%' }}
-                    error={touched.country_code && Boolean(errors.country_code)}
-                    helperText={touched.country_code && errors.country_code}
-                  />
-                  <Field
-                    as={TextField}
-                    name="phone_number"
-                    label="Phone Number"
-                    placeholder="1234567890"
-                    sx={{ width: '70%' }}
-                    error={touched.phone_number && Boolean(errors.phone_number)}
-                    helperText={touched.phone_number && errors.phone_number}
-                  />
-                </Box>
-
-                {/* Role Assignment Dropdown */}
+              {/* Contact Information */}
+              <SectionHeader icon={PhoneIcon} title="Contact Information" />
+              <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
                 <Field
                   as={TextField}
-                  name="role"
-                  label="Role"
-                  select
+                  name="country_code"
+                  label="Code"
+                  placeholder="+44"
+                  size="small"
+                  sx={{ width: 100 }}
+                  error={touched.country_code && Boolean(errors.country_code)}
+                  helperText={touched.country_code && errors.country_code}
+                  InputProps={{
+                    sx: { borderRadius: 2 }
+                  }}
+                />
+                <Field
+                  as={TextField}
+                  name="phone_number"
+                  label="Phone Number"
+                  placeholder="1234567890"
                   fullWidth
-                  error={touched.role && Boolean(errors.role)}
-                  helperText={touched.role && errors.role}
-                >
-                  {ROLES.map((role) => (
-                    <MenuItem key={role} value={role}>
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
-                    </MenuItem>
-                  ))}
-                </Field>
+                  size="small"
+                  error={touched.phone_number && Boolean(errors.phone_number)}
+                  helperText={touched.phone_number && errors.phone_number}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PhoneIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 2 }
+                  }}
+                />
+              </Box>
 
-                {/* Password Field */}
+              {/* Role Selection */}
+              <SectionHeader icon={BadgeIcon} title="Role Assignment" />
+              <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+                {ROLES.map((role) => {
+                  const Icon = role.icon;
+                  const isSelected = values.role === role.value;
+                  return (
+                    <Box
+                      key={role.value}
+                      onClick={() => setFieldValue('role', role.value)}
+                      sx={{
+                        flex: 1,
+                        p: 1.5,
+                        border: '2px solid',
+                        borderColor: isSelected ? role.color : 'divider',
+                        borderRadius: 2,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        bgcolor: isSelected ? alpha(role.color, 0.08) : 'transparent',
+                        '&:hover': {
+                          borderColor: role.color,
+                          bgcolor: alpha(role.color, 0.04),
+                        },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Icon sx={{ color: role.color, fontSize: 18 }} />
+                        <Typography variant="body2" fontWeight={600}>
+                          {role.label}
+                        </Typography>
+                        {isSelected && (
+                          <Chip
+                            label="Selected"
+                            size="small"
+                            sx={{
+                              height: 18,
+                              fontSize: '0.6rem',
+                              bgcolor: role.color,
+                              color: 'white',
+                              ml: 'auto',
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+
+              {/* Password Section */}
+              <SectionHeader icon={LockIcon} title={isNewUser ? "Set Password" : "Change Password"} />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 <Field
                   as={TextField}
                   name="password"
-                  label={isNewUser ? "Password" : "New Password (Leave blank to keep current)"}
-                  type="password"
+                  label={isNewUser ? "Password" : "New Password"}
+                  type={showPassword ? 'text' : 'password'}
                   fullWidth
                   required={isNewUser}
+                  size="small"
                   error={touched.password && Boolean(errors.password)}
                   helperText={touched.password && errors.password}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 2 }
+                  }}
                 />
-                
-                {/* Confirm Password Field - only for new users */}
                 {isNewUser && (
                   <Field
                     as={TextField}
                     name="password2"
                     label="Confirm Password"
-                    type="password"
+                    type={showPassword2 ? 'text' : 'password'}
                     fullWidth
-                    required={isNewUser}
+                    required
+                    size="small"
                     error={touched.password2 && Boolean(errors.password2)}
                     helperText={touched.password2 && errors.password2}
-                    inputProps={{ autoComplete: 'new-password' }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowPassword2(!showPassword2)}
+                            edge="end"
+                            size="small"
+                          >
+                            {showPassword2 ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                      sx: { borderRadius: 2 }
+                    }}
                   />
                 )}
-                
                 {!isNewUser && (
-                  <Typography variant="caption" color="text.secondary">
-                    Use the New Password field above to reset the user's password.
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+                    Leave blank to keep the current password
                   </Typography>
                 )}
               </Box>
             </DialogContent>
-            <DialogActions>
-              <Button onClick={handleClose} color="inherit">
+
+            <DialogActions
+              sx={{
+                px: 3,
+                py: 1.5,
+                bgcolor: 'grey.50',
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Button
+                onClick={handleClose}
+                color="inherit"
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                }}
+              >
                 Cancel
               </Button>
-              <Button type="submit" variant="contained" color="primary" disabled={loading}>
-                {loading ? <CircularProgress size={24} /> : (isNewUser ? 'Create User' : 'Save Changes')}
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  px: 4,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  bgcolor: '#000000',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
+                  '&:hover': {
+                    bgcolor: '#1a1a1a',
+                  },
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={22} sx={{ color: 'white' }} />
+                ) : (
+                  isNewUser ? 'Create User' : 'Save Changes'
+                )}
               </Button>
             </DialogActions>
           </Form>
