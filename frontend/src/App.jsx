@@ -41,6 +41,20 @@ import { PricingDashboard } from './pages/pricing';
 // Admin pages
 import UserManagement from './pages/admin/UserManagement';
 import HotelManagement from './pages/Admin/HotelManagement';
+import StaffManagement from './pages/admin/StaffManagement';
+
+// Guest pages
+import BrowseRooms from './pages/guest/BrowseRooms';
+import RoomDetails from './pages/guest/RoomDetails';
+import MyBookings from './pages/guest/MyBookings';
+
+// Report pages
+import OccupancyReport from './pages/reports/OccupancyReport';
+import RevenueReport from './pages/reports/RevenueReport';
+import AnalyticsDashboard from './pages/reports/AnalyticsDashboard';
+
+// Settings page
+import Settings from './pages/settings/Settings';
 
 // Examples
 import NotificationExample from './examples/NotificationExample';
@@ -115,6 +129,78 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <HotelManagement />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Staff Management (Manager/Admin) */}
+              <Route
+                path="/staff"
+                element={
+                  <ProtectedRoute requiredRole="manager">
+                    <StaffManagement />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Settings (Admin) */}
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Guest Portal Routes */}
+              <Route
+                path="/guest/rooms"
+                element={
+                  <ProtectedRoute>
+                    <BrowseRooms />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/guest/rooms/:id"
+                element={
+                  <ProtectedRoute>
+                    <RoomDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/guest/my-bookings"
+                element={
+                  <ProtectedRoute>
+                    <MyBookings />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Reports (Manager/Admin) */}
+              <Route
+                path="/reports/occupancy"
+                element={
+                  <ProtectedRoute requiredRole="manager">
+                    <OccupancyReport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports/revenue"
+                element={
+                  <ProtectedRoute requiredRole="manager">
+                    <RevenueReport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports/analytics"
+                element={
+                  <ProtectedRoute requiredRole="manager">
+                    <AnalyticsDashboard />
                   </ProtectedRoute>
                 }
               />

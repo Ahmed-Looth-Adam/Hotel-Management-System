@@ -45,6 +45,8 @@ import {
   ExpandMore,
   ChevronLeft as ChevronLeftIcon,
   Menu as MenuIcon,
+  Search as SearchIcon,
+  ListAlt as ListAltIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 280;
@@ -60,6 +62,20 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent' }) => {
 
   // Menu items based on user role
   const menuItems = [
+    // Guest menu items
+    {
+      title: 'Browse Rooms',
+      icon: <SearchIcon />,
+      path: '/guest/rooms',
+      roles: ['guest'],
+    },
+    {
+      title: 'My Bookings',
+      icon: <ListAltIcon />,
+      path: '/guest/my-bookings',
+      roles: ['guest'],
+    },
+    // Staff/Manager/Admin menu items
     {
       title: 'Dashboard',
       icon: <DashboardIcon />,
@@ -166,7 +182,7 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent' }) => {
         }}
       >
         <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
-          Admin Panel
+          {userRole === 'guest' ? 'Guest Portal' : 'Admin Panel'}
         </Typography>
         {isMobile && (
           <IconButton onClick={onClose}>
