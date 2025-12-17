@@ -33,10 +33,12 @@ import {
   PersonOutline,
 } from '@mui/icons-material';
 import { Dialog, Slide } from '@mui/material';
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { DateRange } from 'react-date-range';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 import { useAuth } from '../../context/AuthContext';
 import hotelService from '../../services/hotelService';
 
@@ -489,66 +491,114 @@ const Hero = () => {
         transformOrigin={{ vertical: 'top', horizontal: 'center' }}
         PaperProps={{
           sx: {
-            p: 2,
             borderRadius: '24px',
             mt: 2,
             boxShadow: '0 8px 28px rgba(0,0,0,0.28)',
             border: 'none',
+            overflow: 'hidden',
+            '& .rdrCalendarWrapper': {
+              fontSize: '14px',
+            },
+            '& .rdrDateDisplayWrapper': {
+              display: 'none',
+            },
+            '& .rdrMonthAndYearWrapper': {
+              paddingTop: '10px',
+            },
+            '& .rdrMonth': {
+              padding: '0 16px 16px',
+            },
+            '& .rdrDayNumber span': {
+              color: '#222222',
+            },
+            '& .rdrDayToday .rdrDayNumber span:after': {
+              background: '#FF385C',
+            },
+            // Circular start/end selection markers
+            '& .rdrStartEdge, & .rdrEndEdge': {
+              background: '#222222',
+              borderRadius: '50%',
+              top: '3px',
+              bottom: '3px',
+              left: '3px',
+              right: '3px',
+            },
+            // White text for selected start/end dates
+            '& .rdrDay:has(.rdrStartEdge) .rdrDayNumber span, & .rdrDay:has(.rdrEndEdge) .rdrDayNumber span': {
+              color: '#FFFFFF !important',
+            },
+            // In-range background
+            '& .rdrInRange': {
+              background: '#F7F7F7',
+            },
+            // Black text for in-range dates
+            '& .rdrDay:has(.rdrInRange) .rdrDayNumber span': {
+              color: '#222222 !important',
+            },
+            '& .rdrDayInPreview .rdrDayNumber span': {
+              color: '#222222 !important',
+            },
+            '& .rdrDayStartPreview, & .rdrDayInPreview, & .rdrDayEndPreview': {
+              borderColor: '#222222',
+            },
+            '& .rdrDayDisabled': {
+              backgroundColor: 'transparent',
+            },
+            '& .rdrDayDisabled .rdrDayNumber span': {
+              color: '#DDDDDD',
+            },
           },
         }}
         TransitionComponent={Grow}
       >
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <DateCalendar
-                value={checkIn}
-                onChange={(newValue) => {
-                  if (!checkIn || (checkIn && checkOut)) {
-                    setCheckIn(newValue);
-                    setCheckOut(null);
-                  } else if (newValue.isAfter(checkIn)) {
-                    setCheckOut(newValue);
-                    // Optional: close on check-out selection
-                  } else {
-                    setCheckIn(newValue);
-                  }
-                }}
-                disablePast
-                views={['year', 'month', 'day']}
-              />
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
-              <Button
-                variant="text"
-                sx={{
-                  color: '#222222',
-                  fontWeight: 600,
-                  textDecoration: 'underline',
-                  textTransform: 'none',
-                  mr: 2
-                }}
-                onClick={() => { setCheckIn(null); setCheckOut(null); }}
-              >
-                Clear dates
-              </Button>
-              <Button
-                variant="contained"
-                sx={{
-                  borderRadius: '8px',
-                  bgcolor: '#222222',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 3,
-                  '&:hover': { bgcolor: '#000000' },
-                }}
-                onClick={() => setDateAnchor(null)}
-              >
-                Close
-              </Button>
-            </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <DateRange
+            ranges={[{
+              startDate: checkIn ? checkIn.toDate() : new Date(),
+              endDate: checkOut ? checkOut.toDate() : checkIn ? checkIn.toDate() : new Date(),
+              key: 'selection',
+            }]}
+            onChange={(item) => {
+              setCheckIn(dayjs(item.selection.startDate));
+              setCheckOut(dayjs(item.selection.endDate));
+            }}
+            months={2}
+            direction="horizontal"
+            minDate={new Date()}
+            rangeColors={['#F7F7F7']}
+            color="#222222"
+            showDateDisplay={false}
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2, borderTop: '1px solid #EBEBEB' }}>
+            <Button
+              variant="text"
+              sx={{
+                color: '#222222',
+                fontWeight: 600,
+                textDecoration: 'underline',
+                textTransform: 'none',
+                mr: 2
+              }}
+              onClick={() => { setCheckIn(null); setCheckOut(null); }}
+            >
+              Clear dates
+            </Button>
+            <Button
+              variant="contained"
+              sx={{
+                borderRadius: '8px',
+                bgcolor: '#222222',
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
+                '&:hover': { bgcolor: '#000000' },
+              }}
+              onClick={() => setDateAnchor(null)}
+            >
+              Done
+            </Button>
           </Box>
-        </LocalizationProvider>
+        </Box>
       </Popover>
 
       {/* Guests Popover */}
@@ -797,25 +847,66 @@ const Hero = () => {
           </Box>
 
           {activeField === 'dates' && (
-            <Box sx={{ mt: 2 }}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DateCalendar
-                  value={checkIn}
-                  onChange={(newValue) => {
-                    if (!checkIn || (checkIn && checkOut)) {
-                      setCheckIn(newValue);
-                      setCheckOut(null);
-                    } else if (newValue.isAfter(checkIn)) {
-                      setCheckOut(newValue);
-                      setActiveField('guests'); // Auto-advance
-                    } else {
-                      setCheckIn(newValue);
-                    }
-                  }}
-                  disablePast
-                  views={['day']}
-                />
-              </LocalizationProvider>
+            <Box
+              sx={{
+                mt: 2,
+                '& .rdrCalendarWrapper': {
+                  fontSize: '12px',
+                  width: '100%',
+                },
+                '& .rdrDateDisplayWrapper': {
+                  display: 'none',
+                },
+                '& .rdrMonth': {
+                  width: '100%',
+                  padding: '0',
+                },
+                '& .rdrMonthAndYearWrapper': {
+                  paddingTop: 0,
+                },
+                // Circular start/end selection markers
+                '& .rdrStartEdge, & .rdrEndEdge': {
+                  background: '#222222',
+                  borderRadius: '50%',
+                  top: '3px',
+                  bottom: '3px',
+                  left: '3px',
+                  right: '3px',
+                },
+                // White text for selected start/end dates
+                '& .rdrDay:has(.rdrStartEdge) .rdrDayNumber span, & .rdrDay:has(.rdrEndEdge) .rdrDayNumber span': {
+                  color: '#FFFFFF !important',
+                },
+                // In-range background
+                '& .rdrInRange': {
+                  background: '#F7F7F7',
+                },
+                // Black text for in-range dates
+                '& .rdrDay:has(.rdrInRange) .rdrDayNumber span': {
+                  color: '#222222 !important',
+                },
+              }}
+            >
+              <DateRange
+                ranges={[{
+                  startDate: checkIn ? checkIn.toDate() : new Date(),
+                  endDate: checkOut ? checkOut.toDate() : checkIn ? checkIn.toDate() : new Date(),
+                  key: 'selection',
+                }]}
+                onChange={(item) => {
+                  setCheckIn(dayjs(item.selection.startDate));
+                  setCheckOut(dayjs(item.selection.endDate));
+                  // Auto-advance to guests when both dates selected
+                  if (item.selection.startDate !== item.selection.endDate) {
+                    setActiveField('guests');
+                  }
+                }}
+                months={1}
+                direction="vertical"
+                minDate={new Date()}
+                rangeColors={['#F7F7F7']}
+                showDateDisplay={false}
+              />
             </Box>
           )}
         </Paper>

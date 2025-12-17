@@ -23,6 +23,7 @@
     "framer-motion": "^12.23.26",
     "notistack": "^3.0.2",
     "react": "^19.1.1",
+    "react-date-range": "^2.0.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.6",
     "recharts": "^3.3.0",
