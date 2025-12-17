@@ -254,7 +254,7 @@ class RoomTypePricingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RoomTypePricing
-        fields = ['id', 'hotel', 'room_type', 'room_type_display', 'base_price', 'currency', 'is_active', 'created_at', 'updated_at']
+        fields = ['id', 'hotel', 'room_type', 'room_type_display', 'off_peak_price', 'peak_price', 'currency', 'is_active', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
 
@@ -270,12 +270,11 @@ class ViewPricingSerializer(serializers.ModelSerializer):
 
 
 class SeasonalPricingSerializer(serializers.ModelSerializer):
-    """Serializer for seasonal pricing"""
-    modifier_type_display = serializers.CharField(source='get_modifier_type_display', read_only=True)
+    """Serializer for seasonal pricing (peak/off-peak date ranges)"""
 
     class Meta:
         model = SeasonalPricing
-        fields = ['id', 'hotel', 'season_name', 'start_date', 'end_date', 'modifier_type', 'modifier_type_display', 'modifier_value', 'priority', 'is_active', 'created_at', 'updated_at']
+        fields = ['id', 'hotel', 'season_name', 'start_date', 'end_date', 'is_peak_season', 'is_active', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
 
