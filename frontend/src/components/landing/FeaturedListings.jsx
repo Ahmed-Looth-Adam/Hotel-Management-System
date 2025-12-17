@@ -19,6 +19,7 @@ import {
   MeetingRoom,
   ArrowForward,
   Hotel as HotelIcon,
+  Star as StarIcon,
 } from '@mui/icons-material';
 import hotelService from '../../services/hotelService';
 
@@ -117,13 +118,23 @@ const HotelCard = ({ hotel, isMobile, onClick }) => {
       </Box>
 
       <CardContent sx={{ p: 0 }}>
-        <Typography
-          variant="h6"
-          fontWeight="700"
-          sx={{ fontSize: '1.1rem', lineHeight: 1.3, mb: 0.5 }}
-        >
-          {hotel.name}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+          <Typography
+            variant="h6"
+            fontWeight="700"
+            sx={{ fontSize: '1.1rem', lineHeight: 1.3 }}
+          >
+            {hotel.name}
+          </Typography>
+          {hotel.star_rating && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+              <StarIcon sx={{ fontSize: 16, color: '#FFB400' }} />
+              <Typography variant="body2" fontWeight={600}>
+                {hotel.star_rating}
+              </Typography>
+            </Box>
+          )}
+        </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
           <LocationOn sx={{ fontSize: 16, color: 'text.secondary' }} />
@@ -132,11 +143,21 @@ const HotelCard = ({ hotel, isMobile, onClick }) => {
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <MeetingRoom sx={{ fontSize: 16, color: 'text.secondary' }} />
-          <Typography variant="body2" color="text.secondary">
-            {hotel.total_rooms || 0} rooms
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <MeetingRoom sx={{ fontSize: 16, color: 'text.secondary' }} />
+            <Typography variant="body2" color="text.secondary">
+              {hotel.total_rooms || 0} rooms
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+              From
+            </Typography>
+            <Typography variant="subtitle1" fontWeight={700} color="primary">
+              £120<Typography component="span" variant="caption" color="text.secondary">/night</Typography>
+            </Typography>
+          </Box>
         </Box>
       </CardContent>
     </Card>
