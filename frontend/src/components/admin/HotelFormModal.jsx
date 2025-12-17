@@ -3,7 +3,6 @@ import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
@@ -16,7 +15,23 @@ import {
   Switch,
   Rating,
   Typography,
+  Avatar,
+  IconButton,
+  InputAdornment,
+  Chip,
+  alpha,
 } from '@mui/material';
+import {
+  Close as CloseIcon,
+  Hotel as HotelIcon,
+  Edit as EditIcon,
+  Star as StarIcon,
+  MeetingRoom as RoomIcon,
+  Person as ManagerIcon,
+  Description as DescriptionIcon,
+  LocationCity as LocationIcon,
+  ToggleOn as StatusIcon,
+} from '@mui/icons-material';
 import authService from '../../services/authService';
 
 const HotelSchema = Yup.object().shape({
@@ -44,7 +59,6 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
   const [loadingManagers, setLoadingManagers] = useState(false);
 
   const isNewHotel = !hotelToEdit;
-  const title = isNewHotel ? 'Create New Hotel' : `Edit Hotel: ${hotelToEdit?.name}`;
 
   const initialValues = {
     name: hotelToEdit?.name || '',
@@ -55,9 +69,10 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
     is_active: hotelToEdit?.is_active ?? true,
   };
 
-  // Fetch managers when modal opens
+  // Reset error when modal opens
   useEffect(() => {
     if (open) {
+      setError(null);
       fetchManagers();
     }
   }, [open]);
@@ -66,7 +81,6 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
     setLoadingManagers(true);
     const result = await authService.getUsers('manager');
     if (result.success) {
-      // Filter to only active managers
       const activeManagers = (result.data || []).filter(m => m.is_active);
       setManagers(activeManagers);
     }
@@ -77,7 +91,6 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
     setLoading(true);
     setError(null);
 
-    // Prepare payload
     const payload = {
       name: values.name,
       description: values.description || null,
@@ -92,7 +105,6 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
     if (result.success) {
       handleClose();
     } else {
-      // Handle Django's detailed error structure
       const detailError =
         result.error?.name?.[0] ||
         result.error?.description?.[0] ||
@@ -107,9 +119,59 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
     setLoading(false);
   };
 
+  const SectionHeader = ({ icon: Icon, title }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
+      <Icon sx={{ fontSize: 16, color: 'primary.main' }} />
+      <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {title}
+      </Typography>
+    </Box>
+  );
+
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>{title}</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          overflow: 'hidden',
+        }
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          background: 'linear-gradient(180deg, #1a1f37 0%, #0f1225 100%)',
+          color: '#ffffff',
+          px: 3,
+          py: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              width: 36,
+              height: 36,
+            }}
+          >
+            {isNewHotel ? <HotelIcon fontSize="small" /> : <EditIcon fontSize="small" />}
+          </Avatar>
+          <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#ffffff' }}>
+            {isNewHotel ? 'Create New Hotel' : `Edit Hotel: ${hotelToEdit?.name}`}
+          </Typography>
+        </Box>
+        <IconButton onClick={handleClose} sx={{ color: '#ffffff' }} size="small">
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+
       <Formik
         initialValues={initialValues}
         validationSchema={HotelSchema}
@@ -118,26 +180,39 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
       >
         {({ errors, touched, values, setFieldValue }) => (
           <Form>
-            <DialogContent dividers>
+            <DialogContent sx={{ px: 3, py: 2 }}>
               {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
+                <Alert
+                  severity="error"
+                  sx={{ mb: 2, borderRadius: 2 }}
+                  onClose={() => setError(null)}
+                >
                   {error}
                 </Alert>
               )}
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {/* Hotel Name */}
+              {/* Hotel Information */}
+              <SectionHeader icon={HotelIcon} title="Hotel Information" />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
                 <Field
                   as={TextField}
                   name="name"
                   label="Hotel Name"
                   fullWidth
                   required
+                  size="small"
                   error={touched.name && Boolean(errors.name)}
                   helperText={touched.name && errors.name}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LocationIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 2 }
+                  }}
                 />
 
-                {/* Description */}
                 <Field
                   as={TextField}
                   name="description"
@@ -145,15 +220,30 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
                   fullWidth
                   multiline
                   rows={3}
+                  size="small"
                   error={touched.description && Boolean(errors.description)}
                   helperText={touched.description && errors.description}
+                  InputProps={{
+                    sx: { borderRadius: 2 }
+                  }}
                 />
+              </Box>
 
-                {/* Star Rating */}
-                <Box>
-                  <Typography component="legend" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Star Rating *
-                  </Typography>
+              {/* Star Rating */}
+              <SectionHeader icon={StarIcon} title="Star Rating" />
+              <Box sx={{ mb: 2, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    p: 1.5,
+                    bgcolor: alpha('#FFB400', 0.08),
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: alpha('#FFB400', 0.2),
+                  }}
+                >
                   <Rating
                     name="star_rating"
                     value={values.star_rating}
@@ -161,72 +251,172 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
                       setFieldValue('star_rating', newValue || 1);
                     }}
                     size="large"
+                    sx={{
+                      '& .MuiRating-iconFilled': {
+                        color: '#FFB400',
+                      },
+                    }}
                   />
-                  {touched.star_rating && errors.star_rating && (
-                    <Typography variant="caption" color="error">
-                      {errors.star_rating}
-                    </Typography>
-                  )}
+                  <Chip
+                    label={`${values.star_rating} Star${values.star_rating > 1 ? 's' : ''}`}
+                    size="small"
+                    sx={{
+                      bgcolor: '#FFB400',
+                      color: 'white',
+                      fontWeight: 600,
+                    }}
+                  />
                 </Box>
+                {touched.star_rating && errors.star_rating && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                    {errors.star_rating}
+                  </Typography>
+                )}
+              </Box>
 
-                {/* Room Capacity */}
+              {/* Capacity */}
+              <SectionHeader icon={RoomIcon} title="Room Capacity" />
+              <Box sx={{ mb: 2 }}>
                 <Field
                   as={TextField}
                   name="room_capacity"
-                  label="Room Capacity"
+                  label="Number of Rooms"
                   type="number"
                   fullWidth
                   required
+                  size="small"
                   inputProps={{ min: 0 }}
                   error={touched.room_capacity && Boolean(errors.room_capacity)}
                   helperText={touched.room_capacity && errors.room_capacity}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <RoomIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 2 }
+                  }}
                 />
+              </Box>
 
-                {/* Manager Assignment */}
+              {/* Manager Assignment */}
+              <SectionHeader icon={ManagerIcon} title="Manager Assignment" />
+              <Box sx={{ mb: 2 }}>
                 <Field
                   as={TextField}
                   name="manager_id"
                   label="Hotel Manager"
                   select
                   fullWidth
+                  size="small"
                   error={touched.manager_id && Boolean(errors.manager_id)}
                   helperText={touched.manager_id && errors.manager_id}
                   disabled={loadingManagers}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <ManagerIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 2 }
+                  }}
                 >
                   <MenuItem value="">
                     <em>None (No Manager Assigned)</em>
                   </MenuItem>
                   {managers.map((manager) => (
                     <MenuItem key={manager.id} value={manager.id}>
-                      {manager.username} ({manager.email})
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}>
+                          {manager.username?.[0]?.toUpperCase()}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2">{manager.username}</Typography>
+                          <Typography variant="caption" color="text.secondary">{manager.email}</Typography>
+                        </Box>
+                      </Box>
                     </MenuItem>
                   ))}
                 </Field>
+              </Box>
 
-                {/* Active Status */}
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={values.is_active}
-                      onChange={(e) => setFieldValue('is_active', e.target.checked)}
-                      color="primary"
-                    />
-                  }
-                  label="Active"
+              {/* Status */}
+              <SectionHeader icon={StatusIcon} title="Hotel Status" />
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 1.5,
+                  bgcolor: values.is_active ? alpha('#2e7d32', 0.08) : alpha('#757575', 0.08),
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: values.is_active ? alpha('#2e7d32', 0.2) : alpha('#757575', 0.2),
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      bgcolor: values.is_active ? 'success.main' : 'grey.400',
+                    }}
+                  />
+                  <Typography variant="body2" fontWeight={500}>
+                    {values.is_active ? 'Hotel is Active' : 'Hotel is Inactive'}
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={values.is_active}
+                  onChange={(e) => setFieldValue('is_active', e.target.checked)}
+                  color="success"
                 />
               </Box>
             </DialogContent>
-            <DialogActions>
-              <Button onClick={handleClose} color="inherit">
+
+            <DialogActions
+              sx={{
+                px: 3,
+                py: 1.5,
+                bgcolor: 'grey.50',
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Button
+                onClick={handleClose}
+                color="inherit"
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                }}
+              >
                 Cancel
               </Button>
-              <Button type="submit" variant="contained" color="primary" disabled={loading}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  px: 4,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  bgcolor: '#000000',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
+                  '&:hover': {
+                    bgcolor: '#1a1a1a',
+                  },
+                }}
+              >
                 {loading ? (
-                  <CircularProgress size={24} />
-                ) : isNewHotel ? (
-                  'Create Hotel'
+                  <CircularProgress size={22} sx={{ color: 'white' }} />
                 ) : (
-                  'Save Changes'
+                  isNewHotel ? 'Create Hotel' : 'Save Changes'
                 )}
               </Button>
             </DialogActions>
