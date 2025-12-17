@@ -76,12 +76,15 @@ const Hero = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrolled = window.scrollY > 50;
+      const scrollY = window.scrollY;
+      const scrolled = scrollY > 50;
       setIsScrolled(scrolled);
-      if (scrolled) {
+
+      // Hysteresis for expansion state to prevent flickering
+      if (scrollY > 100) {
         setIsExpanded(false);
         setActiveField(null);
-      } else {
+      } else if (scrollY < 50) {
         setIsExpanded(true);
       }
     };
