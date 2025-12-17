@@ -368,23 +368,6 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
 
       {/* Navigation Menu */}
       <Box sx={{ flex: 1, px: collapsed ? 1 : 2, py: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-        {!collapsed && (
-          <Typography
-            variant="caption"
-            sx={{
-              color: alpha('#fff', 0.4),
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              fontSize: '0.65rem',
-              px: 1.5,
-              mb: 1,
-              display: 'block',
-            }}
-          >
-            Menu
-          </Typography>
-        )}
         <List sx={{ py: 0 }}>
           {filteredMenuItems.map((item) => {
             const isActive = item.path && isActivePath(item.path);

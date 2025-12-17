@@ -330,6 +330,11 @@ const UserManagement = () => {
 
     if (result.success) {
       setSuccess(`User "${deletedUsername}" deleted permanently.`);
+      addNotification(
+        `User "${deletedUsername}" has been permanently deleted`,
+        'user_deleted',
+        '/admin/users'
+      );
     } else {
       // Restore user if delete failed
       fetchUsers();

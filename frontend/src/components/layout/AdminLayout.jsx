@@ -44,6 +44,7 @@ import {
   Notifications as NotificationsIcon,
   KeyboardArrowDown as ArrowDownIcon,
   PersonAdd as PersonAddIcon,
+  PersonRemove as PersonRemoveIcon,
   DeleteSweep as ClearAllIcon,
   Circle as UnreadIcon,
 } from '@mui/icons-material';
@@ -318,6 +319,8 @@ const AdminLayout = ({ children }) => {
                       <ListItemIcon sx={{ minWidth: 36 }}>
                         {notification.type === 'user_created' ? (
                           <PersonAddIcon sx={{ color: 'primary.main' }} />
+                        ) : notification.type === 'user_deleted' ? (
+                          <PersonRemoveIcon sx={{ color: 'error.main' }} />
                         ) : (
                           <NotificationsIcon sx={{ color: 'text.secondary' }} />
                         )}

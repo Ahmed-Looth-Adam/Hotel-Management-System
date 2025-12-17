@@ -539,27 +539,22 @@ class AdminUserDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, user_id):
-        print('delete')
         target_user = self.get_object(user_id)
-        print(target_user)
         if not target_user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
         if target_user.id == request.user.id:
-            return Response({"error": "You cannot soft-delete your own account."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "You cannot delete your own account."}, status=status.HTTP_400_BAD_REQUEST)
 
-        target_user.is_active = False
-        target_user.save()
-        print('Deleted user')
-        
-        admin_action_performed.send (
+        username = target_user.username
+
+        admin_action_performed.send(
             sender=self.__class__,
             actor=request.user,
             target_user=target_user,
-            description=f"Soft-deleted user {target_user.username}."
+            description=f"Permanently deleted user {username}."
         )
 
-        print('Sent signal')
-        
-        
-        return Response({"message": f"User {target_user.username} has been soft-deleted (deactivated)."}, status=status.HTTP_204_NO_CONTENT)
+        target_user.delete()
+
+        return Response({"message": f"User {username} has been permanently deleted."}, status=status.HTTP_204_NO_CONTENT)
