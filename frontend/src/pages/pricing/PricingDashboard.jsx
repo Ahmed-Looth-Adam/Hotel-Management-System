@@ -23,7 +23,7 @@ import {
   TextField,
 } from '@mui/material';
 import {
-  AttachMoney,
+  CurrencyPound,
   Add,
   Edit,
   Delete,
@@ -134,7 +134,7 @@ const PricingDashboard = () => {
       case 'room_type':
         return [
           { id: 'room_type_display', label: 'Room Type', sortable: true },
-          { id: 'base_price', label: 'Base Price', render: (row) => `$${parseFloat(row.base_price).toFixed(2)}` },
+          { id: 'base_price', label: 'Base Price', render: (row) => `£${parseFloat(row.base_price).toFixed(2)}` },
           { id: 'currency', label: 'Currency' },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
           { id: 'actions', label: 'Actions', sortable: false, render: (row) => (
@@ -145,7 +145,7 @@ const PricingDashboard = () => {
         return [
           { id: 'view_name', label: 'View Type', sortable: true },
           { id: 'modifier_type_display', label: 'Modifier Type' },
-          { id: 'modifier_value', label: 'Value', render: (row) => row.modifier_type === 'percentage' ? `${row.modifier_value}%` : `$${row.modifier_value}` },
+          { id: 'modifier_value', label: 'Value', render: (row) => row.modifier_type === 'percentage' ? `${row.modifier_value}%` : `£${row.modifier_value}` },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
           { id: 'actions', label: 'Actions', sortable: false, render: (row) => (
             <IconButton size="small" onClick={() => handleDelete(row.id)} color="error"><Delete /></IconButton>
@@ -157,7 +157,7 @@ const PricingDashboard = () => {
           { id: 'start_date', label: 'Start Date', sortable: true },
           { id: 'end_date', label: 'End Date', sortable: true },
           { id: 'modifier_type_display', label: 'Modifier Type' },
-          { id: 'modifier_value', label: 'Value', render: (row) => row.modifier_type === 'percentage' ? `${row.modifier_value}%` : `$${row.modifier_value}` },
+          { id: 'modifier_value', label: 'Value', render: (row) => row.modifier_type === 'percentage' ? `${row.modifier_value}%` : `£${row.modifier_value}` },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
           { id: 'actions', label: 'Actions', sortable: false, render: (row) => (
             <IconButton size="small" onClick={() => handleDelete(row.id)} color="error"><Delete /></IconButton>
@@ -168,7 +168,7 @@ const PricingDashboard = () => {
           { id: 'day_type_name', label: 'Day Type', sortable: true },
           { id: 'applicable_days', label: 'Days', render: (row) => Array.isArray(row.applicable_days) ? row.applicable_days.join(', ') : row.applicable_days },
           { id: 'modifier_type_display', label: 'Modifier Type' },
-          { id: 'modifier_value', label: 'Value', render: (row) => row.modifier_type === 'percentage' ? `${row.modifier_value}%` : `$${row.modifier_value}` },
+          { id: 'modifier_value', label: 'Value', render: (row) => row.modifier_type === 'percentage' ? `${row.modifier_value}%` : `£${row.modifier_value}` },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
           { id: 'actions', label: 'Actions', sortable: false, render: (row) => (
             <IconButton size="small" onClick={() => handleDelete(row.id)} color="error"><Delete /></IconButton>
@@ -179,7 +179,7 @@ const PricingDashboard = () => {
           { id: 'promotion_name', label: 'Promotion', sortable: true },
           { id: 'promo_code', label: 'Code' },
           { id: 'discount_type_display', label: 'Type' },
-          { id: 'discount_value', label: 'Discount', render: (row) => row.discount_type === 'percentage' ? `${row.discount_value}%` : `$${row.discount_value}` },
+          { id: 'discount_value', label: 'Discount', render: (row) => row.discount_type === 'percentage' ? `${row.discount_value}%` : `£${row.discount_value}` },
           { id: 'start_date', label: 'Start', sortable: true },
           { id: 'end_date', label: 'End', sortable: true },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
@@ -193,7 +193,7 @@ const PricingDashboard = () => {
   };
 
   const tabs = [
-    { value: 'room_type', label: 'Room Type Pricing', icon: <AttachMoney /> },
+    { value: 'room_type', label: 'Room Type Pricing', icon: <CurrencyPound /> },
     { value: 'view', label: 'View Pricing', icon: <Visibility /> },
     { value: 'seasonal', label: 'Seasonal Pricing', icon: <DateRange /> },
     { value: 'day_type', label: 'Day Type Pricing', icon: <DateRange /> },
@@ -204,7 +204,7 @@ const PricingDashboard = () => {
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AttachMoney color="primary" sx={{ fontSize: 32 }} />
+          <CurrencyPound color="primary" sx={{ fontSize: 32 }} />
           <Typography variant="h4" component="h1">Pricing Management</Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>

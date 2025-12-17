@@ -216,9 +216,42 @@ class RoomDetailSerializer(serializers.ModelSerializer):
 
 class RoomSerializer(serializers.ModelSerializer):
     """Default room serializer for create/update"""
+
+    # Room type configuration based on documentation
+    ROOM_TYPE_CONFIG = {
+        'standard': {'bed_size': 'queen', 'bed_count': 1, 'max_occupancy': 2},
+        'deluxe': {'bed_size': 'king', 'bed_count': 1, 'max_occupancy': 2},
+        'suite': {'bed_size': 'queen', 'bed_count': 2, 'max_occupancy': 4},
+        'penthouse': {'bed_size': 'king', 'bed_count': 2, 'max_occupancy': 4},
+    }
+
     class Meta:
         model = Room
         fields = '__all__'
+
+    def create(self, validated_data):
+        # Auto-set bed config, occupancy, and status based on room type
+        room_type_category = validated_data.get('room_type_category', 'standard')
+        config = self.ROOM_TYPE_CONFIG.get(room_type_category, self.ROOM_TYPE_CONFIG['standard'])
+
+        validated_data.setdefault('bed_size', config['bed_size'])
+        validated_data.setdefault('bed_count', config['bed_count'])
+        validated_data.setdefault('max_occupancy', config['max_occupancy'])
+        validated_data.setdefault('status', 'available')
+        validated_data.setdefault('is_available', True)
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # If room type category changes, update the config
+        room_type_category = validated_data.get('room_type_category', instance.room_type_category)
+        if room_type_category != instance.room_type_category:
+            config = self.ROOM_TYPE_CONFIG.get(room_type_category, self.ROOM_TYPE_CONFIG['standard'])
+            validated_data.setdefault('bed_size', config['bed_size'])
+            validated_data.setdefault('bed_count', config['bed_count'])
+            validated_data.setdefault('max_occupancy', config['max_occupancy'])
+
+        return super().update(instance, validated_data)
 
 
 # ============== Amenity Serializers ==============

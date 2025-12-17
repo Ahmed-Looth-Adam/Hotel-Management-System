@@ -245,7 +245,7 @@ function ComponentDemo() {
               }
               footer={
                 <Typography variant="h6" color="primary">
-                  $250/night
+                  £250/night
                 </Typography>
               }
               hoverable

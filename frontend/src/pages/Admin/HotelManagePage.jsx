@@ -40,7 +40,7 @@ import {
   Hotel as HotelIcon,
   MeetingRoom as RoomIcon,
   Collections as GalleryIcon,
-  AttachMoney as PricingIcon,
+  CurrencyPound as PricingIcon,
   RoomService as ServicesIcon,
   Policy as PolicyIcon,
   Dashboard as OverviewIcon,
@@ -57,10 +57,7 @@ import {
   CloudUpload as UploadIcon,
   Image as ImageIcon,
   PhotoLibrary as PhotoLibraryIcon,
-  KingBed as BedIcon,
-  People as OccupancyIcon,
   Visibility as ViewIcon,
-  ToggleOn as StatusIcon,
   Layers as FloorIcon,
   Category as CategoryIcon,
 } from '@mui/icons-material';
@@ -397,24 +394,10 @@ const RoomsTab = ({ hotel }) => {
   const { showSuccess, showError } = useNotification();
 
   const ROOM_TYPE_CHOICES = [
-    { value: 'standard', label: 'Standard' },
-    { value: 'superior', label: 'Superior' },
-    { value: 'deluxe', label: 'Deluxe' },
-    { value: 'suite', label: 'Suite' },
-    { value: 'family', label: 'Family' },
-  ];
-
-  const BED_SIZE_CHOICES = [
-    { value: 'king', label: 'King' },
-    { value: 'queen', label: 'Queen' },
-    { value: 'twin', label: 'Twin' },
-  ];
-
-  const STATUS_CHOICES = [
-    { value: 'available', label: 'Available' },
-    { value: 'occupied', label: 'Occupied' },
-    { value: 'cleaning', label: 'Cleaning' },
-    { value: 'out_of_service', label: 'Out of Service' },
+    { value: 'standard', label: 'Standard Double' },
+    { value: 'deluxe', label: 'Deluxe King' },
+    { value: 'suite', label: 'Family Suite' },
+    { value: 'penthouse', label: 'Penthouse' },
   ];
 
   useEffect(() => {
@@ -450,14 +433,8 @@ const RoomsTab = ({ hotel }) => {
       hotel: hotel.id,
       room_number: editingRoom.room_number,
       floor: editingRoom.floor,
-      room_type: editingRoom.room_type || 1,
       room_type_category: editingRoom.room_type_category,
-      bed_size: editingRoom.bed_size,
-      bed_count: editingRoom.bed_count,
-      max_occupancy: editingRoom.max_occupancy,
-      status: editingRoom.status,
       view: editingRoom.view || null,
-      is_available: editingRoom.is_available ?? true,
       is_active: editingRoom.is_active ?? true,
     };
 
@@ -522,10 +499,6 @@ const RoomsTab = ({ hotel }) => {
               room_number: '',
               floor: 1,
               room_type_category: 'standard',
-              bed_size: 'queen',
-              bed_count: 1,
-              max_occupancy: 2,
-              status: 'available',
               view: null,
               is_available: true,
               is_active: true,
@@ -555,8 +528,6 @@ const RoomsTab = ({ hotel }) => {
                 <TableCell>Room #</TableCell>
                 <TableCell>Floor</TableCell>
                 <TableCell>Type</TableCell>
-                <TableCell>Bed</TableCell>
-                <TableCell>Max Occupancy</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Active</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -568,8 +539,6 @@ const RoomsTab = ({ hotel }) => {
                   <TableCell sx={{ fontWeight: 600 }}>{room.room_number}</TableCell>
                   <TableCell>{room.floor}</TableCell>
                   <TableCell>{room.room_type_name || room.room_type_category}</TableCell>
-                  <TableCell>{room.bed_size} x{room.bed_count}</TableCell>
-                  <TableCell>{room.max_occupancy}</TableCell>
                   <TableCell>
                     <Chip
                       label={room.status}
@@ -732,103 +701,26 @@ const RoomsTab = ({ hotel }) => {
             </Select>
           </FormControl>
 
-          {/* Bed Configuration */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
-            <BedIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Bed Configuration
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5 }}>
-            <FormControl fullWidth size="small">
-              <Select
-                value={editingRoom?.bed_size || 'queen'}
-                onChange={(e) => setEditingRoom({ ...editingRoom, bed_size: e.target.value })}
-                sx={{ borderRadius: 2 }}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <BedIcon sx={{ color: 'text.secondary', fontSize: 20, ml: 1 }} />
-                  </InputAdornment>
-                }
-              >
-                {BED_SIZE_CHOICES.map((type) => (
-                  <MenuItem key={type.value} value={type.value}>
-                    {type.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              label="Bed Count"
-              type="number"
-              value={editingRoom?.bed_count || 1}
-              onChange={(e) => setEditingRoom({ ...editingRoom, bed_count: parseInt(e.target.value) || 1 })}
-              fullWidth
-              size="small"
-              inputProps={{ min: 1 }}
-              InputProps={{
-                sx: { borderRadius: 2 },
-              }}
-            />
-          </Box>
-
-          {/* Occupancy */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
-            <OccupancyIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Occupancy
-            </Typography>
-          </Box>
-          <TextField
-            label="Maximum Occupancy"
-            type="number"
-            value={editingRoom?.max_occupancy || 2}
-            onChange={(e) => setEditingRoom({ ...editingRoom, max_occupancy: parseInt(e.target.value) || 1 })}
-            fullWidth
-            size="small"
-            inputProps={{ min: 1 }}
-            sx={{ mb: 2.5 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <OccupancyIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
-                </InputAdornment>
-              ),
-              sx: { borderRadius: 2 },
-            }}
-          />
-
-          {/* Status & View */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
-            <StatusIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Status & View
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={editingRoom?.status || 'available'}
-                label="Status"
-                onChange={(e) => setEditingRoom({ ...editingRoom, status: e.target.value })}
-                sx={{ borderRadius: 2 }}
-              >
-                {STATUS_CHOICES.map((type) => (
-                  <MenuItem key={type.value} value={type.value}>
-                    {type.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {roomViews.length > 0 && (
-              <FormControl fullWidth size="small">
-                <InputLabel>View</InputLabel>
+          {/* View */}
+          {roomViews.length > 0 && (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
+                <ViewIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+                <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Room View
+                </Typography>
+              </Box>
+              <FormControl fullWidth size="small" sx={{ mb: 2.5 }}>
                 <Select
                   value={editingRoom?.view || ''}
-                  label="View"
                   onChange={(e) => setEditingRoom({ ...editingRoom, view: e.target.value || null })}
                   sx={{ borderRadius: 2 }}
+                  displayEmpty
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <ViewIcon sx={{ color: 'text.secondary', fontSize: 20, ml: 1 }} />
+                    </InputAdornment>
+                  }
                 >
                   <MenuItem value="">None</MenuItem>
                   {roomViews.map((view) => (
@@ -838,8 +730,8 @@ const RoomsTab = ({ hotel }) => {
                   ))}
                 </Select>
               </FormControl>
-            )}
-          </Box>
+            </>
+          )}
 
           {/* Room Status */}
           <Box
@@ -1827,14 +1719,14 @@ const PricingTab = ({ hotel }) => {
     { value: 'standard', label: 'Standard Double' },
     { value: 'deluxe', label: 'Deluxe King' },
     { value: 'suite', label: 'Family Suite' },
-    { value: 'family', label: 'Penthouse' },
+    { value: 'penthouse', label: 'Penthouse' },
   ];
 
   const DEFAULT_PRICES = {
     standard: { off_peak: 120, peak: 180 },
     deluxe: { off_peak: 180, peak: 250 },
     suite: { off_peak: 240, peak: 320 },
-    family: { off_peak: 500, peak: 750 },
+    penthouse: { off_peak: 500, peak: 750 },
   };
 
   useEffect(() => {
@@ -2273,7 +2165,7 @@ const PricingTab = ({ hotel }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <OffPeakIcon sx={{ color: 'info.main', fontSize: 18, mr: 0.5 }} />£
+                    £
                   </InputAdornment>
                 ),
                 sx: { borderRadius: 2 },
@@ -2289,7 +2181,7 @@ const PricingTab = ({ hotel }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <PeakIcon sx={{ color: 'warning.main', fontSize: 18, mr: 0.5 }} />£
+                    £
                   </InputAdornment>
                 ),
                 sx: { borderRadius: 2 },
@@ -2907,7 +2799,7 @@ const ServicesTab = ({ hotel }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <PricingIcon sx={{ color: 'text.secondary', fontSize: 18, mr: 0.5 }} />£
+                    £
                   </InputAdornment>
                 ),
                 sx: { borderRadius: 2 },

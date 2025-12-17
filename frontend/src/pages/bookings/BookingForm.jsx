@@ -260,14 +260,14 @@ const BookingForm = () => {
               {priceBreakdown && (
                 <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
                   <Typography variant="subtitle1">Price Breakdown</Typography>
-                  <Typography>Base Price: ${priceBreakdown.base_total?.toFixed(2)}</Typography>
+                  <Typography>Base Price: £{priceBreakdown.base_total?.toFixed(2)}</Typography>
                   {priceBreakdown.discount_amount > 0 && (
                     <Typography color="success.main">
-                      Discount: -${priceBreakdown.discount_amount?.toFixed(2)}
+                      Discount: -£{priceBreakdown.discount_amount?.toFixed(2)}
                     </Typography>
                   )}
                   <Typography variant="h6" sx={{ mt: 1 }}>
-                    Total: ${priceBreakdown.final_total?.toFixed(2)}
+                    Total: £{priceBreakdown.final_total?.toFixed(2)}
                   </Typography>
                 </Box>
               )}

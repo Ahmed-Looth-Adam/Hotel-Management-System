@@ -284,11 +284,11 @@ const BookingDetail = () => {
             </Typography>
             <List dense>
               <ListItem>
-                <ListItemText primary="Total Price" secondary={`$${parseFloat(booking.total_price || 0).toFixed(2)}`} />
+                <ListItemText primary="Total Price" secondary={`£${parseFloat(booking.total_price || 0).toFixed(2)}`} />
               </ListItem>
               {booking.additional_charges > 0 && (
                 <ListItem>
-                  <ListItemText primary="Additional Charges" secondary={`$${parseFloat(booking.additional_charges).toFixed(2)}`} />
+                  <ListItemText primary="Additional Charges" secondary={`£${parseFloat(booking.additional_charges).toFixed(2)}`} />
                 </ListItem>
               )}
               <ListItem>

@@ -35,7 +35,7 @@ import {
   Chip,
 } from '@mui/material';
 import {
-  AttachMoney,
+  CurrencyPound,
   TrendingUp,
   Receipt,
   AccountBalance,
@@ -123,7 +123,7 @@ const RevenueReport = () => {
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <AttachMoney color="primary" sx={{ fontSize: 32 }} />
+        <CurrencyPound color="primary" sx={{ fontSize: 32 }} />
         <Typography variant="h4" component="h1">
           Revenue Report
         </Typography>
@@ -187,7 +187,7 @@ const RevenueReport = () => {
                 title="Total Revenue"
                 value={formatCurrency(data.total_revenue)}
                 subtitle="For selected period"
-                icon={<AttachMoney sx={{ fontSize: 48 }} />}
+                icon={<CurrencyPound sx={{ fontSize: 48 }} />}
                 color="success.main"
               />
             </Grid>
@@ -352,7 +352,7 @@ const RevenueReport = () => {
         </>
       ) : (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <AttachMoney sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+          <CurrencyPound sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" color="text.secondary">
             No data available
           </Typography>

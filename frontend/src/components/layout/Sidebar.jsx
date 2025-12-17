@@ -37,12 +37,10 @@ import {
 import {
   Dashboard as DashboardIcon,
   Hotel as HotelIcon,
-  MeetingRoom as RoomIcon,
   EventNote as BookingIcon,
   People as PeopleIcon,
   Assessment as ReportIcon,
   Settings as SettingsIcon,
-  AttachMoney as PricingIcon,
   Speed as OperationsIcon,
   ExpandLess,
   ExpandMore,
@@ -108,28 +106,10 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
       roles: ['staff', 'manager', 'admin'],
     },
     {
-      title: 'Hotels',
-      icon: HotelIcon,
-      path: '/hotels',
-      roles: ['manager', 'admin'],
-    },
-    {
-      title: 'Rooms',
-      icon: RoomIcon,
-      path: '/rooms',
-      roles: ['staff', 'manager', 'admin'],
-    },
-    {
       title: 'Bookings',
       icon: BookingIcon,
       path: '/bookings',
       roles: ['staff', 'manager', 'admin'],
-    },
-    {
-      title: 'Pricing',
-      icon: PricingIcon,
-      path: '/pricing',
-      roles: ['manager', 'admin'],
     },
     {
       title: 'Reports',
@@ -140,12 +120,6 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
         { title: 'Revenue', path: '/reports/revenue' },
         { title: 'Analytics', path: '/reports/analytics' },
       ],
-    },
-    {
-      title: 'Staff',
-      icon: PeopleIcon,
-      path: '/staff',
-      roles: ['manager', 'admin'],
     },
     {
       title: 'Settings',

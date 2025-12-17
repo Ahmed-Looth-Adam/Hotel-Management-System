@@ -127,11 +127,10 @@ class RoomType(models.Model):
 class Room(models.Model):
     """Individual room"""
     ROOM_TYPE_CHOICES = [
-        ('standard', 'Standard'),
-        ('superior', 'Superior'),
-        ('deluxe', 'Deluxe'),
-        ('suite', 'Suite'),
-        ('family', 'Family'),
+        ('standard', 'Standard Double'),
+        ('deluxe', 'Deluxe King'),
+        ('suite', 'Family Suite'),
+        ('penthouse', 'Penthouse'),
     ]
 
     BED_SIZE_CHOICES = [
@@ -148,7 +147,7 @@ class Room(models.Model):
     ]
 
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='rooms')
-    room_type = models.ForeignKey(RoomType, on_delete=models.PROTECT, related_name='rooms')
+    room_type = models.ForeignKey(RoomType, on_delete=models.PROTECT, related_name='rooms', null=True, blank=True)
     room_number = models.CharField(max_length=10)
     floor = models.IntegerField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
@@ -279,7 +278,7 @@ class RoomTypePricing(models.Model):
         ('standard', 'Standard Double'),
         ('deluxe', 'Deluxe King'),
         ('suite', 'Family Suite'),
-        ('family', 'Penthouse'),
+        ('penthouse', 'Penthouse'),
     ]
 
     # Default prices from coursework specification (GBP)
@@ -287,7 +286,7 @@ class RoomTypePricing(models.Model):
         'standard': {'off_peak': 120, 'peak': 180},
         'deluxe': {'off_peak': 180, 'peak': 250},
         'suite': {'off_peak': 240, 'peak': 320},
-        'family': {'off_peak': 500, 'peak': 750},
+        'penthouse': {'off_peak': 500, 'peak': 750},
     }
 
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_type_pricing')

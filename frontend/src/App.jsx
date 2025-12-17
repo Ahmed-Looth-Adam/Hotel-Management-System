@@ -33,17 +33,13 @@ import PasswordReset from './pages/profile/PasswordReset';
 import PasswordResetConfirm from './pages/profile/PasswordResetConfirm';
 
 // Hotel management pages
-import { HotelsList, HotelDetail, HotelForm } from './pages/hotels';
-import { RoomsList, RoomDetail, RoomForm } from './pages/rooms';
 import { BookingsList, BookingDetail, BookingForm } from './pages/bookings';
 import { OperationsDashboard } from './pages/operations';
-import { PricingDashboard } from './pages/pricing';
 
 // Admin pages
 import UserManagement from './pages/admin/UserManagement';
 import HotelManagement from './pages/Admin/HotelManagement';
 import HotelManagePage from './pages/Admin/HotelManagePage';
-import StaffManagement from './pages/admin/StaffManagement';
 
 // Guest pages
 import BrowseRooms from './pages/guest/BrowseRooms';
@@ -146,16 +142,6 @@ function App() {
                 }
               />
 
-              {/* Staff Management (Manager/Admin) */}
-              <Route
-                path="/staff"
-                element={
-                  <ProtectedRoute requiredRole="manager">
-                    <StaffManagement />
-                  </ProtectedRoute>
-                }
-              />
-
               {/* Settings (Admin) */}
               <Route
                 path="/settings"
@@ -218,74 +204,6 @@ function App() {
                 }
               />
 
-              {/* Hotels Management */}
-              <Route
-                path="/hotels"
-                element={
-                  <ProtectedRoute>
-                    <HotelsList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/hotels/new"
-                element={
-                  <ProtectedRoute>
-                    <HotelForm />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/hotels/:id"
-                element={
-                  <ProtectedRoute>
-                    <HotelDetail />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/hotels/:id/edit"
-                element={
-                  <ProtectedRoute>
-                    <HotelForm />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Rooms Management */}
-              <Route
-                path="/rooms"
-                element={
-                  <ProtectedRoute>
-                    <RoomsList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/rooms/new"
-                element={
-                  <ProtectedRoute>
-                    <RoomForm />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/rooms/:id"
-                element={
-                  <ProtectedRoute>
-                    <RoomDetail />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/rooms/:id/edit"
-                element={
-                  <ProtectedRoute>
-                    <RoomForm />
-                  </ProtectedRoute>
-                }
-              />
-
               {/* Bookings Management */}
               <Route
                 path="/bookings"
@@ -318,16 +236,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <OperationsDashboard />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Pricing Management */}
-              <Route
-                path="/pricing"
-                element={
-                  <ProtectedRoute>
-                    <PricingDashboard />
                   </ProtectedRoute>
                 }
               />

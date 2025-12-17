@@ -157,7 +157,7 @@ const Dashboard = () => {
           <Grid item xs={12} sm={4}>
             <Box sx={{ textAlign: 'center', p: 2 }}>
               <Typography variant="h4" color="primary">
-                $0
+                £0
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Total Revenue

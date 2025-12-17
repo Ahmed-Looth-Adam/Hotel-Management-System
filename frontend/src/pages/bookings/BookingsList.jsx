@@ -152,7 +152,7 @@ const BookingsList = () => {
     {
       id: 'total_price',
       label: 'Total',
-      render: (row) => `$${parseFloat(row.total_price || 0).toFixed(2)}`,
+      render: (row) => `£${parseFloat(row.total_price || 0).toFixed(2)}`,
     },
     {
       id: 'actions',
