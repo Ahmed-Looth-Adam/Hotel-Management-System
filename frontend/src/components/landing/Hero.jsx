@@ -508,6 +508,20 @@ const Hero = () => {
             '& .rdrMonth': {
               padding: '0 16px 16px',
             },
+            '& .rdrDay': {
+              height: '40px',
+              lineHeight: '40px',
+            },
+            '& .rdrDayNumber': {
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
             '& .rdrDayNumber span': {
               color: '#222222',
             },
@@ -516,20 +530,38 @@ const Hero = () => {
             },
             // Circular start/end selection markers
             '& .rdrStartEdge, & .rdrEndEdge': {
-              background: '#222222',
-              borderRadius: '50%',
-              top: '3px',
-              bottom: '3px',
-              left: '3px',
-              right: '3px',
+              background: '#222222 !important',
+              borderRadius: '50% !important',
+              top: '50% !important',
+              left: '50% !important',
+              right: 'auto !important',
+              bottom: 'auto !important',
+              width: '36px !important',
+              height: '36px !important',
+              transform: 'translate(-50%, -50%) !important',
+            },
+            // Hide passive/overflow dates from adjacent months
+            '& .rdrDayPassive': {
+              visibility: 'hidden',
+              pointerEvents: 'none',
+            },
+            // Hide the default selection display that causes duplication
+            '& .rdrDayStartOfMonth .rdrInRange, & .rdrDayStartOfWeek .rdrInRange': {
+              borderTopLeftRadius: '0',
+              borderBottomLeftRadius: '0',
+            },
+            '& .rdrDayEndOfMonth .rdrInRange, & .rdrDayEndOfWeek .rdrInRange': {
+              borderTopRightRadius: '0',
+              borderBottomRightRadius: '0',
             },
             // White text for selected start/end dates
             '& .rdrDay:has(.rdrStartEdge) .rdrDayNumber span, & .rdrDay:has(.rdrEndEdge) .rdrDayNumber span': {
               color: '#FFFFFF !important',
+              fontWeight: 600,
             },
             // In-range background
             '& .rdrInRange': {
-              background: '#F7F7F7',
+              background: '#F7F7F7 !important',
             },
             // Black text for in-range dates
             '& .rdrDay:has(.rdrInRange) .rdrDayNumber span': {
@@ -546,6 +578,10 @@ const Hero = () => {
             },
             '& .rdrDayDisabled .rdrDayNumber span': {
               color: '#DDDDDD',
+            },
+            // Hide duplicate selection previews
+            '& .rdrSelected': {
+              display: 'none !important',
             },
           },
         }}
@@ -864,26 +900,56 @@ const Hero = () => {
                 '& .rdrMonthAndYearWrapper': {
                   paddingTop: 0,
                 },
+                '& .rdrDay': {
+                  height: '40px',
+                  lineHeight: '40px',
+                },
+                '& .rdrDayNumber': {
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+                '& .rdrDayNumber span': {
+                  color: '#222222',
+                },
                 // Circular start/end selection markers
                 '& .rdrStartEdge, & .rdrEndEdge': {
-                  background: '#222222',
-                  borderRadius: '50%',
-                  top: '3px',
-                  bottom: '3px',
-                  left: '3px',
-                  right: '3px',
+                  background: '#222222 !important',
+                  borderRadius: '50% !important',
+                  top: '50% !important',
+                  left: '50% !important',
+                  right: 'auto !important',
+                  bottom: 'auto !important',
+                  width: '36px !important',
+                  height: '36px !important',
+                  transform: 'translate(-50%, -50%) !important',
+                },
+                // Hide passive/overflow dates from adjacent months
+                '& .rdrDayPassive': {
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
                 },
                 // White text for selected start/end dates
                 '& .rdrDay:has(.rdrStartEdge) .rdrDayNumber span, & .rdrDay:has(.rdrEndEdge) .rdrDayNumber span': {
                   color: '#FFFFFF !important',
+                  fontWeight: 600,
                 },
                 // In-range background
                 '& .rdrInRange': {
-                  background: '#F7F7F7',
+                  background: '#F7F7F7 !important',
                 },
                 // Black text for in-range dates
                 '& .rdrDay:has(.rdrInRange) .rdrDayNumber span': {
                   color: '#222222 !important',
+                },
+                // Hide duplicate selection previews
+                '& .rdrSelected': {
+                  display: 'none !important',
                 },
               }}
             >
