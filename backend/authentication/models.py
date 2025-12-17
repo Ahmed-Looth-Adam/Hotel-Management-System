@@ -4,14 +4,14 @@ from django.utils import timezone
 
 class User(AbstractUser):
     """Extended User model with additional fields"""
-    
+
     ROLE_CHOICES = [
         ('guest', 'Guest'),
         ('staff', 'Front Desk Staff'),
         ('manager', 'Hotel Manager'),
         ('admin', 'Administrator'),
     ]
-    
+
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='guest')
     phone_number = models.CharField(max_length=20, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
@@ -19,6 +19,16 @@ class User(AbstractUser):
     city = models.CharField(max_length=100, blank=True)
     country = models.CharField(max_length=100, blank=True)
     postal_code = models.CharField(max_length=20, blank=True)
+
+    # Staff hotel assignment - which hotel this staff member works at
+    assigned_hotel = models.ForeignKey(
+        'hotels.Hotel',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='staff_members',
+        help_text="Hotel this staff member is assigned to (for staff role only)"
+    )
 
     # Staff/User profile fields
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True, help_text="Profile photo")

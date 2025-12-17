@@ -597,7 +597,7 @@ const UserManagement = () => {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
+              gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 120px',
               gap: 2,
               p: 2,
               bgcolor: '#ffffff',
@@ -610,6 +610,9 @@ const UserManagement = () => {
             </Typography>
             <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
               ROLE
+            </Typography>
+            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              ASSIGNED HOTEL
             </Typography>
             <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
               STATUS
@@ -639,7 +642,7 @@ const UserManagement = () => {
                 <Box
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
+                    gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 120px',
                     gap: 2,
                     p: 2,
                     alignItems: 'center',
@@ -735,6 +738,36 @@ const UserManagement = () => {
                         ))}
                       </Select>
                     </Box>
+                  </Box>
+
+                  {/* Assigned Hotel */}
+                  <Box>
+                    {['staff', 'manager'].includes(user.role) && user.assigned_hotel_name ? (
+                      <Chip
+                        size="small"
+                        label={user.assigned_hotel_name}
+                        sx={{
+                          bgcolor: 'grey.100',
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          fontSize: '0.7rem',
+                          maxWidth: '100%',
+                          '& .MuiChip-label': {
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          },
+                        }}
+                      />
+                    ) : ['staff', 'manager'].includes(user.role) ? (
+                      <Typography variant="caption" color="text.secondary" fontStyle="italic">
+                        Not assigned
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">
+                        —
+                      </Typography>
+                    )}
                   </Box>
 
                   {/* Status */}

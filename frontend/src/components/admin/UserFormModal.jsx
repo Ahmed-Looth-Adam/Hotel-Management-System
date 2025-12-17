@@ -33,8 +33,10 @@ import {
   Visibility,
   VisibilityOff,
   CloudUpload as UploadIcon,
+  Hotel as HotelIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+import hotelService from '../../services/hotelService';
 
 
 const UserSchema = (isNewUser) => Yup.object().shape({
@@ -102,10 +104,14 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = 
   const [previewUrl, setPreviewUrl] = useState(userToEdit?.profile_picture || null);
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
+  const [hotels, setHotels] = useState([]);
+  const [loadingHotels, setLoadingHotels] = useState(false);
   const fileInputRef = useRef(null);
   const { user: currentUser } = useAuth();
 
   const isNewUser = !userToEdit;
+  const isManager = currentUser?.role === 'manager';
+  const showHotelField = forceRole === 'staff' || (!forceRole && ['staff'].includes(userToEdit?.role));
 
   // Parse existing phone number into country code and number
   const parsePhoneNumber = (phone) => {
@@ -128,7 +134,8 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = 
     phone_number: parsedPhone.number || '',
     role: forceRole || userToEdit?.role || 'staff',
     password: '',
-    password2: ''
+    password2: '',
+    assigned_hotel: userToEdit?.assigned_hotel || '',
   };
 
   // Reset state when modal opens or userToEdit changes
@@ -139,8 +146,24 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = 
       setPreviewUrl(userToEdit?.profile_picture || null);
       setShowPassword(false);
       setShowPassword2(false);
+      fetchHotels();
     }
   }, [open, userToEdit]);
+
+  // Fetch hotels for assignment dropdown
+  const fetchHotels = async () => {
+    setLoadingHotels(true);
+    const result = await hotelService.getAll({ is_active: true });
+    if (result.success) {
+      let hotelList = Array.isArray(result.data) ? result.data : (result.data?.results || []);
+      // If manager, filter to only show hotels they manage
+      if (isManager) {
+        hotelList = hotelList.filter(h => h.manager?.id === currentUser?.id);
+      }
+      setHotels(hotelList);
+    }
+    setLoadingHotels(false);
+  };
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -168,6 +191,11 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = 
         if (key === 'country_code') return; // Skip, we'll use combined phone
         if (key === 'phone_number') {
           if (combinedPhone) formData.append('phone_number', combinedPhone);
+          return;
+        }
+        if (key === 'assigned_hotel') {
+          // Only include if a hotel is selected
+          if (values[key]) formData.append('assigned_hotel', values[key]);
           return;
         }
         if (values[key]) {
@@ -587,6 +615,46 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = 
                     );
                   })}
                 </Box>
+              )}
+
+              {/* Hotel Assignment - Only show for staff role */}
+              {(forceRole === 'staff' || values.role === 'staff') && (
+                <>
+                  <SectionHeader icon={HotelIcon} title="Hotel Assignment" />
+                  <Box sx={{ mb: 2 }}>
+                    <Field
+                      as={TextField}
+                      name="assigned_hotel"
+                      label="Assigned Hotel"
+                      select
+                      fullWidth
+                      size="small"
+                      disabled={loadingHotels}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <HotelIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                        sx: { borderRadius: 2 }
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>No Hotel Assigned</em>
+                      </MenuItem>
+                      {hotels.map((hotel) => (
+                        <MenuItem key={hotel.id} value={hotel.id}>
+                          {hotel.name} - {hotel.city}
+                        </MenuItem>
+                      ))}
+                    </Field>
+                    {isManager && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        You can only assign staff to hotels you manage
+                      </Typography>
+                    )}
+                  </Box>
+                </>
               )}
 
               {/* Password Section */}

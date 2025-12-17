@@ -32,7 +32,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
-from .permissions import IsAdminUserCustom
+from .permissions import IsAdminUserCustom, IsAdminOrManager
 from django.db.models import Q
 from core.signals import admin_action_performed, profile_updated
 
@@ -451,32 +451,70 @@ class AdminUserListAPIView(APIView):
     """
     GET: List all users (with optional role filtering)
     POST: Create a new staff/manager account
+
+    For managers:
+    - GET: Only returns staff assigned to hotels they manage
+    - POST: Can only create staff and must assign to their managed hotels
     """
-    permission_classes = [IsAuthenticated, IsAdminUserCustom]
+    permission_classes = [IsAuthenticated, IsAdminOrManager]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_managed_hotels(self, user):
+        """Get hotels managed by this user"""
+        from hotels.models import Hotel
+        return Hotel.objects.filter(manager=user)
 
     def get(self, request):
         User = get_user_model()
         role_filter = request.query_params.get('role')
         users = User.objects.all().order_by('-created_at')
-        if role_filter:
+
+        # If manager, only show staff from their hotels
+        if request.user.role == 'manager':
+            managed_hotels = self.get_managed_hotels(request.user)
+            # Only show staff assigned to manager's hotels
+            users = users.filter(role='staff', assigned_hotel__in=managed_hotels)
+        elif role_filter:
             users = users.filter(role=role_filter)
+
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        # If manager, enforce staff role and hotel assignment
+        if request.user.role == 'manager':
+            # Managers can only create staff
+            if request.data.get('role') and request.data.get('role') != 'staff':
+                return Response(
+                    {"error": "Managers can only create staff accounts."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Force role to staff
+            if hasattr(request.data, '_mutable'):
+                request.data._mutable = True
+            request.data['role'] = 'staff'
+
+            # Validate hotel assignment
+            assigned_hotel_id = request.data.get('assigned_hotel')
+            if assigned_hotel_id:
+                managed_hotels = self.get_managed_hotels(request.user)
+                if not managed_hotels.filter(id=assigned_hotel_id).exists():
+                    return Response(
+                        {"error": "You can only assign staff to hotels you manage."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
         serializer = AdminUserRegistrationSerializer(data=request.data)
-        print(f"you accessed AdminUserListAPIView post with serializer {serializer}")  
         if serializer.is_valid():
             user = serializer.save()
-            print(f"you accessed AdminUserListAPIView with user {user}")
-            admin_action_performed.send (
+            admin_action_performed.send(
                 sender=self.__class__,
                 actor=request.user,
-                target_user=user,  
+                target_user=user,
                 description=f"Created user {user}"
             )
-            
+
             return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -484,9 +522,19 @@ class AdminUserListAPIView(APIView):
 class AdminUserDetailAPIView(APIView):
     """
     PATCH: Update user role, status (activate/deactivate), or reset password
+    DELETE: Delete a user
+
+    For managers:
+    - Can only update/delete staff assigned to their hotels
+    - Cannot change user roles
     """
-    permission_classes = [IsAuthenticated, IsAdminUserCustom]
+    permission_classes = [IsAuthenticated, IsAdminOrManager]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_managed_hotels(self, user):
+        """Get hotels managed by this user"""
+        from hotels.models import Hotel
+        return Hotel.objects.filter(manager=user)
 
     def get_object(self, user_id):
         User = get_user_model()
@@ -495,13 +543,45 @@ class AdminUserDetailAPIView(APIView):
         except User.DoesNotExist:
             return None
 
+    def can_manager_access_user(self, manager, target_user):
+        """Check if manager can access this user (must be staff in their hotel)"""
+        if target_user.role != 'staff':
+            return False
+        managed_hotels = self.get_managed_hotels(manager)
+        return target_user.assigned_hotel in managed_hotels
+
     def patch(self, request, user_id):
         target_user = self.get_object(user_id)
         if not target_user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Manager restrictions
+        if request.user.role == 'manager':
+            if not self.can_manager_access_user(request.user, target_user):
+                return Response(
+                    {"error": "You can only manage staff assigned to your hotels."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            # Managers cannot change roles
+            if 'role' in request.data and request.data.get('role') != 'staff':
+                return Response(
+                    {"error": "Managers cannot change user roles."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            # Validate hotel assignment change
+            if 'assigned_hotel' in request.data:
+                new_hotel_id = request.data.get('assigned_hotel')
+                if new_hotel_id:
+                    managed_hotels = self.get_managed_hotels(request.user)
+                    if not managed_hotels.filter(id=new_hotel_id).exists():
+                        return Response(
+                            {"error": "You can only assign staff to hotels you manage."},
+                            status=status.HTTP_403_FORBIDDEN
+                        )
+
         if target_user.id == request.user.id and 'is_active' in request.data:
-             return Response({"error": "You cannot deactivate your own account."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "You cannot deactivate your own account."}, status=status.HTTP_400_BAD_REQUEST)
+
         if 'role' in request.data:
             new_role = request.data.get('role')
             if new_role == "admin" and not request.user.is_superuser:
@@ -510,14 +590,15 @@ class AdminUserDetailAPIView(APIView):
                 target_user.is_staff = True
             else:
                 target_user.is_staff = False
+
         if 'password' in request.data:
             target_user.set_password(request.data['password'])
             target_user.save()
-            admin_action_performed.send (
+            admin_action_performed.send(
                 sender=self.__class__,
                 actor=request.user,
                 target_user=target_user,
-                description= f"Changed password for user {target_user.username}."             
+                description=f"Changed password for user {target_user.username}."
             )
             return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
 
@@ -525,23 +606,31 @@ class AdminUserDetailAPIView(APIView):
         serializer = AdminUserUpdateSerializer(target_user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            
+
             # Log what changed
             changed_fields = list(request.data.keys())
-            admin_action_performed.send (
+            admin_action_performed.send(
                 sender=self.__class__,
                 actor=request.user,
                 target_user=target_user,
-                description= f'Updated user profile for {target_user.username}. Changed fields: {changed_fields}'
+                description=f'Updated user profile for {target_user.username}. Changed fields: {changed_fields}'
             )
-            
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def delete(self, request, user_id):
         target_user = self.get_object(user_id)
         if not target_user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Manager restrictions
+        if request.user.role == 'manager':
+            if not self.can_manager_access_user(request.user, target_user):
+                return Response(
+                    {"error": "You can only delete staff assigned to your hotels."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         if target_user.id == request.user.id:
             return Response({"error": "You cannot delete your own account."}, status=status.HTTP_400_BAD_REQUEST)

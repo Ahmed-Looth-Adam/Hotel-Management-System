@@ -75,6 +75,7 @@ class UserLoginSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user details"""
+    assigned_hotel_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -82,9 +83,23 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name',
             'role', 'phone_number', 'date_of_birth', 'address',
             'city', 'country', 'postal_code', 'is_active',
-            'profile_picture', 'date_joined', 'created_at', 'updated_at'
+            'profile_picture', 'date_joined', 'created_at', 'updated_at',
+            'assigned_hotel', 'assigned_hotel_name'
         ]
-        read_only_fields = ['id', 'date_joined', 'created_at', 'updated_at', 'role']
+        read_only_fields = ['id', 'date_joined', 'created_at', 'updated_at', 'role', 'assigned_hotel_name']
+
+    def get_assigned_hotel_name(self, obj):
+        """Get the name of the assigned hotel (for staff) or managed hotel (for managers)"""
+        # For staff: return assigned hotel
+        if obj.assigned_hotel:
+            return obj.assigned_hotel.name
+        # For managers: return hotel they manage
+        if obj.role == 'manager':
+            from hotels.models import Hotel
+            managed_hotel = Hotel.objects.filter(manager=obj).first()
+            if managed_hotel:
+                return managed_hotel.name
+        return None
 
     def validate_email(self, value):
         """Check if email is already registered by another user"""
@@ -130,7 +145,7 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'role', 'is_active', 'first_name', 'last_name', 'email', 'username',
-            'phone_number', 'profile_picture'
+            'phone_number', 'profile_picture', 'assigned_hotel'
         ]
         extra_kwargs = {
             'role': {'required': False},
@@ -138,11 +153,12 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
             'username': {'required': False},
             'email': {'required': False},
             'phone_number': {'required': False},
-            'profile_picture': {'required': False}
+            'profile_picture': {'required': False},
+            'assigned_hotel': {'required': False}
         }
 
 class AdminUserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for admin to create staff/manager users"""
+    """Serializer for admin/manager to create staff/manager users"""
     password = serializers.CharField(
         write_only=True,
         required=True,
@@ -162,7 +178,7 @@ class AdminUserRegistrationSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'password', 'password2',
             'first_name', 'last_name', 'phone_number',
             'date_of_birth', 'address', 'city', 'country', 'postal_code', 'role',
-            'profile_picture'
+            'profile_picture', 'assigned_hotel'
         ]
         extra_kwargs = {
             'email': {'required': True},
@@ -176,6 +192,7 @@ class AdminUserRegistrationSerializer(serializers.ModelSerializer):
             'postal_code': {'required': False},
             'role': {'required': False},
             'profile_picture': {'required': False},
+            'assigned_hotel': {'required': False},
         }
 
     def validate(self, attrs):
@@ -197,9 +214,10 @@ class AdminUserRegistrationSerializer(serializers.ModelSerializer):
         # Remove password2 as it's not needed for user creation
         validated_data.pop('password2')
         # Create user with the validated data
-        role = validated_data.pop('role', 'guest') 
+        role = validated_data.pop('role', 'guest')
         if not role:
             role = 'guest'
-        user = User.objects.create_user(role = role, **validated_data)
+        assigned_hotel = validated_data.pop('assigned_hotel', None)
+        user = User.objects.create_user(role=role, assigned_hotel=assigned_hotel, **validated_data)
         return user
 
