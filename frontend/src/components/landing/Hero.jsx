@@ -81,6 +81,8 @@ const Hero = () => {
       if (scrolled) {
         setIsExpanded(false);
         setActiveField(null);
+      } else {
+        setIsExpanded(true);
       }
     };
     window.addEventListener('scroll', handleScroll);
