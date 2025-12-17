@@ -33,7 +33,6 @@ import {
 } from '@mui/material';
 import {
   Edit as EditIcon,
-  Refresh as RefreshIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
@@ -57,6 +56,7 @@ import {
 } from '@mui/icons-material';
 import authService from '../../services/authService';
 import UserFormModal from '../../components/admin/UserFormModal';
+import { useNotificationContext } from '../../context/NotificationContext';
 
 const ROLES = ['admin', 'manager', 'staff', 'guest'];
 
@@ -136,6 +136,7 @@ const RoleBadge = ({ role }) => {
 
 const UserManagement = () => {
   const theme = useTheme();
+  const { addNotification } = useNotificationContext();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -230,6 +231,11 @@ const UserManagement = () => {
       result = await authService.createUser(payload);
       if (result.success) {
         setSuccess(`User ${result.data.username} created successfully.`);
+        addNotification(
+          `New user "${result.data.username}" has been created`,
+          'user_created',
+          '/admin/users'
+        );
         fetchUsers();
       }
     } else {
@@ -409,15 +415,6 @@ const UserManagement = () => {
               >
                 Add User
               </Button>
-              <Tooltip title="Refresh">
-                <IconButton
-                  onClick={fetchUsers}
-                  disabled={loading}
-                  sx={{ bgcolor: 'white', boxShadow: 1 }}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
             </Box>
           </Box>
         </Box>

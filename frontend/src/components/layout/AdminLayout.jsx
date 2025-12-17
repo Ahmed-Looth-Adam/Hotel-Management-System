@@ -13,6 +13,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotificationContext } from '../../context/NotificationContext';
 import Sidebar, { DRAWER_WIDTH_EXPANDED, DRAWER_WIDTH_COLLAPSED } from './Sidebar';
 import {
   Box,
@@ -30,6 +31,9 @@ import {
   Badge,
   Tooltip,
   alpha,
+  Button,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -39,16 +43,37 @@ import {
   Search as SearchIcon,
   Notifications as NotificationsIcon,
   KeyboardArrowDown as ArrowDownIcon,
+  PersonAdd as PersonAddIcon,
+  DeleteSweep as ClearAllIcon,
+  Circle as UnreadIcon,
 } from '@mui/icons-material';
+
+// Helper function to format relative time
+const formatRelativeTime = (timestamp) => {
+  const now = new Date();
+  const date = new Date(timestamp);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString();
+};
 
 const AdminLayout = ({ children }) => {
   const { user, logout } = useAuth();
+  const { notifications, unreadCount, markAsRead, clearAll } = useNotificationContext();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorElUser, setAnchorElUser] = useState(null);
+  const [anchorElNotifications, setAnchorElNotifications] = useState(null);
 
   // Sidebar collapse state - persisted in localStorage
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -71,6 +96,22 @@ const AdminLayout = ({ children }) => {
 
   const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
   const handleCloseUserMenu = () => setAnchorElUser(null);
+
+  const handleOpenNotifications = (event) => setAnchorElNotifications(event.currentTarget);
+  const handleCloseNotifications = () => setAnchorElNotifications(null);
+
+  const handleNotificationClick = (notification) => {
+    markAsRead(notification.id);
+    handleCloseNotifications();
+    if (notification.link) {
+      navigate(notification.link);
+    }
+  };
+
+  const handleClearAll = () => {
+    clearAll();
+    handleCloseNotifications();
+  };
 
   const handleLogout = async () => {
     handleCloseUserMenu();
@@ -177,6 +218,7 @@ const AdminLayout = ({ children }) => {
             {/* Notifications */}
             <Tooltip title="Notifications">
               <IconButton
+                onClick={handleOpenNotifications}
                 sx={{
                   color: 'text.secondary',
                   '&:hover': {
@@ -185,7 +227,7 @@ const AdminLayout = ({ children }) => {
                 }}
               >
                 <Badge
-                  badgeContent={3}
+                  badgeContent={unreadCount}
                   color="error"
                   sx={{
                     '& .MuiBadge-badge': {
@@ -199,6 +241,121 @@ const AdminLayout = ({ children }) => {
                 </Badge>
               </IconButton>
             </Tooltip>
+
+            {/* Notifications Dropdown */}
+            <Menu
+              anchorEl={anchorElNotifications}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              keepMounted
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              open={Boolean(anchorElNotifications)}
+              onClose={handleCloseNotifications}
+              PaperProps={{
+                elevation: 0,
+                sx: {
+                  overflow: 'visible',
+                  filter: 'drop-shadow(0px 4px 20px rgba(0,0,0,0.08))',
+                  mt: 1,
+                  borderRadius: 2,
+                  minWidth: 320,
+                  maxWidth: 360,
+                  maxHeight: 400,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  '&::before': {
+                    content: '""',
+                    display: 'block',
+                    position: 'absolute',
+                    top: 0,
+                    right: 20,
+                    width: 10,
+                    height: 10,
+                    bgcolor: 'background.paper',
+                    transform: 'translateY(-50%) rotate(45deg)',
+                    zIndex: 0,
+                    borderLeft: '1px solid',
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                  },
+                },
+              }}
+            >
+              {/* Header */}
+              <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Notifications
+                  {unreadCount > 0 && (
+                    <Typography component="span" variant="caption" sx={{ ml: 1, color: 'primary.main' }}>
+                      ({unreadCount} new)
+                    </Typography>
+                  )}
+                </Typography>
+              </Box>
+
+              {/* Notification List */}
+              <Box sx={{ maxHeight: 280, overflowY: 'auto' }}>
+                {notifications.length === 0 ? (
+                  <Box sx={{ py: 4, textAlign: 'center' }}>
+                    <NotificationsIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      No notifications
+                    </Typography>
+                  </Box>
+                ) : (
+                  notifications.map((notification) => (
+                    <MenuItem
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      sx={{
+                        py: 1.5,
+                        px: 2,
+                        bgcolor: notification.read ? 'transparent' : alpha(theme.palette.primary.main, 0.04),
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        },
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        {notification.type === 'user_created' ? (
+                          <PersonAddIcon sx={{ color: 'primary.main' }} />
+                        ) : (
+                          <NotificationsIcon sx={{ color: 'text.secondary' }} />
+                        )}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={notification.message}
+                        secondary={formatRelativeTime(notification.timestamp)}
+                        primaryTypographyProps={{
+                          variant: 'body2',
+                          fontWeight: notification.read ? 400 : 600,
+                        }}
+                        secondaryTypographyProps={{
+                          variant: 'caption',
+                        }}
+                      />
+                      {!notification.read && (
+                        <UnreadIcon sx={{ fontSize: 8, color: 'primary.main', ml: 1 }} />
+                      )}
+                    </MenuItem>
+                  ))
+                )}
+              </Box>
+
+              {/* Footer */}
+              {notifications.length > 0 && (
+                <Box sx={{ borderTop: '1px solid', borderColor: 'divider', p: 1 }}>
+                  <Button
+                    fullWidth
+                    size="small"
+                    startIcon={<ClearAllIcon />}
+                    onClick={handleClearAll}
+                    sx={{ textTransform: 'none', color: 'text.secondary' }}
+                  >
+                    Clear all notifications
+                  </Button>
+                </Box>
+              )}
+            </Menu>
 
             {/* Divider */}
             <Divider orientation="vertical" flexItem sx={{ mx: 1, my: 1.5 }} />

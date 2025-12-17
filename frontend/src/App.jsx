@@ -15,6 +15,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Layout } from './components/layout';
 import NotificationInitializer from './components/NotificationInitializer';
@@ -71,8 +72,9 @@ function App() {
       autoHideDuration={3000}
     >
       <NotificationInitializer />
-      <AuthProvider>
-        <Router>
+      <NotificationProvider>
+        <AuthProvider>
+          <Router>
           <Layout>
             <Routes>
               {/* Public Routes */}
@@ -323,8 +325,9 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Layout>
-        </Router>
-      </AuthProvider>
+          </Router>
+        </AuthProvider>
+      </NotificationProvider>
     </SnackbarProvider>
   );
 }
