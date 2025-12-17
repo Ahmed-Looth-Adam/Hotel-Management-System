@@ -28,8 +28,11 @@ const Layout = ({ children }) => {
   const authPages = ['/login', '/register', '/auth/password-reset'];
   const isAuthPage = authPages.some(page => currentPath.startsWith(page));
 
+  // Home page - uses its own Airbnb-style header
+  const isHomePage = currentPath === '/';
+
   // Public pages that should use the simple Navbar layout
-  const publicPages = ['/', '/demo', '/notification-demo', '/loading-demo'];
+  const publicPages = ['/demo', '/notification-demo', '/loading-demo'];
   const isPublicPage = publicPages.includes(currentPath);
 
   // Guest portal pages
@@ -49,6 +52,17 @@ const Layout = ({ children }) => {
 
   // Auth pages - minimal layout
   if (isAuthPage) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
+          {children}
+        </Box>
+      </Box>
+    );
+  }
+
+  // Home page - uses its own Airbnb-style header (no separate Navbar)
+  if (isHomePage) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>

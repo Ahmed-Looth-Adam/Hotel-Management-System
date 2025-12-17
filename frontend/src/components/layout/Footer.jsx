@@ -1,13 +1,5 @@
 /**
- * Footer Component - Site-wide footer matching homepage design
- *
- * Features:
- * - Brand information and description
- * - Quick navigation links
- * - Contact information
- * - Copyright notice
- *
- * Created By: Ismail Wasiu Abdul Samad, UWE ID: 24050765
+ * Footer Component - Airbnb-style footer
  */
 
 import { useNavigate } from 'react-router-dom';
@@ -16,104 +8,235 @@ import {
   Box,
   Container,
   Typography,
-  Button,
   Grid,
   Stack,
-  Divider,
-  alpha,
+  Link,
+  IconButton,
 } from '@mui/material';
 import {
-  Hotel as HotelIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  LocationOn as LocationIcon,
+  Facebook,
+  Twitter,
+  Instagram,
+  Language,
+  AttachMoney,
 } from '@mui/icons-material';
+
+const FooterLink = ({ children, onClick }) => (
+  <Typography
+    component="span"
+    onClick={onClick}
+    sx={{
+      fontSize: '14px',
+      color: '#222222',
+      cursor: 'pointer',
+      transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+      '&:hover': {
+        textDecoration: 'underline',
+      },
+    }}
+  >
+    {children}
+  </Typography>
+);
 
 const Footer = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
   return (
-    <Box sx={{ bgcolor: 'primary.main', color: 'white', py: 6, mt: 8 }}>
-      <Container maxWidth="lg">
-        <Grid container spacing={4}>
-          {/* Brand Section */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <HotelIcon sx={{ fontSize: 32, mr: 1 }} />
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                Hotel Management
+    <Box
+      sx={{
+        bgcolor: '#F7F7F7',
+        borderTop: '1px solid #DDDDDD',
+        mt: 6,
+      }}
+    >
+      {/* Main Footer */}
+      <Container maxWidth="xl">
+        <Box sx={{ py: 6 }}>
+          <Grid container spacing={4}>
+            {/* Support */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Typography
+                sx={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#222222',
+                  mb: 2,
+                }}
+              >
+                Support
+              </Typography>
+              <Stack spacing={1.5}>
+                <FooterLink onClick={() => navigate('/help')}>Help Center</FooterLink>
+                <FooterLink onClick={() => navigate('/safety')}>Safety information</FooterLink>
+                <FooterLink onClick={() => navigate('/cancellation')}>Cancellation options</FooterLink>
+                <FooterLink onClick={() => navigate('/contact')}>Contact us</FooterLink>
+              </Stack>
+            </Grid>
+
+            {/* Community */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Typography
+                sx={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#222222',
+                  mb: 2,
+                }}
+              >
+                Community
+              </Typography>
+              <Stack spacing={1.5}>
+                <FooterLink onClick={() => navigate('/about')}>About us</FooterLink>
+                <FooterLink onClick={() => navigate('/careers')}>Careers</FooterLink>
+                <FooterLink onClick={() => navigate('/press')}>Press</FooterLink>
+                <FooterLink onClick={() => navigate('/investors')}>Investors</FooterLink>
+              </Stack>
+            </Grid>
+
+            {/* Hosting */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Typography
+                sx={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#222222',
+                  mb: 2,
+                }}
+              >
+                For Hotels
+              </Typography>
+              <Stack spacing={1.5}>
+                <FooterLink onClick={() => navigate('/partner')}>Partner with us</FooterLink>
+                <FooterLink onClick={() => navigate('/resources')}>Hotel resources</FooterLink>
+                <FooterLink onClick={() => navigate('/forum')}>Community forum</FooterLink>
+                <FooterLink onClick={() => navigate('/hosting')}>Hosting responsibly</FooterLink>
+              </Stack>
+            </Grid>
+
+            {/* Hotels */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Typography
+                sx={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#222222',
+                  mb: 2,
+                }}
+              >
+                Hotels
+              </Typography>
+              <Stack spacing={1.5}>
+                <FooterLink onClick={() => navigate(isAuthenticated ? '/guest/rooms' : '/login')}>
+                  {isAuthenticated ? 'Browse Rooms' : 'Sign in'}
+                </FooterLink>
+                <FooterLink onClick={() => navigate('/guest/rooms')}>All destinations</FooterLink>
+                <FooterLink onClick={() => navigate('/deals')}>Special deals</FooterLink>
+                <FooterLink onClick={() => navigate('/gift-cards')}>Gift cards</FooterLink>
+              </Stack>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Bottom Bar */}
+        <Box
+          sx={{
+            borderTop: '1px solid #DDDDDD',
+            py: 3,
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', md: 'center' },
+            gap: 2,
+          }}
+        >
+          {/* Left side */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: { xs: 1, md: 2 },
+            }}
+          >
+            <Typography sx={{ fontSize: '14px', color: '#222222' }}>
+              © {new Date().getFullYear()} Hotels
+            </Typography>
+            <Typography sx={{ color: '#717171', display: { xs: 'none', md: 'block' } }}>·</Typography>
+            <FooterLink onClick={() => navigate('/privacy')}>Privacy</FooterLink>
+            <Typography sx={{ color: '#717171' }}>·</Typography>
+            <FooterLink onClick={() => navigate('/terms')}>Terms</FooterLink>
+            <Typography sx={{ color: '#717171' }}>·</Typography>
+            <FooterLink onClick={() => navigate('/sitemap')}>Sitemap</FooterLink>
+          </Box>
+
+          {/* Right side */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                cursor: 'pointer',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              <Language sx={{ fontSize: 18, color: '#222222' }} />
+              <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#222222' }}>
+                English (UK)
               </Typography>
             </Box>
-            <Typography variant="body2" sx={{ opacity: 0.9, mb: 2 }}>
-              Experience world-class hospitality with our premium hotel services. Your comfort is our priority.
-            </Typography>
-          </Grid>
-
-          {/* Quick Links Section */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-              Quick Links
-            </Typography>
-            <Stack spacing={1}>
-              <Button
-                color="inherit"
-                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                onClick={() => navigate('/')}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                cursor: 'pointer',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#222222' }}>
+                £ GBP
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <IconButton
+                size="small"
+                sx={{
+                  color: '#222222',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+                }}
               >
-                Home
-              </Button>
-              <Button
-                color="inherit"
-                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                onClick={() => navigate(isAuthenticated ? '/bookings' : '/register')}
+                <Facebook sx={{ fontSize: 20 }} />
+              </IconButton>
+              <IconButton
+                size="small"
+                sx={{
+                  color: '#222222',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+                }}
               >
-                Book a Room
-              </Button>
-              <Button
-                color="inherit"
-                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
+                <Twitter sx={{ fontSize: 20 }} />
+              </IconButton>
+              <IconButton
+                size="small"
+                sx={{
+                  color: '#222222',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+                }}
               >
-                {isAuthenticated ? 'Dashboard' : 'Sign In'}
-              </Button>
-              <Button
-                color="inherit"
-                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                onClick={() => navigate('/demo')}
-              >
-                View Components
-              </Button>
-            </Stack>
-          </Grid>
-
-          {/* Contact Section */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-              Contact Us
-            </Typography>
-            <Stack spacing={1.5}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <PhoneIcon sx={{ fontSize: 20 }} />
-                <Typography variant="body2">+44 (0) 20 1234 5678</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <EmailIcon sx={{ fontSize: 20 }} />
-                <Typography variant="body2">info@hotelmanagement.com</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LocationIcon sx={{ fontSize: 20 }} />
-                <Typography variant="body2">123 Luxury Street, London, UK</Typography>
-              </Box>
-            </Stack>
-          </Grid>
-        </Grid>
-
-        {/* Copyright */}
-        <Divider sx={{ my: 3, borderColor: alpha('#ffffff', 0.2) }} />
-        <Typography variant="body2" sx={{ textAlign: 'center', opacity: 0.8 }}>
-          © {new Date().getFullYear()} Hotel Management System. All rights reserved.
-        </Typography>
+                <Instagram sx={{ fontSize: 20 }} />
+              </IconButton>
+            </Box>
+          </Box>
+        </Box>
       </Container>
     </Box>
   );

@@ -1,31 +1,38 @@
 /**
- * Home Page - Landing page with modern hotel booking aesthetic
+ * Home Page - Airbnb-style landing page
  *
  * Features:
- * - Hero with functional search
- * - Featured Hotels from API
- * - Room Types with pricing
- * - Why Choose Us section
- * - Clean, modern design
- *
- * Refactored By: Agent
+ * - Sticky search header with Airbnb-style animations
+ * - Category tabs for filtering
+ * - Hotel grid with card carousel
+ * - Smooth animations throughout
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Box } from '@mui/material';
 import Hero from '../components/landing/Hero';
+import CategoryTabs from '../components/landing/CategoryTabs';
 import FeaturedListings from '../components/landing/FeaturedListings';
-import RoomTypesSection from '../components/landing/RoomTypesSection';
-import WhyChooseUs from '../components/landing/WhyChooseUs';
 import { Footer } from '../components/layout';
 
 function Home() {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#FFFFFF' }}>
+      {/* Sticky Header with Search */}
       <Hero />
+
+      {/* Category Tabs */}
+      <CategoryTabs
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+      />
+
+      {/* Hotel Listings */}
       <FeaturedListings />
-      <RoomTypesSection />
-      <WhyChooseUs />
+
+      {/* Footer */}
       <Footer />
     </Box>
   );

@@ -36,7 +36,7 @@ from .services import PricingCalculator, BookingService, LateCheckoutService
 class HotelViewSet(viewsets.ModelViewSet):
     """ViewSet for Hotel CRUD operations"""
     queryset = Hotel.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -66,7 +66,7 @@ class HotelViewSet(viewsets.ModelViewSet):
 class RoomViewSet(viewsets.ModelViewSet):
     """ViewSet for Room CRUD operations"""
     queryset = Room.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -105,7 +105,7 @@ class RoomViewViewSet(viewsets.ModelViewSet):
     """ViewSet for Room View types"""
     queryset = RoomView.objects.all()
     serializer_class = RoomViewSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = RoomView.objects.all()
@@ -119,7 +119,7 @@ class RoomTypeViewSet(viewsets.ModelViewSet):
     """ViewSet for Room Types"""
     queryset = RoomType.objects.all()
     serializer_class = RoomTypeSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
 
 # ============== Amenity ViewSets ==============
@@ -128,7 +128,7 @@ class AmenityCategoryViewSet(viewsets.ModelViewSet):
     """ViewSet for Amenity Categories"""
     queryset = AmenityCategory.objects.all()
     serializer_class = AmenityCategorySerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = AmenityCategory.objects.all()
@@ -142,7 +142,7 @@ class AmenityViewSet(viewsets.ModelViewSet):
     """ViewSet for Amenities"""
     queryset = Amenity.objects.all()
     serializer_class = AmenitySerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = Amenity.objects.select_related('category')
@@ -159,7 +159,7 @@ class RoomAmenityViewSet(viewsets.ModelViewSet):
     """ViewSet for Room-Amenity assignments"""
     queryset = RoomAmenity.objects.all()
     serializer_class = RoomAmenitySerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = RoomAmenity.objects.select_related('room', 'amenity')
@@ -175,7 +175,7 @@ class RoomTypePricingViewSet(viewsets.ModelViewSet):
     """ViewSet for Room Type Pricing"""
     queryset = RoomTypePricing.objects.all()
     serializer_class = RoomTypePricingSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = RoomTypePricing.objects.all()
@@ -189,7 +189,7 @@ class ViewPricingViewSet(viewsets.ModelViewSet):
     """ViewSet for View Pricing"""
     queryset = ViewPricing.objects.all()
     serializer_class = ViewPricingSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = ViewPricing.objects.select_related('view')
@@ -203,7 +203,7 @@ class SeasonalPricingViewSet(viewsets.ModelViewSet):
     """ViewSet for Seasonal Pricing"""
     queryset = SeasonalPricing.objects.all()
     serializer_class = SeasonalPricingSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = SeasonalPricing.objects.all()
@@ -217,7 +217,7 @@ class DayTypePricingViewSet(viewsets.ModelViewSet):
     """ViewSet for Day Type Pricing"""
     queryset = DayTypePricing.objects.all()
     serializer_class = DayTypePricingSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = DayTypePricing.objects.all()
@@ -231,7 +231,7 @@ class PromotionalDiscountViewSet(viewsets.ModelViewSet):
     """ViewSet for Promotional Discounts"""
     queryset = PromotionalDiscount.objects.all()
     serializer_class = PromotionalDiscountSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = PromotionalDiscount.objects.all()
@@ -248,7 +248,7 @@ class RoomRateViewSet(viewsets.ModelViewSet):
     """ViewSet for Room Rates (legacy)"""
     queryset = RoomRate.objects.all()
     serializer_class = RoomRateSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
 
 # ============== Policy ViewSets ==============
@@ -257,7 +257,7 @@ class HotelPolicyViewSet(viewsets.ModelViewSet):
     """ViewSet for Hotel Policies"""
     queryset = HotelPolicy.objects.all()
     serializer_class = HotelPolicySerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = HotelPolicy.objects.all()
@@ -276,7 +276,7 @@ class GalleryViewSet(viewsets.ModelViewSet):
     """ViewSet for Galleries"""
     queryset = Gallery.objects.all()
     serializer_class = GallerySerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = Gallery.objects.prefetch_related('images', 'rooms')
@@ -351,7 +351,7 @@ class GalleryImageViewSet(viewsets.ModelViewSet):
     """ViewSet for Gallery Images"""
     queryset = GalleryImage.objects.all()
     serializer_class = GalleryImageSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = GalleryImage.objects.select_related('gallery')
@@ -444,7 +444,7 @@ class LateCheckoutRequestViewSet(viewsets.ModelViewSet):
 
 class PricingCalculationView(APIView):
     """API view for calculating room prices"""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = PricingCalculationRequestSerializer(data=request.data)
@@ -467,7 +467,7 @@ class PricingCalculationView(APIView):
 
 class RoomAvailabilityView(APIView):
     """API view for checking room availability"""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = RoomAvailabilityRequestSerializer(data=request.data)
@@ -542,7 +542,7 @@ class AncillaryServiceViewSet(viewsets.ModelViewSet):
     """ViewSet for Ancillary Services (Airport Transfer, Breakfast, Spa, Late Checkout, etc.)"""
     queryset = AncillaryService.objects.all()
     serializer_class = AncillaryServiceSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
     def get_queryset(self):
         queryset = AncillaryService.objects.select_related('hotel')

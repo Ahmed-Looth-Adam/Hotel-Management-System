@@ -61,6 +61,10 @@ import {
   Visibility as ViewIcon,
   Layers as FloorIcon,
   Category as CategoryIcon,
+  Spa as AmenitiesIcon,
+  FolderOpen as FolderIcon,
+  ExpandMore as ExpandMoreIcon,
+  ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import hotelService from '../../services/hotelService';
 import { useNotification } from '../../hooks/useNotification';
@@ -86,6 +90,7 @@ const tabs = [
   { label: 'Rooms', icon: <RoomIcon /> },
   { label: 'Gallery', icon: <GalleryIcon /> },
   { label: 'Pricing', icon: <PricingIcon /> },
+  { label: 'Amenities', icon: <AmenitiesIcon /> },
   { label: 'Services', icon: <ServicesIcon /> },
   { label: 'Policies', icon: <PolicyIcon /> },
 ];
@@ -274,9 +279,12 @@ const HotelManagePage = () => {
           <PricingTab hotel={hotel} onRefresh={fetchHotel} />
         </TabPanel>
         <TabPanel value={activeTab} index={4}>
-          <ServicesTab hotel={hotel} onRefresh={fetchHotel} />
+          <AmenitiesTab hotel={hotel} onRefresh={fetchHotel} />
         </TabPanel>
         <TabPanel value={activeTab} index={5}>
+          <ServicesTab hotel={hotel} onRefresh={fetchHotel} />
+        </TabPanel>
+        <TabPanel value={activeTab} index={6}>
           <PoliciesTab hotel={hotel} onRefresh={fetchHotel} />
         </TabPanel>
       </Container>
@@ -2519,6 +2527,524 @@ const PricingTab = ({ hotel }) => {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+};
+
+// ============== Amenities Tab ==============
+const AmenitiesTab = ({ hotel }) => {
+  const [categories, setCategories] = useState([]);
+  const [amenities, setAmenities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editingAmenity, setEditingAmenity] = useState(null);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [amenityDialogOpen, setAmenityDialogOpen] = useState(false);
+  const { showSuccess, showError } = useNotification();
+
+  useEffect(() => {
+    if (hotel?.id) {
+      fetchData();
+    }
+  }, [hotel?.id]);
+
+  const fetchData = async () => {
+    if (!hotel?.id) return;
+    setLoading(true);
+    const [catResult, amenResult] = await Promise.all([
+      hotelService.getAmenityCategories(hotel.id),
+      hotelService.getAmenities(hotel.id),
+    ]);
+    if (catResult.success) {
+      const data = Array.isArray(catResult.data) ? catResult.data : (catResult.data?.results || []);
+      setCategories(data);
+      // Auto-expand all categories initially
+      const expanded = {};
+      data.forEach(cat => { expanded[cat.id] = true; });
+      setExpandedCategories(expanded);
+    }
+    if (amenResult.success) {
+      const data = Array.isArray(amenResult.data) ? amenResult.data : (amenResult.data?.results || []);
+      setAmenities(data);
+    }
+    setLoading(false);
+  };
+
+  const toggleCategory = (categoryId) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId],
+    }));
+  };
+
+  const getAmenitiesByCategory = (categoryId) => {
+    return amenities.filter(a => a.category === categoryId);
+  };
+
+  // Category CRUD
+  const handleSaveCategory = async () => {
+    const isNew = !editingCategory.id;
+    const data = {
+      hotel: hotel.id,
+      name: editingCategory.name,
+      description: editingCategory.description || '',
+      sort_order: editingCategory.sort_order || 0,
+      is_active: editingCategory.is_active ?? true,
+    };
+
+    const result = isNew
+      ? await hotelService.createAmenityCategory(data)
+      : await hotelService.updateAmenityCategory(editingCategory.id, data);
+
+    if (result.success) {
+      showSuccess(isNew ? 'Category created' : 'Category updated');
+      fetchData();
+      setCategoryDialogOpen(false);
+    } else {
+      showError(result.error?.detail || result.error?.name?.[0] || 'Failed to save category');
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    const categoryAmenities = getAmenitiesByCategory(id);
+    if (categoryAmenities.length > 0) {
+      showError('Cannot delete category with amenities. Remove amenities first.');
+      return;
+    }
+    if (!confirm('Delete this category?')) return;
+    const result = await hotelService.deleteAmenityCategory(id);
+    if (result.success) {
+      showSuccess('Category deleted');
+      fetchData();
+    } else {
+      showError('Failed to delete category');
+    }
+  };
+
+  // Amenity CRUD
+  const handleSaveAmenity = async () => {
+    const isNew = !editingAmenity.id;
+    const data = {
+      hotel: hotel.id,
+      category: editingAmenity.category,
+      name: editingAmenity.name,
+      description: editingAmenity.description || '',
+      icon: editingAmenity.icon || '',
+      sort_order: editingAmenity.sort_order || 0,
+      is_active: editingAmenity.is_active ?? true,
+    };
+
+    const result = isNew
+      ? await hotelService.createAmenity(data)
+      : await hotelService.updateAmenity(editingAmenity.id, data);
+
+    if (result.success) {
+      showSuccess(isNew ? 'Amenity created' : 'Amenity updated');
+      fetchData();
+      setAmenityDialogOpen(false);
+    } else {
+      showError(result.error?.detail || result.error?.name?.[0] || 'Failed to save amenity');
+    }
+  };
+
+  const handleDeleteAmenity = async (id) => {
+    if (!confirm('Delete this amenity?')) return;
+    const result = await hotelService.deleteAmenity(id);
+    if (result.success) {
+      showSuccess('Amenity deleted');
+      fetchData();
+    } else {
+      showError('Failed to delete amenity');
+    }
+  };
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        borderRadius: 3,
+        border: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={600}>
+            Amenities Management
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Manage amenity categories and individual amenities for your hotel.
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => {
+            setEditingCategory({
+              name: '',
+              description: '',
+              sort_order: categories.length,
+              is_active: true,
+            });
+            setCategoryDialogOpen(true);
+          }}
+          size="small"
+        >
+          Add Category
+        </Button>
+      </Box>
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : categories.length === 0 ? (
+        <Box sx={{ p: 4, bgcolor: 'grey.50', borderRadius: 2, textAlign: 'center' }}>
+          <AmenitiesIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
+          <Typography color="text.secondary">No amenity categories yet.</Typography>
+          <Typography variant="caption" color="text.secondary">
+            Create categories like "Bathroom", "Electronics", "Comfort" to organize your amenities.
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {categories.map((category) => (
+            <Paper
+              key={category.id}
+              elevation={0}
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Category Header */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 2,
+                  bgcolor: expandedCategories[category.id] ? 'primary.50' : 'grey.50',
+                  borderBottom: expandedCategories[category.id] ? '1px solid' : 'none',
+                  borderColor: 'divider',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: expandedCategories[category.id] ? 'primary.100' : 'grey.100' },
+                }}
+                onClick={() => toggleCategory(category.id)}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  {expandedCategories[category.id] ? (
+                    <ExpandMoreIcon sx={{ color: 'primary.main' }} />
+                  ) : (
+                    <ChevronRightIcon sx={{ color: 'text.secondary' }} />
+                  )}
+                  <FolderIcon sx={{ color: expandedCategories[category.id] ? 'primary.main' : 'text.secondary' }} />
+                  <Box>
+                    <Typography fontWeight={600}>{category.name}</Typography>
+                    {category.description && (
+                      <Typography variant="caption" color="text.secondary">
+                        {category.description}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Chip
+                    label={`${getAmenitiesByCategory(category.id).length} amenities`}
+                    size="small"
+                    sx={{ ml: 1 }}
+                  />
+                  {!category.is_active && (
+                    <Chip label="Inactive" size="small" color="default" />
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', gap: 0.5 }} onClick={(e) => e.stopPropagation()}>
+                  <Tooltip title="Add Amenity">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => {
+                        setEditingAmenity({
+                          category: category.id,
+                          name: '',
+                          description: '',
+                          icon: '',
+                          sort_order: getAmenitiesByCategory(category.id).length,
+                          is_active: true,
+                        });
+                        setAmenityDialogOpen(true);
+                      }}
+                    >
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Edit Category">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setEditingCategory(category);
+                        setCategoryDialogOpen(true);
+                      }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete Category">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteCategory(category.id)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              {/* Amenities List */}
+              {expandedCategories[category.id] && (
+                <Box sx={{ p: 2 }}>
+                  {getAmenitiesByCategory(category.id).length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                      No amenities in this category yet.
+                    </Typography>
+                  ) : (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {getAmenitiesByCategory(category.id).map((amenity) => (
+                        <Chip
+                          key={amenity.id}
+                          label={amenity.name}
+                          variant={amenity.is_active ? 'filled' : 'outlined'}
+                          color={amenity.is_active ? 'primary' : 'default'}
+                          onDelete={() => handleDeleteAmenity(amenity.id)}
+                          onClick={() => {
+                            setEditingAmenity(amenity);
+                            setAmenityDialogOpen(true);
+                          }}
+                          sx={{
+                            cursor: 'pointer',
+                            '&:hover': { bgcolor: amenity.is_active ? 'primary.dark' : 'grey.200' },
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Paper>
+          ))}
+        </Box>
+      )}
+
+      {/* Category Dialog */}
+      <Dialog
+        open={categoryDialogOpen}
+        onClose={() => setCategoryDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(180deg, #1a1f37 0%, #0f1225 100%)',
+            color: '#ffffff',
+            px: 3,
+            py: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', width: 36, height: 36 }}>
+              {editingCategory?.id ? <EditIcon fontSize="small" /> : <FolderIcon fontSize="small" />}
+            </Avatar>
+            <Typography variant="subtitle1" fontWeight={600}>
+              {editingCategory?.id ? 'Edit Category' : 'Add Category'}
+            </Typography>
+          </Box>
+          <IconButton onClick={() => setCategoryDialogOpen(false)} sx={{ color: '#ffffff' }} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ px: 3, py: 2 }}>
+          <TextField
+            label="Category Name"
+            value={editingCategory?.name || ''}
+            onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+            placeholder="e.g., Bathroom, Electronics, Comfort"
+          />
+          <TextField
+            label="Description"
+            value={editingCategory?.description || ''}
+            onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })}
+            fullWidth
+            size="small"
+            multiline
+            rows={2}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="Sort Order"
+            type="number"
+            value={editingCategory?.sort_order || 0}
+            onChange={(e) => setEditingCategory({ ...editingCategory, sort_order: parseInt(e.target.value) || 0 })}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={editingCategory?.is_active ?? true}
+                onChange={(e) => setEditingCategory({ ...editingCategory, is_active: e.target.checked })}
+                color="success"
+              />
+            }
+            label="Active"
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 1.5, bgcolor: 'grey.50', borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button onClick={() => setCategoryDialogOpen(false)} color="inherit" sx={{ borderRadius: 2, textTransform: 'none' }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveCategory}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              bgcolor: '#000000',
+              '&:hover': { bgcolor: '#1a1a1a' },
+            }}
+          >
+            {editingCategory?.id ? 'Save Changes' : 'Create Category'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Amenity Dialog */}
+      <Dialog
+        open={amenityDialogOpen}
+        onClose={() => setAmenityDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(180deg, #1a1f37 0%, #0f1225 100%)',
+            color: '#ffffff',
+            px: 3,
+            py: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', width: 36, height: 36 }}>
+              {editingAmenity?.id ? <EditIcon fontSize="small" /> : <AmenitiesIcon fontSize="small" />}
+            </Avatar>
+            <Typography variant="subtitle1" fontWeight={600}>
+              {editingAmenity?.id ? 'Edit Amenity' : 'Add Amenity'}
+            </Typography>
+          </Box>
+          <IconButton onClick={() => setAmenityDialogOpen(false)} sx={{ color: '#ffffff' }} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ px: 3, py: 2 }}>
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={editingAmenity?.category || ''}
+              onChange={(e) => setEditingAmenity({ ...editingAmenity, category: e.target.value })}
+              label="Category"
+            >
+              {categories.map((cat) => (
+                <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            label="Amenity Name"
+            value={editingAmenity?.name || ''}
+            onChange={(e) => setEditingAmenity({ ...editingAmenity, name: e.target.value })}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+            placeholder="e.g., Free WiFi, Air Conditioning, Minibar"
+          />
+          <TextField
+            label="Description"
+            value={editingAmenity?.description || ''}
+            onChange={(e) => setEditingAmenity({ ...editingAmenity, description: e.target.value })}
+            fullWidth
+            size="small"
+            multiline
+            rows={2}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="Icon (optional)"
+            value={editingAmenity?.icon || ''}
+            onChange={(e) => setEditingAmenity({ ...editingAmenity, icon: e.target.value })}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+            placeholder="e.g., wifi, ac_unit, local_bar"
+            helperText="Material icon name (optional)"
+          />
+          <TextField
+            label="Sort Order"
+            type="number"
+            value={editingAmenity?.sort_order || 0}
+            onChange={(e) => setEditingAmenity({ ...editingAmenity, sort_order: parseInt(e.target.value) || 0 })}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={editingAmenity?.is_active ?? true}
+                onChange={(e) => setEditingAmenity({ ...editingAmenity, is_active: e.target.checked })}
+                color="success"
+              />
+            }
+            label="Active"
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 1.5, bgcolor: 'grey.50', borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button onClick={() => setAmenityDialogOpen(false)} color="inherit" sx={{ borderRadius: 2, textTransform: 'none' }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveAmenity}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              bgcolor: '#000000',
+              '&:hover': { bgcolor: '#1a1a1a' },
+            }}
+          >
+            {editingAmenity?.id ? 'Save Changes' : 'Create Amenity'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Paper>
   );
 };
 

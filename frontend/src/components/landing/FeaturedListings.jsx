@@ -4,189 +4,303 @@ import {
   Box,
   Container,
   Typography,
-  Card,
-  CardMedia,
-  CardContent,
-  useTheme,
-  useMediaQuery,
   Skeleton,
-  Button,
-  Chip,
-  alpha,
+  IconButton,
 } from '@mui/material';
 import {
-  LocationOn,
-  MeetingRoom,
-  ArrowForward,
-  Hotel as HotelIcon,
+  FavoriteBorder,
+  Favorite,
   Star as StarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Hotel as HotelIcon,
 } from '@mui/icons-material';
 import hotelService from '../../services/hotelService';
 
-const HotelCard = ({ hotel, isMobile, onClick }) => {
-  // Get first gallery image or use placeholder
-  const getHotelImage = () => {
+// Airbnb-style animation timing
+const springTransition = 'all 0.3s cubic-bezier(0.2, 0, 0, 1)';
+const fastSpring = 'all 0.2s cubic-bezier(0.2, 0, 0, 1)';
+
+const HotelCard = ({ hotel, onClick }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  // Get all gallery images
+  const getImages = () => {
     if (hotel.galleries && hotel.galleries.length > 0) {
       const gallery = hotel.galleries[0];
       if (gallery.images && gallery.images.length > 0) {
-        return `http://localhost:8000${gallery.images[0].image}`;
+        return gallery.images.map(img => `http://localhost:8000${img.image}`);
       }
     }
-    return null;
+    return [];
   };
 
-  const imageUrl = getHotelImage();
+  const images = getImages();
+  const hasMultipleImages = images.length > 1;
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation();
+    setIsFavorite(!isFavorite);
+  };
 
   return (
-    <Card
+    <Box
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        border: 'none',
-        boxShadow: 'none',
-        bgcolor: 'transparent',
         cursor: 'pointer',
-        position: 'relative',
-        minWidth: isMobile ? '300px' : 'auto',
-        maxWidth: isMobile ? '300px' : '100%',
-        mx: isMobile ? 1 : 0,
-        scrollSnapAlign: 'start',
-        flexShrink: 0,
-        transition: 'transform 0.2s ease',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-        },
+        width: '100%',
       }}
     >
       {/* Image Container */}
       <Box
         sx={{
           position: 'relative',
-          borderRadius: 4,
+          borderRadius: '12px',
           overflow: 'hidden',
-          mb: 2,
-          aspectRatio: '4/3',
-          bgcolor: '#f0f0f0',
+          aspectRatio: '20/19',
+          bgcolor: '#F7F7F7',
+          mb: 1.5,
         }}
       >
-        {imageUrl ? (
-          <CardMedia
+        {images.length > 0 ? (
+          <Box
             component="img"
-            image={imageUrl}
+            src={images[currentImageIndex]}
             alt={hotel.name}
             sx={{
-              height: '100%',
               width: '100%',
+              height: '100%',
               objectFit: 'cover',
-              transition: 'transform 0.5s ease',
-              '&:hover': {
-                transform: 'scale(1.05)',
-              },
+              transition: 'transform 0.5s cubic-bezier(0.2, 0, 0, 1)',
+              transform: isHovered ? 'scale(1.02)' : 'scale(1)',
             }}
           />
         ) : (
           <Box
             sx={{
-              height: '100%',
               width: '100%',
+              height: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              bgcolor: alpha('#1a1f37', 0.05),
+              bgcolor: '#EBEBEB',
             }}
           >
-            <HotelIcon sx={{ fontSize: 64, color: alpha('#1a1f37', 0.2) }} />
+            <HotelIcon sx={{ fontSize: 48, color: '#DDDDDD' }} />
           </Box>
         )}
-        {hotel.is_active && (
-          <Chip
-            label="Available"
-            size="small"
+
+        {/* Favorite Button */}
+        <IconButton
+          onClick={handleFavoriteClick}
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            color: isFavorite ? '#FF385C' : '#FFFFFF',
+            transition: fastSpring,
+            '&:hover': {
+              transform: 'scale(1.1)',
+            },
+            '&:active': {
+              transform: 'scale(0.9)',
+            },
+          }}
+        >
+          {isFavorite ? (
+            <Favorite sx={{ fontSize: 24, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+          ) : (
+            <FavoriteBorder
+              sx={{
+                fontSize: 24,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                stroke: 'rgba(0,0,0,0.5)',
+                strokeWidth: 2,
+              }}
+            />
+          )}
+        </IconButton>
+
+        {/* Navigation Arrows */}
+        {hasMultipleImages && isHovered && (
+          <>
+            <IconButton
+              onClick={handlePrevImage}
+              sx={{
+                position: 'absolute',
+                left: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                bgcolor: 'rgba(255,255,255,0.9)',
+                width: 28,
+                height: 28,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                transition: fastSpring,
+                opacity: 0,
+                animation: 'fadeIn 0.2s forwards',
+                '@keyframes fadeIn': {
+                  from: { opacity: 0 },
+                  to: { opacity: 1 },
+                },
+                '&:hover': {
+                  bgcolor: '#FFFFFF',
+                  transform: 'translateY(-50%) scale(1.04)',
+                },
+              }}
+            >
+              <ChevronLeft sx={{ fontSize: 16, color: '#222222' }} />
+            </IconButton>
+            <IconButton
+              onClick={handleNextImage}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                bgcolor: 'rgba(255,255,255,0.9)',
+                width: 28,
+                height: 28,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                transition: fastSpring,
+                opacity: 0,
+                animation: 'fadeIn 0.2s forwards',
+                '&:hover': {
+                  bgcolor: '#FFFFFF',
+                  transform: 'translateY(-50%) scale(1.04)',
+                },
+              }}
+            >
+              <ChevronRight sx={{ fontSize: 16, color: '#222222' }} />
+            </IconButton>
+          </>
+        )}
+
+        {/* Dots Indicator */}
+        {hasMultipleImages && (
+          <Box
             sx={{
               position: 'absolute',
-              top: 12,
-              left: 12,
-              bgcolor: 'success.main',
-              color: 'white',
-              fontWeight: 600,
-              fontSize: '0.7rem',
+              bottom: 12,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: 0.5,
             }}
-          />
+          >
+            {images.slice(0, 5).map((_, index) => (
+              <Box
+                key={index}
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  bgcolor: index === currentImageIndex ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
+                  transition: fastSpring,
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                }}
+              />
+            ))}
+          </Box>
         )}
       </Box>
 
-      <CardContent sx={{ p: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+      {/* Content */}
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.25 }}>
           <Typography
-            variant="h6"
-            fontWeight="700"
-            sx={{ fontSize: '1.1rem', lineHeight: 1.3 }}
+            sx={{
+              fontWeight: 600,
+              fontSize: '15px',
+              color: '#222222',
+              lineHeight: 1.3,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              mr: 1,
+            }}
           >
-            {hotel.name}
+            {hotel.city}, {hotel.country}
           </Typography>
           {hotel.star_rating && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-              <StarIcon sx={{ fontSize: 16, color: '#FFB400' }} />
-              <Typography variant="body2" fontWeight={600}>
-                {hotel.star_rating}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <StarIcon sx={{ fontSize: 14, color: '#222222' }} />
+              <Typography sx={{ fontSize: '14px', color: '#222222', fontWeight: 500 }}>
+                {hotel.star_rating}.0
               </Typography>
             </Box>
           )}
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-          <LocationOn sx={{ fontSize: 16, color: 'text.secondary' }} />
-          <Typography variant="body2" color="text.secondary">
-            {hotel.city}, {hotel.country}
+        <Typography
+          sx={{
+            fontSize: '14px',
+            color: '#717171',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            mb: 0.25,
+          }}
+        >
+          {hotel.name}
+        </Typography>
+
+        <Typography
+          sx={{
+            fontSize: '14px',
+            color: '#717171',
+            mb: 0.5,
+          }}
+        >
+          {hotel.total_rooms || 0} rooms available
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '15px', color: '#222222' }}>
+            £120
+          </Typography>
+          <Typography sx={{ fontSize: '15px', color: '#222222' }}>
+            night
           </Typography>
         </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <MeetingRoom sx={{ fontSize: 16, color: 'text.secondary' }} />
-            <Typography variant="body2" color="text.secondary">
-              {hotel.total_rooms || 0} rooms
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-              From
-            </Typography>
-            <Typography variant="subtitle1" fontWeight={700} color="primary">
-              £120<Typography component="span" variant="caption" color="text.secondary">/night</Typography>
-            </Typography>
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 
-const LoadingSkeleton = ({ isMobile }) => (
-  <Box
-    sx={{
-      minWidth: isMobile ? '300px' : 'auto',
-      maxWidth: isMobile ? '300px' : '100%',
-      mx: isMobile ? 1 : 0,
-    }}
-  >
+const LoadingSkeleton = () => (
+  <Box sx={{ width: '100%' }}>
     <Skeleton
       variant="rounded"
-      sx={{ borderRadius: 4, aspectRatio: '4/3', mb: 2 }}
+      sx={{
+        borderRadius: '12px',
+        aspectRatio: '20/19',
+        mb: 1.5,
+      }}
     />
-    <Skeleton variant="text" width="80%" height={28} />
-    <Skeleton variant="text" width="60%" height={20} />
-    <Skeleton variant="text" width="40%" height={20} />
+    <Skeleton variant="text" width="70%" height={20} />
+    <Skeleton variant="text" width="50%" height={18} />
+    <Skeleton variant="text" width="40%" height={18} />
+    <Skeleton variant="text" width="30%" height={20} />
   </Box>
 );
 
 const FeaturedListings = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -201,63 +315,48 @@ const FeaturedListings = () => {
       const data = Array.isArray(result.data)
         ? result.data
         : result.data?.results || [];
-      setHotels(data.slice(0, 8)); // Show max 8 hotels
+      setHotels(data.slice(0, 12));
     }
     setLoading(false);
   };
 
   const handleHotelClick = (hotel) => {
-    // Navigate to browse rooms with hotel filter
     navigate(`/guest/rooms?hotel=${hotel.id}`);
   };
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 } }}>
-        <Box sx={{ mb: 4 }}>
-          <Skeleton variant="text" width={300} height={40} />
-          <Skeleton variant="text" width={200} height={24} />
+      <Container maxWidth="xl" sx={{ py: 3 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: 'repeat(1, 1fr)',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(4, 1fr)',
+              xl: 'repeat(5, 1fr)',
+            },
+            gap: { xs: 3, md: 3 },
+          }}
+        >
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <LoadingSkeleton key={i} />
+          ))}
         </Box>
-        {isMobile ? (
-          <Box
-            sx={{
-              display: 'flex',
-              overflowX: 'auto',
-              gap: 2,
-              pb: 2,
-              '&::-webkit-scrollbar': { display: 'none' },
-            }}
-          >
-            {[1, 2, 3, 4].map((i) => (
-              <LoadingSkeleton key={i} isMobile={true} />
-            ))}
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 4,
-            }}
-          >
-            {[1, 2, 3, 4].map((i) => (
-              <LoadingSkeleton key={i} isMobile={false} />
-            ))}
-          </Box>
-        )}
       </Container>
     );
   }
 
   if (hotels.length === 0) {
     return (
-      <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 } }}>
+      <Container maxWidth="xl" sx={{ py: 6 }}>
         <Box sx={{ textAlign: 'center', py: 8 }}>
-          <HotelIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
-          <Typography variant="h5" fontWeight={600} gutterBottom>
+          <HotelIcon sx={{ fontSize: 64, color: '#DDDDDD', mb: 2 }} />
+          <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#222222', mb: 1 }}>
             No hotels available yet
           </Typography>
-          <Typography color="text.secondary">
+          <Typography sx={{ fontSize: '14px', color: '#717171' }}>
             Check back soon for our featured properties.
           </Typography>
         </Box>
@@ -266,106 +365,44 @@ const FeaturedListings = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 } }}>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'end',
-          mb: 4,
-          px: { xs: 1, md: 0 },
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'repeat(1, 1fr)',
+            sm: 'repeat(2, 1fr)',
+            md: 'repeat(3, 1fr)',
+            lg: 'repeat(4, 1fr)',
+            xl: 'repeat(5, 1fr)',
+          },
+          gap: { xs: 3, md: 3 },
         }}
       >
-        <Box>
-          <Typography
-            variant="h4"
-            fontWeight="800"
-            sx={{ mb: 1, letterSpacing: '-0.02em' }}
+        {hotels.map((hotel, index) => (
+          <Box
+            key={hotel.id}
+            sx={{
+              opacity: 0,
+              animation: `fadeInUp 0.4s ease-out ${index * 0.05}s forwards`,
+              '@keyframes fadeInUp': {
+                from: {
+                  opacity: 0,
+                  transform: 'translateY(20px)',
+                },
+                to: {
+                  opacity: 1,
+                  transform: 'translateY(0)',
+                },
+              },
+            }}
           >
-            Our Hotels
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ maxWidth: '400px' }}
-          >
-            Discover our curated selection of premium hotels worldwide.
-          </Typography>
-        </Box>
-        <Button
-          endIcon={<ArrowForward />}
-          onClick={() => navigate('/guest/rooms')}
-          sx={{
-            display: { xs: 'none', md: 'flex' },
-            textTransform: 'none',
-            fontWeight: 600,
-          }}
-        >
-          View all rooms
-        </Button>
-      </Box>
-
-      {isMobile ? (
-        /* Mobile: Horizontal Scroll */
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'row',
-            overflowX: 'auto',
-            gap: 2,
-            pb: 2,
-            mx: -2,
-            px: 2,
-            scrollSnapType: 'x mandatory',
-            '&::-webkit-scrollbar': { display: 'none' },
-            scrollbarWidth: 'none',
-            flexWrap: 'nowrap',
-            WebkitOverflowScrolling: 'touch',
-          }}
-        >
-          {hotels.map((hotel) => (
             <HotelCard
-              key={hotel.id}
               hotel={hotel}
-              isMobile={true}
               onClick={() => handleHotelClick(hotel)}
             />
-          ))}
-        </Box>
-      ) : (
-        /* Desktop: CSS Grid */
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(4, 1fr)',
-            },
-            gap: 4,
-          }}
-        >
-          {hotels.map((hotel) => (
-            <HotelCard
-              key={hotel.id}
-              hotel={hotel}
-              isMobile={false}
-              onClick={() => handleHotelClick(hotel)}
-            />
-          ))}
-        </Box>
-      )}
-
-      {/* Mobile: View All Button */}
-      <Box sx={{ display: { xs: 'block', md: 'none' }, textAlign: 'center', mt: 3 }}>
-        <Button
-          variant="outlined"
-          endIcon={<ArrowForward />}
-          onClick={() => navigate('/guest/rooms')}
-          sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
-        >
-          View all rooms
-        </Button>
+          </Box>
+        ))}
       </Box>
     </Container>
   );

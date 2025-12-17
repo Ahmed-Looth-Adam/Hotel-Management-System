@@ -14,16 +14,22 @@ class HotelListSerializer(serializers.ModelSerializer):
     """Serializer for hotel list view"""
     room_count = serializers.SerializerMethodField()
     manager = serializers.SerializerMethodField()
+    galleries = serializers.SerializerMethodField()
+    total_rooms = serializers.SerializerMethodField()
 
     class Meta:
         model = Hotel
         fields = [
             'id', 'name', 'location', 'address', 'city', 'country',
-            'description', 'star_rating', 'room_capacity', 'is_active', 'room_count', 'manager'
+            'description', 'star_rating', 'room_capacity', 'is_active', 'room_count', 'manager',
+            'galleries', 'total_rooms'
         ]
 
     def get_room_count(self, obj):
         return obj.rooms.filter(is_active=True).count()
+
+    def get_total_rooms(self, obj):
+        return obj.rooms.count()
 
     def get_manager(self, obj):
         if obj.manager:
@@ -33,6 +39,20 @@ class HotelListSerializer(serializers.ModelSerializer):
                 'email': obj.manager.email
             }
         return None
+
+    def get_galleries(self, obj):
+        """Get galleries with images for the hotel"""
+        galleries = obj.galleries.filter(gallery_type='hotel').prefetch_related('images')[:1]
+        result = []
+        for gallery in galleries:
+            images = [{'id': img.id, 'image': img.image.url if img.image else None}
+                      for img in gallery.images.all()[:5]]
+            result.append({
+                'id': gallery.id,
+                'name': gallery.name,
+                'images': images
+            })
+        return result
 
 
 class HotelDetailSerializer(serializers.ModelSerializer):

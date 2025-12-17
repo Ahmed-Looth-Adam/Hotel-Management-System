@@ -388,6 +388,84 @@ const hotelService = {
       return { success: false, error: error.response?.data || 'Failed to fetch room views' };
     }
   },
+
+  // ============== Amenity Categories ==============
+
+  getAmenityCategories: async (hotelId) => {
+    try {
+      const response = await api.get('/amenity-categories/', { params: { hotel: hotelId } });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to fetch amenity categories' };
+    }
+  },
+
+  createAmenityCategory: async (data) => {
+    try {
+      const response = await api.post('/amenity-categories/', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to create amenity category' };
+    }
+  },
+
+  updateAmenityCategory: async (id, data) => {
+    try {
+      const response = await api.put(`/amenity-categories/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to update amenity category' };
+    }
+  },
+
+  deleteAmenityCategory: async (id) => {
+    try {
+      await api.delete(`/amenity-categories/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to delete amenity category' };
+    }
+  },
+
+  // ============== Amenities ==============
+
+  getAmenities: async (hotelId, categoryId = null) => {
+    try {
+      const params = { hotel: hotelId };
+      if (categoryId) params.category = categoryId;
+      const response = await api.get('/amenities/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to fetch amenities' };
+    }
+  },
+
+  createAmenity: async (data) => {
+    try {
+      const response = await api.post('/amenities/', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to create amenity' };
+    }
+  },
+
+  updateAmenity: async (id, data) => {
+    try {
+      const response = await api.put(`/amenities/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to update amenity' };
+    }
+  },
+
+  deleteAmenity: async (id) => {
+    try {
+      await api.delete(`/amenities/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to delete amenity' };
+    }
+  },
 };
 
 export default hotelService;
