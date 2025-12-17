@@ -256,18 +256,26 @@ class RoomRate(models.Model):
 
 
 class RoomTypePricing(models.Model):
-    """Base pricing per room type category"""
+    """Base pricing per room type category with off-peak and peak prices"""
     ROOM_TYPE_CHOICES = [
-        ('standard', 'Standard'),
-        ('superior', 'Superior'),
-        ('deluxe', 'Deluxe'),
-        ('suite', 'Suite'),
-        ('family', 'Family'),
+        ('standard', 'Standard Double'),
+        ('deluxe', 'Deluxe King'),
+        ('suite', 'Family Suite'),
+        ('family', 'Penthouse'),
     ]
+
+    # Default prices from coursework specification (GBP)
+    DEFAULT_PRICES = {
+        'standard': {'off_peak': 120, 'peak': 180},
+        'deluxe': {'off_peak': 180, 'peak': 250},
+        'suite': {'off_peak': 240, 'peak': 320},
+        'family': {'off_peak': 500, 'peak': 750},
+    }
 
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_type_pricing')
     room_type = models.CharField(max_length=20, choices=ROOM_TYPE_CHOICES)
-    base_price = models.DecimalField(max_digits=10, decimal_places=2)
+    off_peak_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per night during off-peak season")
+    peak_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per night during peak season")
     currency = models.CharField(max_length=3, default='GBP')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -278,7 +286,30 @@ class RoomTypePricing(models.Model):
         verbose_name_plural = 'room type pricing'
 
     def __str__(self):
-        return f"{self.get_room_type_display()} - {self.hotel.name} - {self.currency} {self.base_price}"
+        return f"{self.get_room_type_display()} - {self.hotel.name} - {self.currency} {self.off_peak_price}/{self.peak_price}"
+
+    def get_price_for_date(self, date, hotel_seasonal_pricing=None):
+        """Get the appropriate price based on whether the date falls in peak season"""
+        if hotel_seasonal_pricing:
+            for season in hotel_seasonal_pricing:
+                if season.is_active and season.is_peak_season and season.is_date_in_range(date):
+                    return self.peak_price
+        return self.off_peak_price
+
+    @classmethod
+    def create_default_pricing(cls, hotel):
+        """Create default pricing entries for a hotel"""
+        for room_type, prices in cls.DEFAULT_PRICES.items():
+            cls.objects.get_or_create(
+                hotel=hotel,
+                room_type=room_type,
+                defaults={
+                    'off_peak_price': prices['off_peak'],
+                    'peak_price': prices['peak'],
+                    'currency': 'GBP',
+                    'is_active': True,
+                }
+            )
 
 
 class ViewPricing(models.Model):
@@ -313,40 +344,27 @@ class ViewPricing(models.Model):
 
 
 class SeasonalPricing(models.Model):
-    """Date-range based pricing adjustments"""
-    MODIFIER_TYPE_CHOICES = [
-        ('fixed', 'Fixed Amount'),
-        ('percentage', 'Percentage'),
-    ]
-
+    """Date-range based season definitions (Peak/Off-Peak)"""
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='seasonal_pricing')
-    season_name = models.CharField(max_length=100)
+    season_name = models.CharField(max_length=100, help_text="e.g., 'Summer Peak', 'Christmas Peak', 'Winter Off-Peak'")
     start_date = models.DateField()
     end_date = models.DateField()
-    modifier_type = models.CharField(max_length=20, choices=MODIFIER_TYPE_CHOICES)
-    modifier_value = models.DecimalField(max_digits=10, decimal_places=2)
-    priority = models.PositiveIntegerField(default=0)
+    is_peak_season = models.BooleanField(default=False, help_text="If true, peak prices apply during this period")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-priority', 'start_date']
+        ordering = ['start_date']
         verbose_name_plural = 'seasonal pricing'
 
     def __str__(self):
-        return f"{self.season_name} ({self.start_date} to {self.end_date})"
+        season_type = "Peak" if self.is_peak_season else "Off-Peak"
+        return f"{self.season_name} ({season_type}: {self.start_date} to {self.end_date})"
 
     def is_date_in_range(self, date):
         """Check if a date falls within this seasonal period"""
         return self.start_date <= date <= self.end_date
-
-    def apply_modifier(self, base_price):
-        """Apply the modifier to a base price"""
-        if self.modifier_type == 'fixed':
-            return base_price + float(self.modifier_value)
-        # Percentage
-        return base_price * (1 + float(self.modifier_value) / 100)
 
 
 class DayTypePricing(models.Model):
