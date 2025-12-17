@@ -25,6 +25,23 @@ const validationSchema = Yup.object({
   password: Yup.string().required('Password is required'),
 });
 
+// Get redirect path based on user role
+const getRedirectPath = (user) => {
+  if (!user?.role) return '/';
+
+  switch (user.role) {
+    case 'admin':
+      return '/admin/hotels';
+    case 'manager':
+      return '/manager/hotel';
+    case 'staff':
+      return '/dashboard';
+    case 'guest':
+    default:
+      return '/';
+  }
+};
+
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,7 +49,9 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  // If user was trying to access a specific page, redirect there after login
+  // Otherwise, use role-based redirect
+  const intendedPath = location.state?.from?.pathname;
 
   const formik = useFormik({
     initialValues: {
@@ -48,8 +67,10 @@ const Login = () => {
         const result = await login(values.username, values.password);
 
         if (result.success) {
-          // Redirect to the page they tried to visit or dashboard
-          navigate(from, { replace: true });
+          const user = result.data?.user;
+          // Use intended path if user was redirected, otherwise use role-based redirect
+          const redirectPath = intendedPath || getRedirectPath(user);
+          navigate(redirectPath, { replace: true });
         } else {
           setError(result.error || 'Incorrect username or password. Please try again.');
         }

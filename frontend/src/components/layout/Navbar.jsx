@@ -114,16 +114,16 @@ const Navbar = () => {
                 sx={{ fontWeight: 600, fontSize: '1rem', '&:hover': { bgcolor: 'transparent', opacity: 0.7 } }}
                 disableRipple
               >
-                Stays
+                Home
               </Button>
               <Button
                 color="inherit"
                 component={Link}
-                to="/bookings"
+                to="/guest/rooms"
                 sx={{ fontWeight: 400, fontSize: '1rem', color: 'text.secondary', '&:hover': { bgcolor: 'transparent', color: 'text.primary' } }}
                 disableRipple
               >
-                Experiences
+                Browse Rooms
               </Button>
             </Box>
 
@@ -134,9 +134,9 @@ const Navbar = () => {
                 <Button
                   color="inherit"
                   sx={{ borderRadius: 4, textTransform: 'none', color: 'text.primary' }}
-                  onClick={() => navigate('/hotels')} // Example link
+                  onClick={() => navigate('/guest/rooms')}
                 >
-                  Browse Hotels
+                  Browse Rooms
                 </Button>
               )}
 
@@ -194,9 +194,9 @@ const Navbar = () => {
                   </Typography>
                 </Box>
                 <Divider />
-                <MenuItem onClick={() => navigate('/dashboard')}>Dashboard</MenuItem>
-                <MenuItem onClick={() => navigate('/bookings')}>My Trips</MenuItem>
-                <MenuItem onClick={() => navigate('/profile')}>Account</MenuItem>
+                <MenuItem onClick={() => navigate('/guest/rooms')}>Browse Rooms</MenuItem>
+                <MenuItem onClick={() => navigate('/guest/my-bookings')}>My Bookings</MenuItem>
+                <MenuItem onClick={() => navigate('/guest/profile')}>Account</MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>Log out</MenuItem>
               </Menu>
@@ -216,12 +216,16 @@ const Navbar = () => {
           <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Menu</Typography>
           <Divider sx={{ mb: 2 }} />
           <List>
-            <ListItemButton onClick={() => navigate('/')}><ListItemText primary="Home" /></ListItemButton>
-            <ListItemButton onClick={() => navigate('/bookings')}><ListItemText primary="My Bookings" /></ListItemButton>
+            <ListItemButton onClick={() => { navigate('/'); setMobileMenuOpen(false); }}><ListItemText primary="Home" /></ListItemButton>
+            <ListItemButton onClick={() => { navigate('/guest/rooms'); setMobileMenuOpen(false); }}><ListItemText primary="Browse Rooms" /></ListItemButton>
+            {isAuthenticated && (
+              <ListItemButton onClick={() => { navigate('/guest/my-bookings'); setMobileMenuOpen(false); }}><ListItemText primary="My Bookings" /></ListItemButton>
+            )}
+            <Divider sx={{ my: 1 }} />
             {isAuthenticated ? (
               <ListItemButton onClick={handleLogout}><ListItemText primary="Log out" /></ListItemButton>
             ) : (
-              <ListItemButton onClick={() => setLoginModalOpen(true)}><ListItemText primary="Log in" /></ListItemButton>
+              <ListItemButton onClick={() => { setLoginModalOpen(true); setMobileMenuOpen(false); }}><ListItemText primary="Log in" /></ListItemButton>
             )}
           </List>
         </Box>

@@ -127,18 +127,15 @@ const ManagerStaffManagement = () => {
     setSelectedUser(null);
   };
 
-  const handleSaveUser = async (userData) => {
+  const handleSaveUser = async (userId, formData) => {
     const isNew = !selectedUser;
 
     // Force role to be staff for managers
-    const staffUserData = {
-      ...userData,
-      role: 'staff',
-    };
+    formData.set('role', 'staff');
 
     const result = isNew
-      ? await authService.createUser(staffUserData)
-      : await authService.updateUser(selectedUser.id, staffUserData);
+      ? await authService.createUser(formData)
+      : await authService.updateUser(userId, formData);
 
     if (result.success) {
       setSuccess(isNew ? `Staff member ${result.data.username} created successfully.` : `Staff member ${result.data.username} updated successfully.`);
@@ -458,10 +455,9 @@ const ManagerStaffManagement = () => {
       {/* User Form Modal - Force staff role */}
       <UserFormModal
         open={isModalOpen}
-        onClose={handleCloseModal}
-        onSave={handleSaveUser}
+        handleClose={handleCloseModal}
+        handleSave={handleSaveUser}
         userToEdit={selectedUser}
-        isNewUser={!selectedUser}
         forceRole="staff"
       />
 

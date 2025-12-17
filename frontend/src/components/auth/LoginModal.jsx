@@ -43,6 +43,23 @@ const validationSchema = Yup.object({
   password: Yup.string().required('Password is required'),
 });
 
+// Get redirect path based on user role
+const getRedirectPath = (user) => {
+  if (!user?.role) return '/';
+
+  switch (user.role) {
+    case 'admin':
+      return '/admin/hotels';
+    case 'manager':
+      return '/manager/hotel';
+    case 'staff':
+      return '/dashboard';
+    case 'guest':
+    default:
+      return '/';
+  }
+};
+
 const LoginModal = ({ open, onClose, onSwitchToRegister }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -63,8 +80,10 @@ const LoginModal = ({ open, onClose, onSwitchToRegister }) => {
         const result = await login(values.username, values.password);
 
         if (result.success) {
+          const user = result.data?.user;
+          const redirectPath = getRedirectPath(user);
           onClose();
-          navigate('/dashboard', { replace: true });
+          navigate(redirectPath, { replace: true });
         } else {
           setError(result.error || 'Incorrect username or password. Please try again.');
         }

@@ -1,198 +1,353 @@
-import React from 'react';
-import { Box, Container, Typography, Card, CardMedia, CardContent, useTheme, useMediaQuery } from '@mui/material';
-import { Star } from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardMedia,
+  CardContent,
+  useTheme,
+  useMediaQuery,
+  Skeleton,
+  Button,
+  Chip,
+  alpha,
+} from '@mui/material';
+import {
+  LocationOn,
+  MeetingRoom,
+  ArrowForward,
+  Hotel as HotelIcon,
+} from '@mui/icons-material';
+import hotelService from '../../services/hotelService';
 
-const ListingCard = ({ room, isMobile }) => (
+const HotelCard = ({ hotel, isMobile, onClick }) => {
+  // Get first gallery image or use placeholder
+  const getHotelImage = () => {
+    if (hotel.galleries && hotel.galleries.length > 0) {
+      const gallery = hotel.galleries[0];
+      if (gallery.images && gallery.images.length > 0) {
+        return `http://localhost:8000${gallery.images[0].image}`;
+      }
+    }
+    return null;
+  };
+
+  const imageUrl = getHotelImage();
+
+  return (
     <Card
-        sx={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            border: 'none',
-            boxShadow: 'none',
-            bgcolor: 'transparent',
-            cursor: 'pointer',
-            position: 'relative',
-            minWidth: isMobile ? '280px' : 'auto', // Fixed width for scroll items
-            maxWidth: isMobile ? '280px' : '100%', // Ensure it doesn't grow
-            mx: isMobile ? 1 : 0, // Margin for scroll items
-            scrollSnapAlign: 'start', // Snap alignment
-            flexShrink: 0, // Prevent shrinking in flex container
-        }}
+      onClick={onClick}
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        border: 'none',
+        boxShadow: 'none',
+        bgcolor: 'transparent',
+        cursor: 'pointer',
+        position: 'relative',
+        minWidth: isMobile ? '300px' : 'auto',
+        maxWidth: isMobile ? '300px' : '100%',
+        mx: isMobile ? 1 : 0,
+        scrollSnapAlign: 'start',
+        flexShrink: 0,
+        transition: 'transform 0.2s ease',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+        },
+      }}
     >
-        {/* Image Container */}
-        <Box sx={{
-            position: 'relative',
-            borderRadius: 4,
-            overflow: 'hidden',
-            mb: 2,
-            aspectRatio: '1/1',
-            bgcolor: '#f0f0f0'
-        }}>
-            <CardMedia
-                component="img"
-                image={room.image}
-                alt={room.name}
-                sx={{
-                    height: '100%',
-                    width: '100%',
-                    objectFit: 'cover',
-                    transition: 'transform 0.5s ease',
-                    '&:hover': {
-                        transform: 'scale(1.05)',
-                    }
-                }}
-            />
+      {/* Image Container */}
+      <Box
+        sx={{
+          position: 'relative',
+          borderRadius: 4,
+          overflow: 'hidden',
+          mb: 2,
+          aspectRatio: '4/3',
+          bgcolor: '#f0f0f0',
+        }}
+      >
+        {imageUrl ? (
+          <CardMedia
+            component="img"
+            image={imageUrl}
+            alt={hotel.name}
+            sx={{
+              height: '100%',
+              width: '100%',
+              objectFit: 'cover',
+              transition: 'transform 0.5s ease',
+              '&:hover': {
+                transform: 'scale(1.05)',
+              },
+            }}
+          />
+        ) : (
+          <Box
+            sx={{
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: alpha('#1a1f37', 0.05),
+            }}
+          >
+            <HotelIcon sx={{ fontSize: 64, color: alpha('#1a1f37', 0.2) }} />
+          </Box>
+        )}
+        {hotel.is_active && (
+          <Chip
+            label="Available"
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 12,
+              left: 12,
+              bgcolor: 'success.main',
+              color: 'white',
+              fontWeight: 600,
+              fontSize: '0.7rem',
+            }}
+          />
+        )}
+      </Box>
+
+      <CardContent sx={{ p: 0 }}>
+        <Typography
+          variant="h6"
+          fontWeight="700"
+          sx={{ fontSize: '1.1rem', lineHeight: 1.3, mb: 0.5 }}
+        >
+          {hotel.name}
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+          <LocationOn sx={{ fontSize: 16, color: 'text.secondary' }} />
+          <Typography variant="body2" color="text.secondary">
+            {hotel.city}, {hotel.country}
+          </Typography>
         </Box>
 
-        <CardContent sx={{ p: 0 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                <Typography variant="h6" fontWeight="700" sx={{ fontSize: '1.1rem', lineHeight: 1.2 }}>
-                    {room.name}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Star sx={{ fontSize: 16 }} />
-                    <Typography variant="body2" fontWeight="500">4.9</Typography>
-                </Box>
-            </Box>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5, fontSize: '0.95rem' }}>
-                {room.features[0]} • {room.features[1]}
-            </Typography>
-
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mt: 1 }}>
-                <Typography variant="body1" fontWeight="700" color="text.primary">
-                    {room.price}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    night
-                </Typography>
-            </Box>
-        </CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MeetingRoom sx={{ fontSize: 16, color: 'text.secondary' }} />
+          <Typography variant="body2" color="text.secondary">
+            {hotel.total_rooms || 0} rooms
+          </Typography>
+        </Box>
+      </CardContent>
     </Card>
+  );
+};
+
+const LoadingSkeleton = ({ isMobile }) => (
+  <Box
+    sx={{
+      minWidth: isMobile ? '300px' : 'auto',
+      maxWidth: isMobile ? '300px' : '100%',
+      mx: isMobile ? 1 : 0,
+    }}
+  >
+    <Skeleton
+      variant="rounded"
+      sx={{ borderRadius: 4, aspectRatio: '4/3', mb: 2 }}
+    />
+    <Skeleton variant="text" width="80%" height={28} />
+    <Skeleton variant="text" width="60%" height={20} />
+    <Skeleton variant="text" width="40%" height={20} />
+  </Box>
 );
 
 const FeaturedListings = () => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-    const roomTypes = [
-        {
-            id: 1,
-            name: 'Standard Room',
-            description: 'Comfortable and affordable accommodation for solo travelers or couples',
-            price: '£89',
-            image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&auto=format&fit=crop',
-            features: ['Queen Bed', '2 Guests', 'Free WiFi', 'City View'],
-        },
-        {
-            id: 2,
-            name: 'Deluxe Suite',
-            description: 'Spacious suite with separate living area and premium amenities',
-            price: '£159',
-            image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop',
-            features: ['King Bed', '4 Guests', 'Living Area', 'Ocean View'],
-        },
-        {
-            id: 3,
-            name: 'Presidential Suite',
-            description: 'Luxurious suite with panoramic views and exclusive services',
-            price: '£299',
-            image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop',
-            features: ['King Bed', '6 Guests', 'Private Terrace', 'Butler Service'],
-        },
-        {
-            id: 4,
-            name: 'Ocean View Villa',
-            description: 'Stunning villa right on the beach',
-            price: '£450',
-            image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&auto=format&fit=crop',
-            features: ['3 Beds', '6 Guests', 'Pool', 'Ocean Front'],
-        },
-        {
-            id: 5,
-            name: 'Forest Retreat',
-            description: 'Secluded cabin in the woods',
-            price: '£180',
-            image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=800&auto=format&fit=crop',
-            features: ['Queen Bed', '2 Guests', 'Fireplace', 'Nature View'],
-        },
-        {
-            id: 6,
-            name: 'Urban Loft',
-            description: 'Modern loft in the heart of the city',
-            price: '£220',
-            image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop',
-            features: ['King Bed', '2 Guests', 'Workspace', 'Skyline View'],
-        },
-        {
-            id: 7,
-            name: 'Mountain Cabin',
-            description: 'Cozy cabin with mountain views',
-            price: '£250',
-            image: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&auto=format&fit=crop',
-            features: ['2 Beds', '4 Guests', 'Hot Tub', 'Mountain View'],
-        },
-        {
-            id: 8,
-            name: 'Lakeside Bungalow',
-            description: 'Peaceful bungalow by the lake',
-            price: '£300',
-            image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop',
-            features: ['King Bed', '3 Guests', 'Private Dock', 'Lake View'],
-        }
-    ];
+  const [hotels, setHotels] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    fetchHotels();
+  }, []);
+
+  const fetchHotels = async () => {
+    setLoading(true);
+    const result = await hotelService.getAll({ is_active: true });
+    if (result.success) {
+      const data = Array.isArray(result.data)
+        ? result.data
+        : result.data?.results || [];
+      setHotels(data.slice(0, 8)); // Show max 8 hotels
+    }
+    setLoading(false);
+  };
+
+  const handleHotelClick = (hotel) => {
+    // Navigate to browse rooms with hotel filter
+    navigate(`/guest/rooms?hotel=${hotel.id}`);
+  };
+
+  if (loading) {
     return (
-        <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 } }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', mb: 4, px: { xs: 1, md: 0 } }}>
-                <Box>
-                    <Typography variant="h4" fontWeight="800" sx={{ mb: 1, letterSpacing: '-0.02em' }}>
-                        Featured places to stay
-                    </Typography>
-                    <Typography variant="body1" color="text.secondary" sx={{ maxWidth: '400px' }}>
-                        Curated selection of professionally designed stays.
-                    </Typography>
-                </Box>
-            </Box>
-
-            {isMobile ? (
-                /* Mobile: Horizontal Scroll */
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    overflowX: 'auto',
-                    gap: 2,
-                    pb: 2,
-                    mx: -2,
-                    px: 2,
-                    scrollSnapType: 'x mandatory',
-                    '&::-webkit-scrollbar': { display: 'none' },
-                    scrollbarWidth: 'none',
-                    flexWrap: 'nowrap',
-                    WebkitOverflowScrolling: 'touch',
-                }}>
-                    {roomTypes.map((room) => (
-                        <ListingCard key={room.id} room={room} isMobile={true} />
-                    ))}
-                </Box>
-            ) : (
-                /* Desktop: CSS Grid */
-                <Box sx={{
-                    display: 'grid',
-                    gridTemplateColumns: {
-                        xs: '1fr',
-                        md: 'repeat(4, 1fr)'
-                    },
-                    gap: 4
-                }}>
-                    {roomTypes.map((room) => (
-                        <ListingCard key={room.id} room={room} isMobile={false} />
-                    ))}
-                </Box>
-            )}
-        </Container>
+      <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 } }}>
+        <Box sx={{ mb: 4 }}>
+          <Skeleton variant="text" width={300} height={40} />
+          <Skeleton variant="text" width={200} height={24} />
+        </Box>
+        {isMobile ? (
+          <Box
+            sx={{
+              display: 'flex',
+              overflowX: 'auto',
+              gap: 2,
+              pb: 2,
+              '&::-webkit-scrollbar': { display: 'none' },
+            }}
+          >
+            {[1, 2, 3, 4].map((i) => (
+              <LoadingSkeleton key={i} isMobile={true} />
+            ))}
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 4,
+            }}
+          >
+            {[1, 2, 3, 4].map((i) => (
+              <LoadingSkeleton key={i} isMobile={false} />
+            ))}
+          </Box>
+        )}
+      </Container>
     );
+  }
+
+  if (hotels.length === 0) {
+    return (
+      <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 } }}>
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <HotelIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
+          <Typography variant="h5" fontWeight={600} gutterBottom>
+            No hotels available yet
+          </Typography>
+          <Typography color="text.secondary">
+            Check back soon for our featured properties.
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 } }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'end',
+          mb: 4,
+          px: { xs: 1, md: 0 },
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h4"
+            fontWeight="800"
+            sx={{ mb: 1, letterSpacing: '-0.02em' }}
+          >
+            Our Hotels
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ maxWidth: '400px' }}
+          >
+            Discover our curated selection of premium hotels worldwide.
+          </Typography>
+        </Box>
+        <Button
+          endIcon={<ArrowForward />}
+          onClick={() => navigate('/guest/rooms')}
+          sx={{
+            display: { xs: 'none', md: 'flex' },
+            textTransform: 'none',
+            fontWeight: 600,
+          }}
+        >
+          View all rooms
+        </Button>
+      </Box>
+
+      {isMobile ? (
+        /* Mobile: Horizontal Scroll */
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'row',
+            overflowX: 'auto',
+            gap: 2,
+            pb: 2,
+            mx: -2,
+            px: 2,
+            scrollSnapType: 'x mandatory',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+            flexWrap: 'nowrap',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {hotels.map((hotel) => (
+            <HotelCard
+              key={hotel.id}
+              hotel={hotel}
+              isMobile={true}
+              onClick={() => handleHotelClick(hotel)}
+            />
+          ))}
+        </Box>
+      ) : (
+        /* Desktop: CSS Grid */
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(4, 1fr)',
+            },
+            gap: 4,
+          }}
+        >
+          {hotels.map((hotel) => (
+            <HotelCard
+              key={hotel.id}
+              hotel={hotel}
+              isMobile={false}
+              onClick={() => handleHotelClick(hotel)}
+            />
+          ))}
+        </Box>
+      )}
+
+      {/* Mobile: View All Button */}
+      <Box sx={{ display: { xs: 'block', md: 'none' }, textAlign: 'center', mt: 3 }}>
+        <Button
+          variant="outlined"
+          endIcon={<ArrowForward />}
+          onClick={() => navigate('/guest/rooms')}
+          sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
+        >
+          View all rooms
+        </Button>
+      </Box>
+    </Container>
+  );
 };
 
 export default FeaturedListings;

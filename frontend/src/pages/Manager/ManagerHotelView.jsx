@@ -89,48 +89,103 @@ const tabs = [
 const ManagerHotelView = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [hotel, setHotel] = useState(null);
+  const [managedHotels, setManagedHotels] = useState([]); // All hotels managed by user
+  const [selectedHotelId, setSelectedHotelId] = useState(null); // Currently selected hotel ID
+  const [hotel, setHotel] = useState(null); // Full details of selected hotel
   const [loading, setLoading] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false); // For fade animation
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const { showError } = useNotification();
 
   useEffect(() => {
-    fetchManagerHotel();
+    fetchManagerHotels();
   }, []);
 
-  const fetchManagerHotel = async () => {
+  const fetchManagerHotels = async () => {
     setLoading(true);
     try {
-      // Fetch hotels where current user is the manager
+      // Fetch all hotels where current user is the manager
       const result = await hotelService.getAll();
       if (result.success) {
         const hotels = Array.isArray(result.data) ? result.data : (result.data?.results || []);
-        // Find hotel where current user is the manager
-        const managedHotel = hotels.find(h => h.manager === user?.id);
-        if (managedHotel) {
-          // Fetch full hotel details
-          const detailResult = await hotelService.getById(managedHotel.id);
+        // Filter hotels where current user is the manager
+        const userManagedHotels = hotels.filter(h => h.manager?.id === user?.id);
+
+        if (userManagedHotels.length > 0) {
+          setManagedHotels(userManagedHotels);
+          // Auto-select the first hotel and fetch its details
+          const firstHotelId = userManagedHotels[0].id;
+          setSelectedHotelId(firstHotelId);
+          setError('');
+          // Fetch full details for the first hotel
+          const detailResult = await hotelService.getById(firstHotelId);
           if (detailResult.success) {
             setHotel(detailResult.data);
-            setError('');
-          } else {
-            setError('Failed to fetch hotel details');
           }
+          setLoading(false);
         } else {
           setError('No hotel assigned to your account. Please contact an administrator.');
+          setLoading(false);
         }
       } else {
         setError('Failed to fetch hotels');
+        setLoading(false);
       }
     } catch (err) {
-      setError('An error occurred while fetching your hotel');
+      setError('An error occurred while fetching your hotels');
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const fetchHotelDetails = async (hotelId, withTransition = false) => {
+    if (!withTransition) {
+      setLoading(true);
+    }
+    try {
+      const detailResult = await hotelService.getById(hotelId);
+      if (detailResult.success) {
+        setHotel(detailResult.data);
+        setError('');
+      } else {
+        setError('Failed to fetch hotel details');
+      }
+    } catch (err) {
+      setError('An error occurred while fetching hotel details');
+    }
+    if (!withTransition) {
+      setLoading(false);
+    } else {
+      // Fade back in after data is loaded
+      setIsTransitioning(false);
+    }
+  };
+
+  const handleHotelChange = async (event) => {
+    const newHotelId = event.target.value;
+    if (newHotelId === selectedHotelId) return;
+
+    // Start fade out
+    setIsTransitioning(true);
+
+    // Wait for fade out animation (200ms)
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Update selection and fetch new data
+    setSelectedHotelId(newHotelId);
+    setActiveTab(0); // Reset to overview tab when switching hotels
+    await fetchHotelDetails(newHotelId, true);
   };
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
+  };
+
+  // Refresh current hotel details
+  const refreshCurrentHotel = () => {
+    if (selectedHotelId) {
+      fetchHotelDetails(selectedHotelId);
+    }
   };
 
   if (loading) {
@@ -156,13 +211,56 @@ const ManagerHotelView = () => {
   return (
     <Box sx={{ width: '100%' }}>
       <Container maxWidth="xl" disableGutters>
-        {/* Header */}
-        <Paper
-          elevation={0}
+        {/* Hotel Selector - Only show if managing multiple hotels */}
+        {managedHotels.length > 1 && (
+          <Paper
+            elevation={0}
+            sx={{
+              mb: 2,
+              p: 2,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+              Managing {managedHotels.length} hotels:
+            </Typography>
+            <FormControl size="small" sx={{ minWidth: 250 }}>
+              <Select
+                value={selectedHotelId || ''}
+                onChange={handleHotelChange}
+                disabled={isTransitioning}
+                sx={{ borderRadius: 2 }}
+              >
+                {managedHotels.map((h) => (
+                  <MenuItem key={h.id} value={h.id}>
+                    {h.name} - {h.city}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Paper>
+        )}
+
+        {/* Main Content with Fade Transition */}
+        <Box
           sx={{
-            mb: 3,
-            borderRadius: 3,
-            border: '1px solid',
+            opacity: isTransitioning ? 0 : 1,
+            transform: isTransitioning ? 'scale(0.98)' : 'scale(1)',
+            transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out',
+          }}
+        >
+          {/* Header */}
+          <Paper
+            elevation={0}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
             borderColor: 'divider',
             overflow: 'hidden',
           }}
@@ -248,20 +346,21 @@ const ManagerHotelView = () => {
           <OverviewTab hotel={hotel} />
         </TabPanel>
         <TabPanel value={activeTab} index={1}>
-          <RoomsTab hotel={hotel} onRefresh={fetchManagerHotel} />
+          <RoomsTab hotel={hotel} onRefresh={refreshCurrentHotel} />
         </TabPanel>
         <TabPanel value={activeTab} index={2}>
-          <GalleryTab hotel={hotel} onRefresh={fetchManagerHotel} />
+          <GalleryTab hotel={hotel} onRefresh={refreshCurrentHotel} />
         </TabPanel>
         <TabPanel value={activeTab} index={3}>
-          <PricingTab hotel={hotel} onRefresh={fetchManagerHotel} />
+          <PricingTab hotel={hotel} onRefresh={refreshCurrentHotel} />
         </TabPanel>
         <TabPanel value={activeTab} index={4}>
-          <ServicesTab hotel={hotel} onRefresh={fetchManagerHotel} />
+          <ServicesTab hotel={hotel} onRefresh={refreshCurrentHotel} />
         </TabPanel>
         <TabPanel value={activeTab} index={5}>
-          <PoliciesTab hotel={hotel} onRefresh={fetchManagerHotel} />
+          <PoliciesTab hotel={hotel} onRefresh={refreshCurrentHotel} />
         </TabPanel>
+        </Box>
       </Container>
     </Box>
   );

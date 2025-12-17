@@ -10,8 +10,8 @@
  * Created By: Ismail Wasiu Abdul Samad, UWE ID: 24050765
  */
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotificationContext } from '../../context/NotificationContext';
 import Sidebar, { DRAWER_WIDTH_EXPANDED, DRAWER_WIDTH_COLLAPSED } from './Sidebar';
@@ -71,12 +71,18 @@ const AdminLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const { notifications, unreadCount, markAsRead, clearAll } = useNotificationContext();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [anchorElNotifications, setAnchorElNotifications] = useState(null);
+
+  // Page transition state
+  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
+  const [displayChildren, setDisplayChildren] = useState(children);
+  const previousPathRef = useRef(location.pathname);
 
   // Sidebar collapse state - persisted in localStorage
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -88,6 +94,26 @@ const AdminLayout = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
   }, [sidebarCollapsed]);
+
+  // Handle page transitions on route change
+  useEffect(() => {
+    if (location.pathname !== previousPathRef.current) {
+      // Start fade out
+      setIsPageTransitioning(true);
+
+      // After fade out, update content and fade in
+      const timer = setTimeout(() => {
+        setDisplayChildren(children);
+        previousPathRef.current = location.pathname;
+        setIsPageTransitioning(false);
+      }, 150);
+
+      return () => clearTimeout(timer);
+    } else {
+      // Same route, just update children (for state changes within same page)
+      setDisplayChildren(children);
+    }
+  }, [location.pathname, children]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -572,7 +598,16 @@ const AdminLayout = ({ children }) => {
         }}
       >
         <Toolbar />
-        {children}
+        {/* Page Content with Fade Transition */}
+        <Box
+          sx={{
+            opacity: isPageTransitioning ? 0 : 1,
+            transform: isPageTransitioning ? 'scale(0.98)' : 'scale(1)',
+            transition: 'opacity 0.15s ease-in-out, transform 0.15s ease-in-out',
+          }}
+        >
+          {displayChildren}
+        </Box>
       </Box>
     </Box>
   );

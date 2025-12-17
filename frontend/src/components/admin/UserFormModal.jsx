@@ -95,7 +95,7 @@ const ROLES = [
   { value: 'staff', label: 'Staff', icon: StaffIcon, color: '#388e3c', description: 'Front desk operations' },
 ];
 
-const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
+const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = null }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [profilePicture, setProfilePicture] = useState(null);
@@ -126,7 +126,7 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
     last_name: userToEdit?.last_name || '',
     country_code: parsedPhone.countryCode || '+44',
     phone_number: parsedPhone.number || '',
-    role: userToEdit?.role || 'staff',
+    role: forceRole || userToEdit?.role || 'staff',
     password: '',
     password2: ''
   };
@@ -502,37 +502,29 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
 
               {/* Role Selection */}
               <SectionHeader icon={BadgeIcon} title="Role Assignment" />
-              <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
-                {ROLES.map((role) => {
-                  const Icon = role.icon;
-                  const isSelected = values.role === role.value;
-                  return (
-                    <Box
-                      key={role.value}
-                      onClick={() => setFieldValue('role', role.value)}
-                      sx={{
-                        flex: 1,
-                        p: 1.5,
-                        border: '2px solid',
-                        borderColor: isSelected ? role.color : 'divider',
-                        borderRadius: 2,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        bgcolor: isSelected ? alpha(role.color, 0.08) : 'transparent',
-                        '&:hover': {
+              {forceRole ? (
+                // Locked role display when forceRole is provided
+                <Box sx={{ mb: 2 }}>
+                  {(() => {
+                    const role = ROLES.find(r => r.value === forceRole) || { label: forceRole, color: '#388e3c', icon: StaffIcon };
+                    const Icon = role.icon;
+                    return (
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          border: '2px solid',
                           borderColor: role.color,
-                          bgcolor: alpha(role.color, 0.04),
-                        },
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <Icon sx={{ color: role.color, fontSize: 18 }} />
-                        <Typography variant="body2" fontWeight={600}>
-                          {role.label}
-                        </Typography>
-                        {isSelected && (
+                          borderRadius: 2,
+                          bgcolor: alpha(role.color, 0.08),
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <Icon sx={{ color: role.color, fontSize: 18 }} />
+                          <Typography variant="body2" fontWeight={600}>
+                            {role.label}
+                          </Typography>
                           <Chip
-                            label="Selected"
+                            label="Fixed"
                             size="small"
                             sx={{
                               height: 18,
@@ -542,12 +534,60 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave }) => {
                               ml: 'auto',
                             }}
                           />
-                        )}
+                        </Box>
                       </Box>
-                    </Box>
-                  );
-                })}
-              </Box>
+                    );
+                  })()}
+                </Box>
+              ) : (
+                // Selectable role options
+                <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+                  {ROLES.map((role) => {
+                    const Icon = role.icon;
+                    const isSelected = values.role === role.value;
+                    return (
+                      <Box
+                        key={role.value}
+                        onClick={() => setFieldValue('role', role.value)}
+                        sx={{
+                          flex: 1,
+                          p: 1.5,
+                          border: '2px solid',
+                          borderColor: isSelected ? role.color : 'divider',
+                          borderRadius: 2,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          bgcolor: isSelected ? alpha(role.color, 0.08) : 'transparent',
+                          '&:hover': {
+                            borderColor: role.color,
+                            bgcolor: alpha(role.color, 0.04),
+                          },
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <Icon sx={{ color: role.color, fontSize: 18 }} />
+                          <Typography variant="body2" fontWeight={600}>
+                            {role.label}
+                          </Typography>
+                          {isSelected && (
+                            <Chip
+                              label="Selected"
+                              size="small"
+                              sx={{
+                                height: 18,
+                                fontSize: '0.6rem',
+                                bgcolor: role.color,
+                                color: 'white',
+                                ml: 'auto',
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
 
               {/* Password Section */}
               <SectionHeader icon={LockIcon} title={isNewUser ? "Set Password" : "Change Password"} />

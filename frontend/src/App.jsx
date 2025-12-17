@@ -41,6 +41,10 @@ import UserManagement from './pages/admin/UserManagement';
 import HotelManagement from './pages/Admin/HotelManagement';
 import HotelManagePage from './pages/Admin/HotelManagePage';
 
+// Manager pages
+import ManagerHotelView from './pages/Manager/ManagerHotelView';
+import ManagerStaffManagement from './pages/Manager/ManagerStaffManagement';
+
 // Guest pages
 import BrowseRooms from './pages/guest/BrowseRooms';
 import RoomDetails from './pages/guest/RoomDetails';
@@ -138,6 +142,24 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <HotelManagePage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Manager Routes */}
+              <Route
+                path="/manager/hotel"
+                element={
+                  <ProtectedRoute requiredRole="manager">
+                    <ManagerHotelView />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/manager/staff"
+                element={
+                  <ProtectedRoute requiredRole="manager">
+                    <ManagerStaffManagement />
                   </ProtectedRoute>
                 }
               />

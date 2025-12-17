@@ -87,6 +87,7 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
       path: '/dashboard',
       roles: ['staff', 'manager', 'admin'],
     },
+    // Admin only
     {
       title: 'User Management',
       icon: PeopleIcon,
@@ -99,6 +100,20 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
       path: '/admin/hotels',
       roles: ['admin'],
     },
+    // Manager only
+    {
+      title: 'My Hotel',
+      icon: HotelIcon,
+      path: '/manager/hotel',
+      roles: ['manager'],
+    },
+    {
+      title: 'Staff Management',
+      icon: PeopleIcon,
+      path: '/manager/staff',
+      roles: ['manager'],
+    },
+    // Staff/Manager/Admin
     {
       title: 'Operations',
       icon: OperationsIcon,
