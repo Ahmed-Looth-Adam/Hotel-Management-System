@@ -71,11 +71,29 @@ class Gallery(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['name']
+        ordering = ['gallery_type', 'name']
         verbose_name_plural = 'galleries'
+        constraints = [
+            # Only one hotel gallery per hotel
+            models.UniqueConstraint(
+                fields=['hotel'],
+                condition=models.Q(gallery_type='hotel'),
+                name='unique_hotel_gallery'
+            )
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.gallery_type})"
+
+    @property
+    def assigned_rooms(self):
+        """Get rooms assigned to this gallery"""
+        return self.rooms.all()
+
+    @property
+    def assigned_rooms_count(self):
+        """Get count of rooms assigned to this gallery"""
+        return self.rooms.count()
 
 
 class GalleryImage(models.Model):
@@ -274,8 +292,8 @@ class RoomTypePricing(models.Model):
 
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_type_pricing')
     room_type = models.CharField(max_length=20, choices=ROOM_TYPE_CHOICES)
-    off_peak_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per night during off-peak season")
-    peak_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per night during peak season")
+    off_peak_price = models.DecimalField(max_digits=10, decimal_places=2, default=100.00, help_text="Price per night during off-peak season")
+    peak_price = models.DecimalField(max_digits=10, decimal_places=2, default=150.00, help_text="Price per night during peak season")
     currency = models.CharField(max_length=3, default='GBP')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

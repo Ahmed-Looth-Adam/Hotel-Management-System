@@ -108,6 +108,286 @@ const hotelService = {
       };
     }
   },
+
+  // ============== Room Type Pricing ==============
+
+  getRoomTypePricing: async (hotelId) => {
+    try {
+      const response = await api.get('/room-type-pricing/', { params: { hotel: hotelId } });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to fetch pricing' };
+    }
+  },
+
+  createRoomTypePricing: async (data) => {
+    try {
+      const response = await api.post('/room-type-pricing/', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to create pricing' };
+    }
+  },
+
+  updateRoomTypePricing: async (id, data) => {
+    try {
+      const response = await api.put(`/room-type-pricing/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to update pricing' };
+    }
+  },
+
+  deleteRoomTypePricing: async (id) => {
+    try {
+      await api.delete(`/room-type-pricing/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to delete pricing' };
+    }
+  },
+
+  // ============== Seasonal Pricing ==============
+
+  getSeasonalPricing: async (hotelId) => {
+    try {
+      const response = await api.get('/seasonal-pricing/', { params: { hotel: hotelId } });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to fetch seasons' };
+    }
+  },
+
+  createSeasonalPricing: async (data) => {
+    try {
+      const response = await api.post('/seasonal-pricing/', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to create season' };
+    }
+  },
+
+  updateSeasonalPricing: async (id, data) => {
+    try {
+      const response = await api.put(`/seasonal-pricing/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to update season' };
+    }
+  },
+
+  deleteSeasonalPricing: async (id) => {
+    try {
+      await api.delete(`/seasonal-pricing/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to delete season' };
+    }
+  },
+
+  // ============== Ancillary Services ==============
+
+  getAncillaryServices: async (hotelId) => {
+    try {
+      const response = await api.get('/ancillary-services/', { params: { hotel: hotelId } });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to fetch services' };
+    }
+  },
+
+  createAncillaryService: async (data) => {
+    try {
+      const response = await api.post('/ancillary-services/', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to create service' };
+    }
+  },
+
+  updateAncillaryService: async (id, data) => {
+    try {
+      const response = await api.put(`/ancillary-services/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to update service' };
+    }
+  },
+
+  deleteAncillaryService: async (id) => {
+    try {
+      await api.delete(`/ancillary-services/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to delete service' };
+    }
+  },
+
+  // ============== Hotel Policies ==============
+
+  getPolicies: async (hotelId) => {
+    try {
+      const response = await api.get('/policies/', { params: { hotel: hotelId } });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to fetch policies' };
+    }
+  },
+
+  createPolicy: async (data) => {
+    try {
+      const response = await api.post('/policies/', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to create policy' };
+    }
+  },
+
+  updatePolicy: async (id, data) => {
+    try {
+      const response = await api.put(`/policies/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to update policy' };
+    }
+  },
+
+  deletePolicy: async (id) => {
+    try {
+      await api.delete(`/policies/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to delete policy' };
+    }
+  },
+
+  // ============== Galleries ==============
+
+  getGalleries: async (hotelId) => {
+    try {
+      const response = await api.get('/galleries/', { params: { hotel: hotelId } });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to fetch galleries' };
+    }
+  },
+
+  createGallery: async (data) => {
+    try {
+      const response = await api.post('/galleries/', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to create gallery' };
+    }
+  },
+
+  updateGallery: async (id, data) => {
+    try {
+      const response = await api.put(`/galleries/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to update gallery' };
+    }
+  },
+
+  deleteGallery: async (id) => {
+    try {
+      await api.delete(`/galleries/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to delete gallery' };
+    }
+  },
+
+  assignRoomsToGallery: async (galleryId, roomIds) => {
+    try {
+      const response = await api.post(`/galleries/${galleryId}/assign_rooms/`, { room_ids: roomIds });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to assign rooms' };
+    }
+  },
+
+  unassignRoomsFromGallery: async (galleryId, roomIds) => {
+    try {
+      const response = await api.post(`/galleries/${galleryId}/unassign_rooms/`, { room_ids: roomIds });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to unassign rooms' };
+    }
+  },
+
+  // ============== Gallery Images ==============
+
+  uploadGalleryImage: async (galleryId, formData) => {
+    try {
+      formData.append('gallery', galleryId);
+      const response = await api.post('/gallery-images/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to upload image' };
+    }
+  },
+
+  deleteGalleryImage: async (id) => {
+    try {
+      await api.delete(`/gallery-images/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to delete image' };
+    }
+  },
+
+  // ============== Rooms ==============
+
+  getRooms: async (hotelId) => {
+    try {
+      const response = await api.get('/rooms/', { params: { hotel: hotelId } });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to fetch rooms' };
+    }
+  },
+
+  createRoom: async (data) => {
+    try {
+      const response = await api.post('/rooms/', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to create room' };
+    }
+  },
+
+  updateRoom: async (id, data) => {
+    try {
+      const response = await api.put(`/rooms/${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to update room' };
+    }
+  },
+
+  deleteRoom: async (id) => {
+    try {
+      await api.delete(`/rooms/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to delete room' };
+    }
+  },
+
+  // ============== Room Views ==============
+
+  getRoomViews: async (hotelId) => {
+    try {
+      const response = await api.get('/room-views/', { params: { hotel: hotelId } });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || 'Failed to fetch room views' };
+    }
+  },
 };
 
 export default hotelService;

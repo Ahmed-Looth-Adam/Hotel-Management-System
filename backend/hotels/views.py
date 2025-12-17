@@ -279,7 +279,7 @@ class GalleryViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
 
     def get_queryset(self):
-        queryset = Gallery.objects.prefetch_related('images')
+        queryset = Gallery.objects.prefetch_related('images', 'rooms')
         hotel_id = self.request.query_params.get('hotel')
         if hotel_id:
             queryset = queryset.filter(hotel_id=hotel_id)
@@ -287,6 +287,64 @@ class GalleryViewSet(viewsets.ModelViewSet):
         if gallery_type:
             queryset = queryset.filter(gallery_type=gallery_type)
         return queryset
+
+    def destroy(self, request, *args, **kwargs):
+        """Prevent deletion of hotel galleries"""
+        instance = self.get_object()
+        if instance.gallery_type == 'hotel':
+            return Response(
+                {'error': 'Cannot delete hotel gallery'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=True, methods=['post'])
+    def assign_rooms(self, request, pk=None):
+        """Assign rooms to a gallery"""
+        gallery = self.get_object()
+        if gallery.gallery_type == 'hotel':
+            return Response(
+                {'error': 'Cannot assign rooms to hotel gallery'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        room_ids = request.data.get('room_ids', [])
+        if not isinstance(room_ids, list):
+            return Response(
+                {'error': 'room_ids must be a list'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update rooms to point to this gallery
+        rooms = Room.objects.filter(id__in=room_ids, hotel=gallery.hotel)
+        rooms.update(gallery=gallery)
+
+        return Response({
+            'message': f'Assigned {rooms.count()} rooms to gallery',
+            'gallery': GallerySerializer(gallery).data
+        })
+
+    @action(detail=True, methods=['post'])
+    def unassign_rooms(self, request, pk=None):
+        """Unassign rooms from a gallery"""
+        gallery = self.get_object()
+
+        room_ids = request.data.get('room_ids', [])
+        if not isinstance(room_ids, list):
+            return Response(
+                {'error': 'room_ids must be a list'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Remove gallery reference from rooms
+        rooms = Room.objects.filter(id__in=room_ids, gallery=gallery)
+        count = rooms.count()
+        rooms.update(gallery=None)
+
+        return Response({
+            'message': f'Unassigned {count} rooms from gallery',
+            'gallery': GallerySerializer(gallery).data
+        })
 
 
 class GalleryImageViewSet(viewsets.ModelViewSet):

@@ -129,14 +129,25 @@ class GallerySerializer(serializers.ModelSerializer):
     """Serializer for galleries"""
     images = GalleryImageSerializer(many=True, read_only=True)
     image_count = serializers.SerializerMethodField()
+    assigned_rooms = serializers.SerializerMethodField()
+    assigned_rooms_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Gallery
-        fields = ['id', 'hotel', 'name', 'description', 'gallery_type', 'images', 'image_count', 'created_at', 'updated_at']
+        fields = ['id', 'hotel', 'name', 'description', 'gallery_type', 'images', 'image_count',
+                  'assigned_rooms', 'assigned_rooms_count', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
     def get_image_count(self, obj):
         return obj.images.count()
+
+    def get_assigned_rooms(self, obj):
+        """Get list of rooms assigned to this gallery"""
+        return [{'id': room.id, 'room_number': room.room_number} for room in obj.rooms.all()]
+
+    def get_assigned_rooms_count(self, obj):
+        """Get count of rooms assigned to this gallery"""
+        return obj.rooms.count()
 
 
 # ============== Room Type Serializers ==============

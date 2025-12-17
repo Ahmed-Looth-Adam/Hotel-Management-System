@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -48,6 +49,7 @@ import {
   ViewList as ViewListIcon,
   ViewModule as ViewModuleIcon,
   LocationOn as LocationIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import hotelService from '../../services/hotelService';
 import HotelFormModal from '../../components/admin/HotelFormModal';
@@ -116,6 +118,7 @@ const StarRating = ({ rating }) => (
 
 const HotelManagement = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const { addNotification } = useNotificationContext();
   const [hotels, setHotels] = useState([]);
   const [filteredHotels, setFilteredHotels] = useState([]);
@@ -675,6 +678,19 @@ const HotelManagement = () => {
 
                   {/* Actions */}
                   <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                    <Tooltip title="Manage Hotel">
+                      <IconButton
+                        size="small"
+                        onClick={() => navigate(`/admin/hotels/${hotel.id}/manage`)}
+                        sx={{
+                          bgcolor: alpha('#9c27b0', 0.1),
+                          color: '#9c27b0',
+                          '&:hover': { bgcolor: alpha('#9c27b0', 0.2) },
+                        }}
+                      >
+                        <SettingsIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title="Edit Hotel">
                       <IconButton
                         size="small"
@@ -920,23 +936,37 @@ const HotelManagement = () => {
                         <Button
                           fullWidth
                           size="small"
-                          onClick={() => handleOpenEdit(hotel)}
+                          onClick={() => navigate(`/admin/hotels/${hotel.id}/manage`)}
                           sx={{
                             borderRadius: 1.5,
                             textTransform: 'none',
                             fontWeight: 600,
                             fontSize: '0.75rem',
                             py: 0.5,
-                            bgcolor: alpha('#1976d2', 0.08),
-                            color: 'primary.main',
+                            bgcolor: alpha('#9c27b0', 0.08),
+                            color: '#9c27b0',
                             '&:hover': {
-                              bgcolor: alpha('#1976d2', 0.15),
+                              bgcolor: alpha('#9c27b0', 0.15),
                             },
                           }}
                         >
-                          <EditIcon sx={{ fontSize: 14, mr: 0.5 }} />
-                          Edit
+                          <SettingsIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                          Manage
                         </Button>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenEdit(hotel)}
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            bgcolor: alpha('#1976d2', 0.08),
+                            color: 'primary.main',
+                            borderRadius: 1.5,
+                            '&:hover': { bgcolor: alpha('#1976d2', 0.15) },
+                          }}
+                        >
+                          <EditIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
                         <IconButton
                           size="small"
                           onClick={() => handleOpenDeleteModal(hotel)}
