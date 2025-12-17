@@ -47,6 +47,8 @@ import {
   PersonRemove as PersonRemoveIcon,
   DeleteSweep as ClearAllIcon,
   Circle as UnreadIcon,
+  AddBusiness as HotelAddIcon,
+  RemoveCircle as HotelRemoveIcon,
 } from '@mui/icons-material';
 
 // Helper function to format relative time
@@ -321,6 +323,10 @@ const AdminLayout = ({ children }) => {
                           <PersonAddIcon sx={{ color: 'primary.main' }} />
                         ) : notification.type === 'user_deleted' ? (
                           <PersonRemoveIcon sx={{ color: 'error.main' }} />
+                        ) : notification.type === 'hotel_created' ? (
+                          <HotelAddIcon sx={{ color: 'success.main' }} />
+                        ) : notification.type === 'hotel_deleted' ? (
+                          <HotelRemoveIcon sx={{ color: 'error.main' }} />
                         ) : (
                           <NotificationsIcon sx={{ color: 'text.secondary' }} />
                         )}
