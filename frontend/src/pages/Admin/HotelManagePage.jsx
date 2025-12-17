@@ -20,6 +20,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   TextField,
   Dialog,
   DialogTitle,
@@ -285,6 +286,21 @@ const HotelManagePage = () => {
 
 // ============== Overview Tab ==============
 const OverviewTab = ({ hotel }) => {
+  const [roomCount, setRoomCount] = useState(0);
+
+  useEffect(() => {
+    const fetchRoomCount = async () => {
+      if (hotel?.id) {
+        const result = await hotelService.getRooms(hotel.id);
+        if (result.success) {
+          const data = Array.isArray(result.data) ? result.data : (result.data?.results || []);
+          setRoomCount(data.length);
+        }
+      }
+    };
+    fetchRoomCount();
+  }, [hotel?.id]);
+
   return (
     <Paper
       elevation={0}
@@ -311,7 +327,7 @@ const OverviewTab = ({ hotel }) => {
           mb: 3,
         }}
       >
-        <StatCard title="Room Capacity" value={hotel?.room_capacity || 0} color="#1976d2" />
+        <StatCard title="Rooms" value={`${roomCount} / ${hotel?.room_capacity || 0}`} color="#1976d2" />
         <StatCard title="Star Rating" value={`${hotel?.star_rating || 0} Stars`} color="#FFB400" />
         <StatCard title="Status" value={hotel?.is_active ? 'Active' : 'Inactive'} color={hotel?.is_active ? '#4caf50' : '#9e9e9e'} />
         <StatCard title="Manager" value={hotel?.manager_name || 'Not Assigned'} color="#9c27b0" />
@@ -391,6 +407,8 @@ const RoomsTab = ({ hotel }) => {
   const [loading, setLoading] = useState(true);
   const [editingRoom, setEditingRoom] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const { showSuccess, showError } = useNotification();
 
   const ROOM_TYPE_CHOICES = [
@@ -521,70 +539,90 @@ const RoomsTab = ({ hotel }) => {
           <Typography color="text.secondary">No rooms found for this hotel.</Typography>
         </Box>
       ) : (
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Room #</TableCell>
-                <TableCell>Floor</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Active</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rooms.map((room) => (
-                <TableRow key={room.id} hover>
-                  <TableCell sx={{ fontWeight: 600 }}>{room.room_number}</TableCell>
-                  <TableCell>{room.floor}</TableCell>
-                  <TableCell>{room.room_type_name || room.room_type_category}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={room.status}
-                      size="small"
-                      sx={{
-                        bgcolor: alpha(getStatusColor(room.status), 0.1),
-                        color: getStatusColor(room.status),
-                        fontWeight: 600,
-                        textTransform: 'capitalize',
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={room.is_active ? 'Yes' : 'No'}
-                      size="small"
-                      color={room.is_active ? 'success' : 'default'}
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Edit">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setEditingRoom(room);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDelete(room.id)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
+        <>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Room #</TableCell>
+                  <TableCell>Floor</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Active</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {rooms
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((room) => (
+                  <TableRow key={room.id} hover>
+                    <TableCell sx={{ fontWeight: 600 }}>{room.room_number}</TableCell>
+                    <TableCell>{room.floor}</TableCell>
+                    <TableCell>{room.room_type_name || room.room_type_category}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={room.status}
+                        size="small"
+                        sx={{
+                          bgcolor: alpha(getStatusColor(room.status), 0.1),
+                          color: getStatusColor(room.status),
+                          fontWeight: 600,
+                          textTransform: 'capitalize',
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={room.is_active ? 'Yes' : 'No'}
+                        size="small"
+                        color={room.is_active ? 'success' : 'default'}
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Edit">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setEditingRoom(room);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDelete(room.id)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={rooms.length}
+            page={page}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[10, 25, 50]}
+            sx={{
+              borderTop: '1px solid',
+              borderColor: 'divider',
+            }}
+          />
+        </>
       )}
 
       {/* Room Dialog */}
