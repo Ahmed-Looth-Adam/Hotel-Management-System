@@ -18,7 +18,6 @@ import {
   MenuItem,
   Card,
   CardContent,
-  Grid,
   Avatar,
   Fade,
   LinearProgress,
@@ -46,6 +45,9 @@ import {
   ChevronRight as ChevronRightIcon,
   FirstPage as FirstPageIcon,
   LastPage as LastPageIcon,
+  ViewList as ViewListIcon,
+  ViewModule as ViewModuleIcon,
+  LocationOn as LocationIcon,
 } from '@mui/icons-material';
 import hotelService from '../../services/hotelService';
 import HotelFormModal from '../../components/admin/HotelFormModal';
@@ -122,6 +124,7 @@ const HotelManagement = () => {
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'tiles'
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -397,127 +400,177 @@ const HotelManagement = () => {
             borderColor: 'divider',
           }}
         >
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={8}>
-              <TextField
-                fullWidth
-                placeholder="Search hotels by name, city, or country..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                size="small"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
+            <TextField
+              placeholder="Search hotels..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
+              sx={{
+                width: { xs: '100%', md: 280 },
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: '#f8f9fa',
+                  fontSize: '0.875rem',
+                  '& input': {
+                    py: 1,
+                  },
+                  '&:hover': {
                     bgcolor: '#f8f9fa',
-                    fontSize: '0.875rem',
-                    '& input': {
-                      py: 1,
-                    },
-                    '&:hover': {
-                      bgcolor: '#f8f9fa',
-                    },
-                    '&.Mui-focused': {
-                      bgcolor: '#fff',
-                    },
+                  },
+                  '&.Mui-focused': {
+                    bgcolor: '#fff',
+                  },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel sx={{ fontSize: '0.875rem' }}>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => setStatusFilter(e.target.value)}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: '#f8f9fa',
+                  fontSize: '0.875rem',
+                  '& .MuiSelect-select': {
+                    py: 1,
+                  },
+                  '&:hover': {
+                    bgcolor: '#f8f9fa',
+                  },
+                  '&.Mui-focused': {
+                    bgcolor: '#fff',
                   },
                 }}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ fontSize: '0.875rem' }}>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>All Status</MenuItem>
+                <MenuItem value="active" sx={{ fontSize: '0.875rem' }}>Active</MenuItem>
+                <MenuItem value="inactive" sx={{ fontSize: '0.875rem' }}>Inactive</MenuItem>
+              </Select>
+            </FormControl>
+            <Box sx={{ flex: 1 }} />
+            <Box
+              sx={{
+                display: 'flex',
+                bgcolor: '#f8f9fa',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                p: 0.25,
+              }}
+            >
+              <Tooltip title="List View">
+                <IconButton
+                  size="small"
+                  onClick={() => setViewMode('list')}
                   sx={{
-                    borderRadius: 2,
-                    bgcolor: '#f8f9fa',
-                    fontSize: '0.875rem',
-                    '& .MuiSelect-select': {
-                      py: 1,
-                    },
+                    borderRadius: 1.5,
+                    bgcolor: viewMode === 'list' ? 'primary.main' : 'transparent',
+                    color: viewMode === 'list' ? '#fff' : 'text.secondary',
                     '&:hover': {
-                      bgcolor: '#f8f9fa',
-                    },
-                    '&.Mui-focused': {
-                      bgcolor: '#fff',
+                      bgcolor: viewMode === 'list' ? 'primary.main' : 'action.hover',
                     },
                   }}
                 >
-                  <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>All Status</MenuItem>
-                  <MenuItem value="active" sx={{ fontSize: '0.875rem' }}>Active</MenuItem>
-                  <MenuItem value="inactive" sx={{ fontSize: '0.875rem' }}>Inactive</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+                  <ViewListIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Card View">
+                <IconButton
+                  size="small"
+                  onClick={() => setViewMode('tiles')}
+                  sx={{
+                    borderRadius: 1.5,
+                    bgcolor: viewMode === 'tiles' ? 'primary.main' : 'transparent',
+                    color: viewMode === 'tiles' ? '#fff' : 'text.secondary',
+                    '&:hover': {
+                      bgcolor: viewMode === 'tiles' ? 'primary.main' : 'action.hover',
+                    },
+                  }}
+                >
+                  <ViewModuleIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
         </Paper>
 
-        {/* Hotels Table */}
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-          }}
-        >
-          {loading && <LinearProgress />}
+        {loading && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
 
-          {/* Table Header */}
-          <Box
+        {/* Empty State */}
+        {filteredHotels.length === 0 && !loading ? (
+          <Paper
+            elevation={0}
             sx={{
-              display: 'grid',
-              gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 120px',
-              gap: 2,
-              p: 2,
-              bgcolor: '#ffffff',
-              borderBottom: '1px solid',
+              borderRadius: 3,
+              border: '1px solid',
               borderColor: 'divider',
+              p: 6,
+              textAlign: 'center',
             }}
           >
-            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
-              HOTEL
+            <HotelIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary">
+              No hotels found
             </Typography>
-            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
-              RATING
+            <Typography variant="body2" color="text.secondary">
+              Try adjusting your search or filters
             </Typography>
-            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
-              CAPACITY
-            </Typography>
-            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
-              MANAGER
-            </Typography>
-            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
-              STATUS
-            </Typography>
-            <Typography variant="subtitle2" fontWeight={600} color="text.secondary" align="center">
-              ACTIONS
-            </Typography>
-          </Box>
-
-          {/* Table Body */}
-          {filteredHotels.length === 0 && !loading ? (
-            <Box sx={{ p: 6, textAlign: 'center' }}>
-              <HotelIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary">
-                No hotels found
+          </Paper>
+        ) : viewMode === 'list' ? (
+          /* List View */
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Table Header */}
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 120px',
+                gap: 2,
+                p: 2,
+                bgcolor: '#ffffff',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+                HOTEL
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Try adjusting your search or filters
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+                RATING
+              </Typography>
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+                CAPACITY
+              </Typography>
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+                MANAGER
+              </Typography>
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+                STATUS
+              </Typography>
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary" align="center">
+                ACTIONS
               </Typography>
             </Box>
-          ) : (
-            paginatedHotels.map((hotel, index) => (
+
+            {/* Table Body */}
+            {paginatedHotels.map((hotel, index) => (
               <Fade in key={hotel.id} timeout={300 + index * 50}>
                 <Box
                   sx={{
@@ -651,63 +704,317 @@ const HotelManagement = () => {
                   </Box>
                 </Box>
               </Fade>
-            ))
-          )}
+            ))}
 
-          {/* Footer with Pagination */}
-          <Box
-            sx={{
-              px: 2,
-              py: 1.5,
-              bgcolor: '#ffffff',
-              borderTop: '1px solid',
-              borderColor: 'divider',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <IconButton
-                size="small"
-                onClick={() => handlePageChange(1)}
-                disabled={currentPage === 1}
-                sx={{ color: 'text.secondary' }}
-              >
-                <FirstPageIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                sx={{ color: 'text.secondary' }}
-              >
-                <ChevronLeftIcon fontSize="small" />
-              </IconButton>
+            {/* Footer with Pagination */}
+            <Box
+              sx={{
+                px: 2,
+                py: 1.5,
+                bgcolor: '#ffffff',
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <FirstPageIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
 
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mx: 2 }}>
-                Page {currentPage} of {totalPages || 1}
-              </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mx: 2 }}>
+                  Page {currentPage} of {totalPages || 1}
+                </Typography>
 
-              <IconButton
-                size="small"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-                sx={{ color: 'text.secondary' }}
-              >
-                <ChevronRightIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => handlePageChange(totalPages)}
-                disabled={currentPage >= totalPages}
-                sx={{ color: 'text.secondary' }}
-              >
-                <LastPageIcon fontSize="small" />
-              </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage >= totalPages}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <LastPageIcon fontSize="small" />
+                </IconButton>
+              </Box>
             </Box>
-          </Box>
-        </Paper>
+          </Paper>
+        ) : (
+          /* Card/Tiles View */
+          <>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(3, 1fr)',
+                  lg: 'repeat(4, 1fr)',
+                  xl: 'repeat(5, 1fr)',
+                },
+                gap: 2,
+              }}
+            >
+              {paginatedHotels.map((hotel, index) => (
+                <Fade in key={hotel.id} timeout={200 + index * 30}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      borderRadius: 2.5,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      overflow: 'hidden',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
+                      },
+                    }}
+                  >
+                    {/* Compact Header */}
+                    <Box
+                      sx={{
+                        background: hotel.is_active
+                          ? 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)'
+                          : 'linear-gradient(135deg, #78909c 0%, #90a4ae 100%)',
+                        px: 2,
+                        py: 1.5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          bgcolor: 'rgba(255,255,255,0.2)',
+                          color: '#fff',
+                        }}
+                      >
+                        <HotelIcon sx={{ fontSize: 18 }} />
+                      </Avatar>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ color: '#fff', fontWeight: 600, lineHeight: 1.2 }}
+                          noWrap
+                        >
+                          {hotel.name}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                          <LocationIcon sx={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }} />
+                          <Typography
+                            variant="caption"
+                            sx={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.65rem' }}
+                            noWrap
+                          >
+                            {hotel.city && hotel.country ? `${hotel.city}, ${hotel.country}` : 'No location'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    {/* Compact Content */}
+                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      {/* Rating & Status Row */}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                          {[...Array(5)].map((_, i) => (
+                            <StarIcon
+                              key={i}
+                              sx={{
+                                fontSize: 14,
+                                color: i < (hotel.star_rating || 0) ? '#FFB400' : 'grey.300',
+                              }}
+                            />
+                          ))}
+                        </Box>
+                        <Chip
+                          size="small"
+                          label={hotel.is_active ? 'Active' : 'Inactive'}
+                          sx={{
+                            height: 20,
+                            fontSize: '0.65rem',
+                            fontWeight: 600,
+                            bgcolor: hotel.is_active ? alpha('#4caf50', 0.1) : alpha('#9e9e9e', 0.1),
+                            color: hotel.is_active ? 'success.dark' : 'grey.600',
+                            '& .MuiChip-label': { px: 1 },
+                          }}
+                        />
+                      </Box>
+
+                      {/* Stats Row */}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          gap: 1,
+                          mb: 1.5,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            flex: 1,
+                            py: 0.75,
+                            px: 1,
+                            bgcolor: alpha('#1976d2', 0.05),
+                            borderRadius: 1.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                          }}
+                        >
+                          <RoomIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+                          <Typography variant="caption" fontWeight={600} sx={{ lineHeight: 1 }}>
+                            {hotel.room_capacity || 0} rooms
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            flex: 1,
+                            py: 0.75,
+                            px: 1,
+                            bgcolor: alpha('#9c27b0', 0.05),
+                            borderRadius: 1.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.75,
+                            minWidth: 0,
+                          }}
+                        >
+                          <ManagerIcon sx={{ fontSize: 16, color: 'secondary.main', flexShrink: 0 }} />
+                          <Typography
+                            variant="caption"
+                            fontWeight={600}
+                            noWrap
+                            sx={{ color: hotel.manager ? 'text.primary' : 'text.disabled', lineHeight: 1.2 }}
+                          >
+                            {hotel.manager?.username || 'Unassigned'}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      {/* Compact Actions */}
+                      <Box sx={{ display: 'flex', gap: 0.75 }}>
+                        <Button
+                          fullWidth
+                          size="small"
+                          onClick={() => handleOpenEdit(hotel)}
+                          sx={{
+                            borderRadius: 1.5,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            py: 0.5,
+                            bgcolor: alpha('#1976d2', 0.08),
+                            color: 'primary.main',
+                            '&:hover': {
+                              bgcolor: alpha('#1976d2', 0.15),
+                            },
+                          }}
+                        >
+                          <EditIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                          Edit
+                        </Button>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenDeleteModal(hotel)}
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            bgcolor: alpha('#f44336', 0.08),
+                            color: 'error.main',
+                            borderRadius: 1.5,
+                            '&:hover': { bgcolor: alpha('#f44336', 0.15) },
+                          }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
+              ))}
+            </Box>
+
+            {/* Pagination for Cards */}
+            <Paper
+              elevation={0}
+              sx={{
+                mt: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                px: 2,
+                py: 1.5,
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <FirstPageIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mx: 2 }}>
+                  Page {currentPage} of {totalPages || 1}
+                </Typography>
+
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage >= totalPages}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <LastPageIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Paper>
+          </>
+        )}
 
         <HotelFormModal
           open={modalOpen}

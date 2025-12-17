@@ -13,16 +13,26 @@ from .models import (
 class HotelListSerializer(serializers.ModelSerializer):
     """Serializer for hotel list view"""
     room_count = serializers.SerializerMethodField()
+    manager = serializers.SerializerMethodField()
 
     class Meta:
         model = Hotel
         fields = [
-            'id', 'name', 'location', 'city', 'country',
-            'star_rating', 'is_active', 'room_count'
+            'id', 'name', 'location', 'address', 'city', 'country',
+            'description', 'star_rating', 'room_capacity', 'is_active', 'room_count', 'manager'
         ]
 
     def get_room_count(self, obj):
         return obj.rooms.filter(is_active=True).count()
+
+    def get_manager(self, obj):
+        if obj.manager:
+            return {
+                'id': obj.manager.id,
+                'username': obj.manager.username,
+                'email': obj.manager.email
+            }
+        return None
 
 
 class HotelDetailSerializer(serializers.ModelSerializer):
@@ -47,10 +57,42 @@ class HotelDetailSerializer(serializers.ModelSerializer):
 
 
 class HotelSerializer(serializers.ModelSerializer):
-    """Default hotel serializer"""
+    """Default hotel serializer for create/update"""
+    manager_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+
     class Meta:
         model = Hotel
         fields = '__all__'
+
+    def validate_manager_id(self, value):
+        if value is None:
+            return None
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            manager = User.objects.get(id=value, role='manager', is_active=True)
+            return value
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid manager ID or manager is not active.")
+
+    def create(self, validated_data):
+        manager_id = validated_data.pop('manager_id', None)
+        if manager_id:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            validated_data['manager'] = User.objects.get(id=manager_id)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        manager_id = validated_data.pop('manager_id', None)
+        if manager_id is not None:
+            if manager_id:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                validated_data['manager'] = User.objects.get(id=manager_id)
+            else:
+                validated_data['manager'] = None
+        return super().update(instance, validated_data)
 
 
 # ============== Room View Serializers ==============

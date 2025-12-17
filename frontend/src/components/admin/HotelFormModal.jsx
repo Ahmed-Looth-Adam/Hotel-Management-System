@@ -11,7 +11,6 @@ import {
   CircularProgress,
   Box,
   Alert,
-  FormControlLabel,
   Switch,
   Rating,
   Typography,
@@ -28,9 +27,10 @@ import {
   Star as StarIcon,
   MeetingRoom as RoomIcon,
   Person as ManagerIcon,
-  Description as DescriptionIcon,
   LocationCity as LocationIcon,
   ToggleOn as StatusIcon,
+  Place as AddressIcon,
+  Public as CountryIcon,
 } from '@mui/icons-material';
 import authService from '../../services/authService';
 
@@ -39,6 +39,21 @@ const HotelSchema = Yup.object().shape({
     .min(2, 'Name must be at least 2 characters')
     .max(255, 'Name must not exceed 255 characters')
     .required('Hotel name is required'),
+  location: Yup.string()
+    .min(2, 'Location must be at least 2 characters')
+    .max(100, 'Location must not exceed 100 characters')
+    .required('Location is required'),
+  address: Yup.string()
+    .min(5, 'Address must be at least 5 characters')
+    .required('Address is required'),
+  city: Yup.string()
+    .min(2, 'City must be at least 2 characters')
+    .max(100, 'City must not exceed 100 characters')
+    .required('City is required'),
+  country: Yup.string()
+    .min(2, 'Country must be at least 2 characters')
+    .max(100, 'Country must not exceed 100 characters')
+    .required('Country is required'),
   description: Yup.string().nullable(),
   star_rating: Yup.number()
     .min(1, 'Rating must be at least 1')
@@ -62,6 +77,10 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
 
   const initialValues = {
     name: hotelToEdit?.name || '',
+    location: hotelToEdit?.location || '',
+    address: hotelToEdit?.address || '',
+    city: hotelToEdit?.city || '',
+    country: hotelToEdit?.country || '',
     description: hotelToEdit?.description || '',
     star_rating: hotelToEdit?.star_rating || 3,
     room_capacity: hotelToEdit?.room_capacity || 0,
@@ -93,6 +112,10 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
 
     const payload = {
       name: values.name,
+      location: values.location,
+      address: values.address,
+      city: values.city,
+      country: values.country,
       description: values.description || null,
       star_rating: values.star_rating,
       room_capacity: values.room_capacity,
@@ -107,6 +130,10 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
     } else {
       const detailError =
         result.error?.name?.[0] ||
+        result.error?.location?.[0] ||
+        result.error?.address?.[0] ||
+        result.error?.city?.[0] ||
+        result.error?.country?.[0] ||
         result.error?.description?.[0] ||
         result.error?.star_rating?.[0] ||
         result.error?.room_capacity?.[0] ||
@@ -180,7 +207,7 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
       >
         {({ errors, touched, values, setFieldValue }) => (
           <Form>
-            <DialogContent sx={{ px: 3, py: 2 }}>
+            <DialogContent sx={{ px: 3, py: 2, maxHeight: '70vh', overflowY: 'auto' }}>
               {error && (
                 <Alert
                   severity="error"
@@ -198,11 +225,52 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
                   as={TextField}
                   name="name"
                   label="Hotel Name"
+                  placeholder="e.g., Grand Plaza Hotel"
                   fullWidth
                   required
                   size="small"
                   error={touched.name && Boolean(errors.name)}
                   helperText={touched.name && errors.name}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <HotelIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 2 }
+                  }}
+                />
+
+                <Field
+                  as={TextField}
+                  name="description"
+                  label="Description"
+                  placeholder="Brief description of the hotel..."
+                  fullWidth
+                  multiline
+                  rows={2}
+                  size="small"
+                  error={touched.description && Boolean(errors.description)}
+                  helperText={touched.description && errors.description}
+                  InputProps={{
+                    sx: { borderRadius: 2 }
+                  }}
+                />
+              </Box>
+
+              {/* Location Details */}
+              <SectionHeader icon={AddressIcon} title="Location Details" />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
+                <Field
+                  as={TextField}
+                  name="location"
+                  label="Location"
+                  placeholder="e.g., Central London, Downtown Manhattan"
+                  fullWidth
+                  required
+                  size="small"
+                  error={touched.location && Boolean(errors.location)}
+                  helperText={touched.location && errors.location}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -215,23 +283,70 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
 
                 <Field
                   as={TextField}
-                  name="description"
-                  label="Description"
+                  name="address"
+                  label="Full Address"
+                  placeholder="e.g., 123 Main Street, Suite 100"
                   fullWidth
-                  multiline
-                  rows={3}
+                  required
                   size="small"
-                  error={touched.description && Boolean(errors.description)}
-                  helperText={touched.description && errors.description}
+                  error={touched.address && Boolean(errors.address)}
+                  helperText={touched.address && errors.address}
                   InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AddressIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
                     sx: { borderRadius: 2 }
                   }}
                 />
+
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Field
+                    as={TextField}
+                    name="city"
+                    label="City"
+                    placeholder="e.g., London"
+                    fullWidth
+                    required
+                    size="small"
+                    error={touched.city && Boolean(errors.city)}
+                    helperText={touched.city && errors.city}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LocationIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                      sx: { borderRadius: 2 }
+                    }}
+                  />
+
+                  <Field
+                    as={TextField}
+                    name="country"
+                    label="Country"
+                    placeholder="e.g., United Kingdom"
+                    fullWidth
+                    required
+                    size="small"
+                    error={touched.country && Boolean(errors.country)}
+                    helperText={touched.country && errors.country}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <CountryIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                      sx: { borderRadius: 2 }
+                    }}
+                  />
+                </Box>
               </Box>
 
               {/* Star Rating */}
               <SectionHeader icon={StarIcon} title="Star Rating" />
-              <Box sx={{ mb: 2, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ mb: 2 }}>
                 <Box
                   sx={{
                     display: 'flex',

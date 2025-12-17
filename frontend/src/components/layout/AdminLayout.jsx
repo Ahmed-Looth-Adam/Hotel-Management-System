@@ -306,46 +306,59 @@ const AdminLayout = ({ children }) => {
                   </Box>
                 ) : (
                   notifications.map((notification) => (
-                    <MenuItem
+                    <Tooltip
                       key={notification.id}
-                      onClick={() => handleNotificationClick(notification)}
-                      sx={{
-                        py: 1.5,
-                        px: 2,
-                        bgcolor: notification.read ? 'transparent' : alpha(theme.palette.primary.main, 0.04),
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.08),
-                        },
-                      }}
+                      title={notification.message}
+                      placement="left"
+                      arrow
+                      enterDelay={500}
                     >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        {notification.type === 'user_created' ? (
-                          <PersonAddIcon sx={{ color: 'primary.main' }} />
-                        ) : notification.type === 'user_deleted' ? (
-                          <PersonRemoveIcon sx={{ color: 'error.main' }} />
-                        ) : notification.type === 'hotel_created' ? (
-                          <HotelAddIcon sx={{ color: 'success.main' }} />
-                        ) : notification.type === 'hotel_deleted' ? (
-                          <HotelRemoveIcon sx={{ color: 'error.main' }} />
-                        ) : (
-                          <NotificationsIcon sx={{ color: 'text.secondary' }} />
+                      <MenuItem
+                        onClick={() => handleNotificationClick(notification)}
+                        sx={{
+                          py: 1.5,
+                          px: 2,
+                          bgcolor: notification.read ? 'transparent' : alpha(theme.palette.primary.main, 0.04),
+                          '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          {notification.type === 'user_created' ? (
+                            <PersonAddIcon sx={{ color: 'primary.main' }} />
+                          ) : notification.type === 'user_deleted' ? (
+                            <PersonRemoveIcon sx={{ color: 'error.main' }} />
+                          ) : notification.type === 'hotel_created' ? (
+                            <HotelAddIcon sx={{ color: 'success.main' }} />
+                          ) : notification.type === 'hotel_deleted' ? (
+                            <HotelRemoveIcon sx={{ color: 'error.main' }} />
+                          ) : (
+                            <NotificationsIcon sx={{ color: 'text.secondary' }} />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={notification.message}
+                          secondary={formatRelativeTime(notification.timestamp)}
+                          primaryTypographyProps={{
+                            variant: 'body2',
+                            fontWeight: notification.read ? 400 : 600,
+                            noWrap: true,
+                            sx: {
+                              maxWidth: 220,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            },
+                          }}
+                          secondaryTypographyProps={{
+                            variant: 'caption',
+                          }}
+                        />
+                        {!notification.read && (
+                          <UnreadIcon sx={{ fontSize: 8, color: 'primary.main', ml: 1 }} />
                         )}
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={notification.message}
-                        secondary={formatRelativeTime(notification.timestamp)}
-                        primaryTypographyProps={{
-                          variant: 'body2',
-                          fontWeight: notification.read ? 400 : 600,
-                        }}
-                        secondaryTypographyProps={{
-                          variant: 'caption',
-                        }}
-                      />
-                      {!notification.read && (
-                        <UnreadIcon sx={{ fontSize: 8, color: 'primary.main', ml: 1 }} />
-                      )}
-                    </MenuItem>
+                      </MenuItem>
+                    </Tooltip>
                   ))
                 )}
               </Box>
