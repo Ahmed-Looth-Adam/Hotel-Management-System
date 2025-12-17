@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Box,
   Container,
@@ -11,15 +12,10 @@ import {
   useTheme,
   IconButton,
   Popover,
-  Fade,
   Grow,
   Avatar,
   Menu,
   MenuItem,
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemText,
   CircularProgress,
 } from '@mui/material';
 import {
@@ -31,7 +27,12 @@ import {
   Language as LanguageIcon,
   LocationOn,
   NearMe,
+  Close,
+  ArrowBack,
+  FavoriteBorder,
+  PersonOutline,
 } from '@mui/icons-material';
+import { Dialog, Slide } from '@mui/material';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -39,7 +40,20 @@ import dayjs from 'dayjs';
 import { useAuth } from '../../context/AuthContext';
 import hotelService from '../../services/hotelService';
 
-// Airbnb-style animation timing
+// Framer Motion spring configurations
+const smoothSpring = {
+  type: 'spring',
+  stiffness: 300,
+  damping: 30,
+};
+
+const gentleSpring = {
+  type: 'spring',
+  stiffness: 200,
+  damping: 25,
+};
+
+// CSS transitions for hover effects
 const springTransition = 'all 0.3s cubic-bezier(0.2, 0, 0, 1)';
 const fastSpring = 'all 0.2s cubic-bezier(0.2, 0, 0, 1)';
 
@@ -69,28 +83,86 @@ const Hero = () => {
 
   // Menu states
   const [anchorElUser, setAnchorElUser] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Transition for full screen dialog
+  const Transition = React.forwardRef(function Transition(props, ref) {
+    return <Slide direction="up" ref={ref} {...props} />;
+  });
 
   // Ref for search bar
   const searchBarRef = useRef(null);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const scrolled = scrollY > 50;
-      setIsScrolled(scrolled);
+  // Track last scroll direction to prevent oscillation
+  const lastScrollY = useRef(0);
+  const scrollDirection = useRef('up');
+  const isManualExpand = useRef(false);
 
-      // Hysteresis for expansion state to prevent flickering
-      if (scrollY > 100) {
-        setIsExpanded(false);
-        setActiveField(null);
-      } else if (scrollY < 50) {
-        setIsExpanded(true);
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+
+          // Determine scroll direction
+          if (scrollY > lastScrollY.current) {
+            scrollDirection.current = 'down';
+          } else if (scrollY < lastScrollY.current) {
+            scrollDirection.current = 'up';
+          }
+
+          lastScrollY.current = scrollY;
+          setIsScrolled(scrollY > 10);
+
+          // Only collapse when scrolling DOWN past threshold
+          if (scrollDirection.current === 'down' && scrollY > 30 && !isManualExpand.current) {
+            setIsExpanded(false);
+            setActiveField(null);
+          }
+
+          // Only expand when at the very top
+          if (scrollY < 5) {
+            setIsExpanded(true);
+            isManualExpand.current = false;
+          }
+
+          ticking = false;
+        });
+        ticking = true;
       }
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Handle manual expand (clicking collapsed bar)
+  const handleExpandSearch = () => {
+    isManualExpand.current = true;
+    setIsExpanded(true);
+    // Reset manual flag after a delay to allow normal scroll behavior
+    setTimeout(() => {
+      isManualExpand.current = false;
+    }, 500);
+  };
+
+  // Click outside to collapse expanded search bar
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchBarRef.current && !searchBarRef.current.contains(event.target)) {
+        const isPopover = event.target.closest('.MuiPopover-root');
+        if (!isPopover && isExpanded && window.scrollY > 10) {
+          setIsExpanded(false);
+          isManualExpand.current = false;
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isExpanded]);
 
   // Fetch hotel locations
   useEffect(() => {
@@ -137,7 +209,7 @@ const Hero = () => {
     setIsExpanded(true);
     setActiveField(field);
     if (field === 'where') {
-      setLocationAnchor(event.currentTarget);
+      setLocationAnchor(searchBarRef.current);
     } else if (field === 'dates') {
       setDateAnchor(event.currentTarget);
     } else if (field === 'guests') {
@@ -163,7 +235,7 @@ const Hero = () => {
   // Collapsed Search Bar (Airbnb style)
   const renderCollapsedSearchBar = () => (
     <Paper
-      onClick={() => setIsExpanded(true)}
+      onClick={handleExpandSearch}
       elevation={0}
       sx={{
         display: 'flex',
@@ -241,7 +313,7 @@ const Hero = () => {
 
   // Expanded Search Bar (Airbnb style)
   const renderExpandedSearchBar = () => (
-    <Box sx={{ width: '100%', maxWidth: '850px', mx: 'auto' }}>
+    <Box sx={{ width: '100%', maxWidth: '900px', mx: 'auto' }}>
       <Paper
         ref={searchBarRef}
         elevation={0}
@@ -382,28 +454,20 @@ const Hero = () => {
             </Typography>
           </Box>
 
-          <Button
-            variant="contained"
+          <IconButton
             onClick={handleSearch}
             sx={{
-              minWidth: { xs: '48px', md: 'auto' },
+              width: '48px',
               height: '48px',
-              borderRadius: '24px',
-              px: { xs: 0, md: 2.5 },
               bgcolor: '#FF385C',
               color: 'white',
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '16px',
-              boxShadow: 'none',
               transition: springTransition,
-              '&:hover': { bgcolor: '#E31C5F', boxShadow: 'none', transform: 'scale(1.04)' },
+              '&:hover': { bgcolor: '#E31C5F', transform: 'scale(1.04)' },
               '&:active': { transform: 'scale(0.96)' },
             }}
           >
             <Search sx={{ fontSize: 20 }} />
-            {!isMobile && <Typography sx={{ ml: 1, fontWeight: 600 }}>Search</Typography>}
-          </Button>
+          </IconButton>
         </Box>
       </Paper>
 
@@ -570,33 +634,309 @@ const Hero = () => {
     </Box>
   );
 
-  return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
+  // Mobile Search Bar (Compact Pill - Airbnb style centered)
+  const renderMobileSearchBar = () => (
+    <Paper
+      onClick={() => setMobileSearchOpen(true)}
+      elevation={0}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 1.5,
+        height: '56px',
+        borderRadius: '32px',
+        border: '1px solid #DDDDDD',
+        boxShadow: '0 3px 12px rgba(0,0,0,0.08)',
+        px: 3,
+        mx: 2,
+        width: '100%',
+        maxWidth: '500px',
+        bgcolor: '#FFFFFF',
+        cursor: 'pointer',
+        transition: fastSpring,
+        '&:active': {
+          transform: 'scale(0.98)',
+        },
+      }}
+    >
+      <Search sx={{ fontSize: 20, color: '#222222' }} />
+      <Typography
+        variant="body2"
+        fontWeight={600}
+        color="#222222"
+        sx={{ letterSpacing: '-0.01em' }}
+      >
+        Start your search
+      </Typography>
+    </Paper>
+  );
+
+  // Mobile Search Overlay (Full Screen Wizard)
+  const renderMobileSearchOverlay = () => (
+    <Dialog
+      fullScreen
+      open={mobileSearchOpen}
+      onClose={() => setMobileSearchOpen(false)}
+      TransitionComponent={Transition}
+    >
+      {/* Header */}
       <Box
         sx={{
+          display: 'flex',
+          alignItems: 'center',
+          p: 2,
+          borderBottom: '1px solid #F7F7F7',
+          gap: 2,
+        }}
+      >
+        <IconButton
+          edge="start"
+          onClick={() => setMobileSearchOpen(false)}
+          sx={{
+            bgcolor: '#F7F7F7',
+            '&:hover': { bgcolor: '#EBEBEB' },
+          }}
+        >
+          <Close sx={{ fontSize: 20 }} />
+        </IconButton>
+        <Typography variant="h6" fontWeight={700} sx={{ flex: 1, textAlign: 'center', mr: 5 }}>
+          Stays
+        </Typography>
+      </Box>
+
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', pb: 10 }}>
+        {/* Where Section */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: '24px',
+            border: '1px solid',
+            borderColor: activeField === 'where' ? '#222222' : '#EBEBEB',
+            boxShadow: activeField === 'where' ? '0 6px 16px rgba(0,0,0,0.08)' : 'none',
+          }}
+          onClick={() => setActiveField('where')}
+        >
+          <Typography variant="caption" fontWeight={800} color="#222222" sx={{ fontSize: '14px', mb: 1, display: 'block' }}>
+            Where to?
+          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              border: '1px solid #B0B0B0',
+              borderRadius: '12px',
+              p: 1.5,
+            }}
+          >
+            <Search sx={{ color: '#222222' }} />
+            <Typography variant="body1" color={selectedLocation ? '#222222' : '#717171'}>
+              {selectedLocation ? `${selectedLocation.city}, ${selectedLocation.country}` : 'Wait, I\'m flexible'}
+            </Typography>
+          </Box>
+
+          {/* Expanded Where Content (Suggested Destinations) */}
+          {activeField === 'where' && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="caption" fontWeight={700} color="#717171" sx={{ mb: 1, display: 'block' }}>
+                SUGGESTED DESTINATIONS
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box
+                  onClick={(e) => { e.stopPropagation(); setSelectedLocation(null); setActiveField('dates'); }}
+                  sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1, borderRadius: '8px', '&:active': { bgcolor: '#F7F7F7' } }}
+                >
+                  <Box sx={{ p: 1, bgcolor: '#F7F7F7', borderRadius: '8px' }}><NearMe sx={{ color: '#FF385C' }} /></Box>
+                  <Typography fontWeight={600}>I'm flexible</Typography>
+                </Box>
+                {locations.slice(0, 3).map((loc) => (
+                  <Box
+                    key={loc.id}
+                    onClick={(e) => { e.stopPropagation(); setSelectedLocation(loc); setActiveField('dates'); }}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1, borderRadius: '8px', '&:active': { bgcolor: '#F7F7F7' } }}
+                  >
+                    <Box sx={{ p: 1, bgcolor: '#F7F7F7', borderRadius: '8px' }}><LocationOn sx={{ color: '#717171' }} /></Box>
+                    <Typography fontWeight={600}>{loc.city}, {loc.country}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+        </Paper>
+
+        {/* When Section */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: '24px',
+            border: '1px solid',
+            borderColor: activeField === 'dates' ? '#222222' : '#EBEBEB',
+            boxShadow: activeField === 'dates' ? '0 6px 16px rgba(0,0,0,0.08)' : 'none',
+          }}
+          onClick={() => setActiveField('dates')}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" fontWeight={800} color="#222222" sx={{ fontSize: '14px' }}>
+              When's your trip?
+            </Typography>
+            <Typography variant="body2" fontWeight={600} color="#222222">
+              {checkIn ? (checkOut ? `${checkIn.format('MMM D')} - ${checkOut.format('MMM D')}` : checkIn.format('MMM D')) : 'Add dates'}
+            </Typography>
+          </Box>
+
+          {activeField === 'dates' && (
+            <Box sx={{ mt: 2 }}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DateCalendar
+                  value={checkIn}
+                  onChange={(newValue) => {
+                    if (!checkIn || (checkIn && checkOut)) {
+                      setCheckIn(newValue);
+                      setCheckOut(null);
+                    } else if (newValue.isAfter(checkIn)) {
+                      setCheckOut(newValue);
+                      setActiveField('guests'); // Auto-advance
+                    } else {
+                      setCheckIn(newValue);
+                    }
+                  }}
+                  disablePast
+                  views={['day']}
+                />
+              </LocalizationProvider>
+            </Box>
+          )}
+        </Paper>
+
+        {/* Who Section */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: '24px',
+            border: '1px solid',
+            borderColor: activeField === 'guests' ? '#222222' : '#EBEBEB',
+            boxShadow: activeField === 'guests' ? '0 6px 16px rgba(0,0,0,0.08)' : 'none',
+          }}
+          onClick={() => setActiveField('guests')}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="caption" fontWeight={800} color="#222222" sx={{ fontSize: '14px' }}>
+              Who's coming?
+            </Typography>
+            <Typography variant="body2" fontWeight={600} color="#222222">
+              {guests} guest{guests !== 1 ? 's' : ''}
+            </Typography>
+          </Box>
+
+          {activeField === 'guests' && (
+            <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography fontWeight={600}>Adults</Typography>
+                <Typography variant="caption" color="#717171">Ages 13 or above</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <IconButton
+                  onClick={(e) => { e.stopPropagation(); setGuests(Math.max(1, guests - 1)); }}
+                  disabled={guests <= 1}
+                  sx={{ border: '1px solid #DDDDDD' }}
+                >
+                  <Remove />
+                </IconButton>
+                <Typography fontWeight={600}>{guests}</Typography>
+                <IconButton
+                  onClick={(e) => { e.stopPropagation(); setGuests(Math.min(10, guests + 1)); }}
+                  sx={{ border: '1px solid #DDDDDD' }}
+                >
+                  <Add />
+                </IconButton>
+              </Box>
+            </Box>
+          )}
+        </Paper>
+      </Box>
+
+      {/* Footer */}
+      <Paper
+        elevation={0}
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          p: 2,
+          borderTop: '1px solid #EBEBEB',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          bgcolor: '#FFFFFF',
+          zIndex: 10
+        }}
+      >
+        <Button
+          variant="text"
+          sx={{ fontWeight: 600, color: '#222222', textDecoration: 'underline', textTransform: 'none' }}
+          onClick={() => {
+            setCheckIn(null);
+            setCheckOut(null);
+            setSelectedLocation(null);
+            setGuests(1);
+          }}
+        >
+          Clear all
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => { setMobileSearchOpen(false); handleSearch(); }}
+          startIcon={<Search />}
+          sx={{
+            bgcolor: '#FF385C',
+            color: 'white',
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 3,
+            py: 1.5,
+            borderRadius: '12px',
+            fontSize: '16px',
+            '&:hover': { bgcolor: '#E31C5F' }
+          }}
+        >
+          Search
+        </Button>
+      </Paper>
+    </Dialog>
+  );
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <motion.div
+        layout
+        transition={gentleSpring}
+        style={{
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          bgcolor: '#FFFFFF',
+          backgroundColor: '#FFFFFF',
           borderBottom: '1px solid #EBEBEB',
-          transition: springTransition,
         }}
       >
-        <Container maxWidth="xl">
+        <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 } }}>
+          {/* Top Row - Logo and Menu (fixed height) */}
           <Box
             sx={{
-              py: { xs: 2, md: isExpanded ? 2.5 : 1.5 },
-              display: 'flex',
+              display: { xs: 'none', md: 'flex' },
               alignItems: 'center',
-              justifyContent: 'center',
-              transition: springTransition,
+              justifyContent: 'space-between',
+              pt: 2,
+              pb: 2,
             }}
           >
             {/* Logo - Left side */}
             <Box
               sx={{
-                position: 'absolute',
-                left: { xs: 16, md: 40 },
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
@@ -604,19 +944,6 @@ const Hero = () => {
               }}
               onClick={() => navigate('/')}
             >
-              {/* Mobile Menu Icon */}
-              {isMobile && (
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMobileMenuOpen(true);
-                  }}
-                  sx={{ mr: 0.5 }}
-                >
-                  <MenuIcon sx={{ fontSize: 24, color: '#222222' }} />
-                </IconButton>
-              )}
               <Box
                 sx={{
                   width: 32,
@@ -630,63 +957,55 @@ const Hero = () => {
               >
                 <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '18px' }}>H</Typography>
               </Box>
-              {!isMobile && (
-                <Typography sx={{ color: '#FF385C', fontWeight: 700, fontSize: '20px', letterSpacing: '-0.02em' }}>
-                  Hotels
-                </Typography>
-              )}
+              <Typography sx={{ color: '#FF385C', fontWeight: 700, fontSize: '20px', letterSpacing: '-0.02em' }}>
+                Hotels
+              </Typography>
             </Box>
 
-            {/* Search Bar - Center */}
-            <Box
-              sx={{
-                width: '100%',
-                maxWidth: isExpanded ? '850px' : '400px',
-                transition: springTransition,
-                px: { xs: 8, md: 0 },
-              }}
-            >
-              {isScrolled && !isExpanded ? (
-                renderCollapsedSearchBar()
-              ) : (
-                <Fade in={isExpanded} timeout={300}>
-                  <Box>{renderExpandedSearchBar()}</Box>
-                </Fade>
+            {/* Center - Collapsed search bar when scrolled */}
+            <AnimatePresence mode="wait">
+              {!isExpanded && (
+                <motion.div
+                  key="collapsed-search"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ flex: 1, display: 'flex', justifyContent: 'center' }}
+                >
+                  {renderCollapsedSearchBar()}
+                </motion.div>
               )}
-            </Box>
+            </AnimatePresence>
 
             {/* Right side - User Menu */}
             <Box
               sx={{
-                position: 'absolute',
-                right: { xs: 16, md: 40 },
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
               }}
             >
-              {/* Browse Rooms link (desktop only) */}
-              {!isMobile && (
-                <Button
-                  onClick={() => navigate('/guest/rooms')}
-                  sx={{
-                    color: '#222222',
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    borderRadius: '24px',
-                    px: 2,
-                    py: 1,
-                    transition: fastSpring,
-                    '&:hover': { bgcolor: '#F7F7F7' },
-                  }}
-                >
-                  Browse Rooms
-                </Button>
-              )}
+              {/* Browse Rooms link */}
+              <Button
+                onClick={() => navigate('/guest/rooms')}
+                sx={{
+                  color: '#222222',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  borderRadius: '24px',
+                  px: 2,
+                  py: 1,
+                  transition: fastSpring,
+                  '&:hover': { bgcolor: '#F7F7F7' },
+                }}
+              >
+                Browse Rooms
+              </Button>
 
               {/* Language Icon */}
-              <IconButton size="small" sx={{ display: { xs: 'none', md: 'flex' } }}>
+              <IconButton size="small">
                 <LanguageIcon sx={{ fontSize: 20, color: '#222222' }} />
               </IconButton>
 
@@ -783,104 +1102,43 @@ const Hero = () => {
               </Menu>
             </Box>
           </Box>
-        </Container>
-      </Box>
 
-      {/* Mobile Menu Drawer */}
-      <Drawer
-        anchor="left"
-        open={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-        PaperProps={{
-          sx: { width: 280, borderRadius: '0 16px 16px 0' },
-        }}
-      >
-        <Box sx={{ p: 3 }}>
-          {/* Logo */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          {/* Second Row - Expanded Search Bar (desktop only) */}
+          <AnimatePresence mode="wait">
+            {!isMobile && isExpanded && (
+              <motion.div
+                key="expanded-search"
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  paddingBottom: '20px',
+                  overflow: 'hidden',
+                }}
+              >
+                {renderExpandedSearchBar()}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Mobile Search Bar */}
+          {isMobile && (
             <Box
               sx={{
-                width: 40,
-                height: 40,
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #FF385C 0%, #E61E4D 100%)',
+                py: 2,
                 display: 'flex',
-                alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '22px' }}>H</Typography>
-            </Box>
-            <Typography sx={{ color: '#FF385C', fontWeight: 700, fontSize: '22px' }}>Hotels</Typography>
-          </Box>
-
-          {isAuthenticated && (
-            <Box sx={{ mb: 3, pb: 2, borderBottom: '1px solid #EBEBEB' }}>
-              <Typography fontWeight={600} color="#222222">
-                Hi, {user?.first_name || user?.username}
-              </Typography>
-              <Typography variant="body2" color="#717171">
-                {user?.email}
-              </Typography>
+              {renderMobileSearchBar()}
             </Box>
           )}
-
-          <List disablePadding>
-            <ListItemButton
-              onClick={() => { navigate('/'); setMobileMenuOpen(false); }}
-              sx={{ borderRadius: '8px', mb: 0.5 }}
-            >
-              <ListItemText primary="Home" primaryTypographyProps={{ fontWeight: 600 }} />
-            </ListItemButton>
-            <ListItemButton
-              onClick={() => { navigate('/guest/rooms'); setMobileMenuOpen(false); }}
-              sx={{ borderRadius: '8px', mb: 0.5 }}
-            >
-              <ListItemText primary="Browse Rooms" />
-            </ListItemButton>
-            {isAuthenticated && (
-              <>
-                <ListItemButton
-                  onClick={() => { navigate('/guest/my-bookings'); setMobileMenuOpen(false); }}
-                  sx={{ borderRadius: '8px', mb: 0.5 }}
-                >
-                  <ListItemText primary="My Bookings" />
-                </ListItemButton>
-                <ListItemButton
-                  onClick={() => { navigate('/guest/profile'); setMobileMenuOpen(false); }}
-                  sx={{ borderRadius: '8px', mb: 0.5 }}
-                >
-                  <ListItemText primary="Account" />
-                </ListItemButton>
-              </>
-            )}
-            <Divider sx={{ my: 2 }} />
-            {isAuthenticated ? (
-              <ListItemButton
-                onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                sx={{ borderRadius: '8px' }}
-              >
-                <ListItemText primary="Log out" primaryTypographyProps={{ color: '#717171' }} />
-              </ListItemButton>
-            ) : (
-              <>
-                <ListItemButton
-                  onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
-                  sx={{ borderRadius: '8px', mb: 0.5 }}
-                >
-                  <ListItemText primary="Log in" primaryTypographyProps={{ fontWeight: 600 }} />
-                </ListItemButton>
-                <ListItemButton
-                  onClick={() => { navigate('/register'); setMobileMenuOpen(false); }}
-                  sx={{ borderRadius: '8px' }}
-                >
-                  <ListItemText primary="Sign up" />
-                </ListItemButton>
-              </>
-            )}
-          </List>
-        </Box>
-      </Drawer>
+        </Container>
+      </motion.div>
 
       {/* Location Popover */}
       <Popover
@@ -1015,6 +1273,87 @@ const Hero = () => {
           )}
         </Box>
       </Popover>
+      {renderMobileSearchOverlay()}
+
+      {/* Mobile Bottom Navigation Bar */}
+      {isMobile && (
+        <Paper
+          elevation={0}
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            borderTop: '1px solid #EBEBEB',
+            bgcolor: '#FFFFFF',
+            py: 1,
+            px: 2,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+            }}
+          >
+            {/* Explore */}
+            <Box
+              onClick={() => navigate('/')}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 0.5,
+                cursor: 'pointer',
+                py: 0.5,
+              }}
+            >
+              <Search sx={{ fontSize: 24, color: '#FF385C' }} />
+              <Typography sx={{ fontSize: '10px', fontWeight: 600, color: '#FF385C' }}>
+                Explore
+              </Typography>
+            </Box>
+
+            {/* Bookings / Wishlists */}
+            <Box
+              onClick={() => navigate(isAuthenticated ? '/guest/my-bookings' : '/login')}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 0.5,
+                cursor: 'pointer',
+                py: 0.5,
+              }}
+            >
+              <FavoriteBorder sx={{ fontSize: 24, color: '#717171' }} />
+              <Typography sx={{ fontSize: '10px', fontWeight: 500, color: '#717171' }}>
+                Bookings
+              </Typography>
+            </Box>
+
+            {/* Log in / Profile */}
+            <Box
+              onClick={() => navigate(isAuthenticated ? '/guest/profile' : '/login')}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 0.5,
+                cursor: 'pointer',
+                py: 0.5,
+              }}
+            >
+              <PersonOutline sx={{ fontSize: 24, color: '#717171' }} />
+              <Typography sx={{ fontSize: '10px', fontWeight: 500, color: '#717171' }}>
+                {isAuthenticated ? 'Profile' : 'Log in'}
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+      )}
     </LocalizationProvider>
   );
 };

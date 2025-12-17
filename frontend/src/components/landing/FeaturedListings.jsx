@@ -324,19 +324,26 @@ const FeaturedListings = () => {
     navigate(`/guest/rooms?hotel=${hotel.id}`);
   };
 
+  // Responsive padding for containers
+  const containerSx = { px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 } };
+
+  // Responsive grid columns
+  const gridColumns = {
+    xs: 'repeat(1, 1fr)',
+    sm: 'repeat(2, 1fr)',
+    md: 'repeat(3, 1fr)',
+    lg: 'repeat(4, 1fr)',
+    xl: 'repeat(5, 1fr)',
+    '2xl': 'repeat(6, 1fr)',
+  };
+
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 3 }}>
+      <Container maxWidth={false} sx={{ py: 3, ...containerSx }}>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: {
-              xs: 'repeat(1, 1fr)',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-              lg: 'repeat(4, 1fr)',
-              xl: 'repeat(5, 1fr)',
-            },
+            gridTemplateColumns: gridColumns,
             gap: { xs: 3, md: 3 },
           }}
         >
@@ -350,7 +357,7 @@ const FeaturedListings = () => {
 
   if (hotels.length === 0) {
     return (
-      <Container maxWidth="xl" sx={{ py: 6 }}>
+      <Container maxWidth={false} sx={{ py: 6, ...containerSx }}>
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <HotelIcon sx={{ fontSize: 64, color: '#DDDDDD', mb: 2 }} />
           <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#222222', mb: 1 }}>
@@ -365,17 +372,11 @@ const FeaturedListings = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth={false} sx={{ py: 3, ...containerSx }}>
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: {
-            xs: 'repeat(1, 1fr)',
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(3, 1fr)',
-            lg: 'repeat(4, 1fr)',
-            xl: 'repeat(5, 1fr)',
-          },
+          gridTemplateColumns: gridColumns,
           gap: { xs: 3, md: 3 },
         }}
       >
