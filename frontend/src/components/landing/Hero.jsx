@@ -40,22 +40,20 @@ import dayjs from 'dayjs';
 import { useAuth } from '../../context/AuthContext';
 import hotelService from '../../services/hotelService';
 
-// Framer Motion spring configurations
-const smoothSpring = {
-  type: 'spring',
-  stiffness: 300,
-  damping: 30,
+// Framer Motion configurations - smooth easing
+const smoothTransition = {
+  duration: 0.3,
+  ease: [0.4, 0, 0.2, 1], // Material Design standard easing
 };
 
-const gentleSpring = {
-  type: 'spring',
-  stiffness: 200,
-  damping: 25,
+const quickTransition = {
+  duration: 0.2,
+  ease: [0.4, 0, 0.2, 1],
 };
 
 // CSS transitions for hover effects
-const springTransition = 'all 0.3s cubic-bezier(0.2, 0, 0, 1)';
-const fastSpring = 'all 0.2s cubic-bezier(0.2, 0, 0, 1)';
+const springTransition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+const fastSpring = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
 
 const Hero = () => {
   const theme = useTheme();
@@ -93,59 +91,48 @@ const Hero = () => {
   // Ref for search bar
   const searchBarRef = useRef(null);
 
-  // Track last scroll direction to prevent oscillation
-  const lastScrollY = useRef(0);
-  const scrollDirection = useRef('up');
-  const isManualExpand = useRef(false);
+  // Lock to prevent rapid state changes
+  const isAnimating = useRef(false);
+  const lastStateChange = useRef(Date.now());
+  const ANIMATION_LOCK_MS = 400; // Prevent state changes for 400ms after each change
+
+  // Safe state setter that respects animation lock
+  const setExpandedSafe = (value) => {
+    const now = Date.now();
+    if (now - lastStateChange.current < ANIMATION_LOCK_MS) {
+      return; // Ignore if too soon after last change
+    }
+    if (isExpanded !== value) {
+      lastStateChange.current = now;
+      setIsExpanded(value);
+    }
+  };
 
   useEffect(() => {
-    let ticking = false;
-
     const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const scrollY = window.scrollY;
+      const scrollY = window.scrollY;
+      setIsScrolled(scrollY > 10);
 
-          // Determine scroll direction
-          if (scrollY > lastScrollY.current) {
-            scrollDirection.current = 'down';
-          } else if (scrollY < lastScrollY.current) {
-            scrollDirection.current = 'up';
-          }
+      // Only collapse when scrolled down enough
+      if (scrollY > 80) {
+        setExpandedSafe(false);
+        setActiveField(null);
+      }
 
-          lastScrollY.current = scrollY;
-          setIsScrolled(scrollY > 10);
-
-          // Only collapse when scrolling DOWN past threshold
-          if (scrollDirection.current === 'down' && scrollY > 30 && !isManualExpand.current) {
-            setIsExpanded(false);
-            setActiveField(null);
-          }
-
-          // Only expand when at the very top
-          if (scrollY < 5) {
-            setIsExpanded(true);
-            isManualExpand.current = false;
-          }
-
-          ticking = false;
-        });
-        ticking = true;
+      // Only expand when at the very top
+      if (scrollY < 10) {
+        setExpandedSafe(true);
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isExpanded]);
 
   // Handle manual expand (clicking collapsed bar)
   const handleExpandSearch = () => {
-    isManualExpand.current = true;
+    lastStateChange.current = Date.now();
     setIsExpanded(true);
-    // Reset manual flag after a delay to allow normal scroll behavior
-    setTimeout(() => {
-      isManualExpand.current = false;
-    }, 500);
   };
 
   // Click outside to collapse expanded search bar
@@ -153,9 +140,8 @@ const Hero = () => {
     const handleClickOutside = (event) => {
       if (searchBarRef.current && !searchBarRef.current.contains(event.target)) {
         const isPopover = event.target.closest('.MuiPopover-root');
-        if (!isPopover && isExpanded && window.scrollY > 10) {
-          setIsExpanded(false);
-          isManualExpand.current = false;
+        if (!isPopover && isExpanded && window.scrollY > 20) {
+          setExpandedSafe(false);
         }
       }
     };
@@ -912,14 +898,12 @@ const Hero = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <motion.div
-        layout
-        transition={gentleSpring}
-        style={{
+      <Box
+        sx={{
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          backgroundColor: '#FFFFFF',
+          bgcolor: '#FFFFFF',
           borderBottom: '1px solid #EBEBEB',
         }}
       >
@@ -963,20 +947,19 @@ const Hero = () => {
             </Box>
 
             {/* Center - Collapsed search bar when scrolled */}
-            <AnimatePresence mode="wait">
-              {!isExpanded && (
-                <motion.div
-                  key="collapsed-search"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.2 }}
-                  style={{ flex: 1, display: 'flex', justifyContent: 'center' }}
-                >
-                  {renderCollapsedSearchBar()}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                justifyContent: 'center',
+                opacity: isExpanded ? 0 : 1,
+                visibility: isExpanded ? 'hidden' : 'visible',
+                transition: 'opacity 0.2s ease, visibility 0.2s ease',
+                pointerEvents: isExpanded ? 'none' : 'auto',
+              }}
+            >
+              {renderCollapsedSearchBar()}
+            </Box>
 
             {/* Right side - User Menu */}
             <Box
@@ -1104,26 +1087,21 @@ const Hero = () => {
           </Box>
 
           {/* Second Row - Expanded Search Bar (desktop only) */}
-          <AnimatePresence mode="wait">
-            {!isMobile && isExpanded && (
-              <motion.div
-                key="expanded-search"
-                layout
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  paddingBottom: '20px',
-                  overflow: 'hidden',
-                }}
-              >
-                {renderExpandedSearchBar()}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {!isMobile && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                pb: isExpanded ? '20px' : 0,
+                maxHeight: isExpanded ? '200px' : 0,
+                opacity: isExpanded ? 1 : 0,
+                overflow: 'hidden',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              {renderExpandedSearchBar()}
+            </Box>
+          )}
 
           {/* Mobile Search Bar */}
           {isMobile && (
@@ -1138,7 +1116,7 @@ const Hero = () => {
             </Box>
           )}
         </Container>
-      </motion.div>
+      </Box>
 
       {/* Location Popover */}
       <Popover
