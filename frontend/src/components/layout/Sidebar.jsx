@@ -96,6 +96,12 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
       roles: ['admin'],
     },
     {
+      title: 'Hotel Management',
+      icon: ApartmentIcon,
+      path: '/admin/hotels',
+      roles: ['admin'],
+    },
+    {
       title: 'Operations',
       icon: OperationsIcon,
       path: '/operations',
@@ -140,12 +146,6 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
       icon: PeopleIcon,
       path: '/staff',
       roles: ['manager', 'admin'],
-    },
-    {
-      title: 'Hotel Management',
-      icon: ApartmentIcon,
-      path: '/admin/hotels',
-      roles: ['admin'],
     },
     {
       title: 'Settings',
