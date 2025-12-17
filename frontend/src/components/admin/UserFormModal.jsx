@@ -308,9 +308,11 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = 
       onClose={handleClose}
       fullWidth
       maxWidth="sm"
+      scroll="paper"
       PaperProps={{
         sx: {
           borderRadius: 3,
+          maxHeight: '90vh',
           overflow: 'hidden',
         }
       }}
@@ -354,7 +356,36 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = 
       >
         {({ errors, touched, values, setFieldValue }) => (
           <Form>
-            <DialogContent sx={{ px: 3, py: 2 }}>
+            <DialogContent
+              sx={{
+                px: 3,
+                py: 2,
+                maxHeight: 'calc(90vh - 140px)',
+                overflowY: 'auto',
+                '&::-webkit-scrollbar': {
+                  width: '6px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'transparent',
+                  borderRadius: '3px',
+                  transition: 'background 0.2s ease',
+                },
+                '&:hover::-webkit-scrollbar-thumb': {
+                  background: 'rgba(0, 0, 0, 0.2)',
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                  background: 'rgba(0, 0, 0, 0.3)',
+                },
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'transparent transparent',
+                '&:hover': {
+                  scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+                },
+              }}
+            >
               {error && (
                 <Alert
                   severity="error"
