@@ -248,7 +248,7 @@ const Hero = () => {
         }}
       >
         <Typography variant="body2" fontWeight={600} color="#222222" noWrap>
-          {selectedLocation ? selectedLocation.city : 'Anywhere'}
+          {selectedLocation ? selectedLocation.city : 'Where'}
         </Typography>
       </Box>
       <Box
@@ -261,7 +261,7 @@ const Hero = () => {
         }}
       >
         <Typography variant="body2" fontWeight={600} color="#222222" noWrap>
-          Any week
+          {checkIn ? checkIn.format('MMM D') : 'When'}
         </Typography>
       </Box>
       <Box
@@ -949,9 +949,9 @@ const Hero = () => {
             {/* Center - Collapsed search bar when scrolled */}
             <Box
               sx={{
-                flex: 1,
-                display: 'flex',
-                justifyContent: 'center',
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
                 opacity: isExpanded ? 0 : 1,
                 visibility: isExpanded ? 'hidden' : 'visible',
                 transition: 'opacity 0.2s ease, visibility 0.2s ease',
