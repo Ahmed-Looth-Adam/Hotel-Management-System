@@ -116,7 +116,7 @@ const HotelFormModal = ({ open, handleClose, hotelToEdit, handleSave }) => {
       address: values.address,
       city: values.city,
       country: values.country,
-      description: values.description || null,
+      description: values.description || '',  // Send empty string, not null
       star_rating: values.star_rating,
       room_capacity: values.room_capacity,
       manager_id: values.manager_id || null,
