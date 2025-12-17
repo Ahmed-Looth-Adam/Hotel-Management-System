@@ -88,8 +88,10 @@ const Hero = () => {
     return <Slide direction="up" ref={ref} {...props} />;
   });
 
-  // Ref for search bar
+  // Refs for search bar fields
   const searchBarRef = useRef(null);
+  const dateFieldRef = useRef(null);
+  const guestFieldRef = useRef(null);
 
   // Lock to prevent rapid state changes
   const isAnimating = useRef(false);
@@ -218,10 +220,25 @@ const Hero = () => {
     await logout();
   };
 
+  // Handle collapsed bar click - expand and open the relevant field
+  const handleCollapsedFieldClick = (field, event) => {
+    handleExpandSearch();
+    // Delay to allow expansion animation before opening popover
+    setTimeout(() => {
+      setActiveField(field);
+      if (field === 'where') {
+        setLocationAnchor(searchBarRef.current);
+      } else if (field === 'dates') {
+        setDateAnchor(dateFieldRef.current);
+      } else if (field === 'guests') {
+        setGuestAnchor(guestFieldRef.current);
+      }
+    }, 350);
+  };
+
   // Collapsed Search Bar (Airbnb style)
   const renderCollapsedSearchBar = () => (
     <Paper
-      onClick={handleExpandSearch}
       elevation={0}
       sx={{
         display: 'flex',
@@ -239,6 +256,7 @@ const Hero = () => {
       }}
     >
       <Box
+        onClick={() => handleCollapsedFieldClick('where')}
         sx={{
           px: 2,
           py: 1.5,
@@ -252,6 +270,7 @@ const Hero = () => {
         </Typography>
       </Box>
       <Box
+        onClick={() => handleCollapsedFieldClick('dates')}
         sx={{
           px: 2,
           py: 1.5,
@@ -265,6 +284,7 @@ const Hero = () => {
         </Typography>
       </Box>
       <Box
+        onClick={() => handleCollapsedFieldClick('guests')}
         sx={{
           px: 2,
           py: 1.5,
@@ -278,6 +298,7 @@ const Hero = () => {
         </Typography>
       </Box>
       <Box
+        onClick={handleSearch}
         sx={{
           width: 32,
           height: 32,
@@ -360,6 +381,7 @@ const Hero = () => {
 
         {/* When */}
         <Box
+          ref={dateFieldRef}
           onClick={(e) => handleFieldClick('dates', e)}
           sx={{
             flex: 1.5,
@@ -404,6 +426,7 @@ const Hero = () => {
 
         {/* Who */}
         <Box
+          ref={guestFieldRef}
           sx={{
             flex: 1.2,
             display: 'flex',
