@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Box,
@@ -57,19 +57,31 @@ const quickTransition = {
 const springTransition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
 const fastSpring = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
 
-const Hero = () => {
+const Hero = ({ initialCollapsed = false, initialParams = {} }) => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated, logout } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(!initialCollapsed);
   const [activeField, setActiveField] = useState(null);
 
+  // Get initial values from props or URL params
+  const getInitialDate = (key) => {
+    const value = initialParams[key] || searchParams.get(key);
+    return value ? dayjs(value) : null;
+  };
+
+  const getInitialGuests = () => {
+    const value = initialParams.guests || searchParams.get('guests');
+    return value ? parseInt(value) : null;
+  };
+
   // Search state
-  const [checkIn, setCheckIn] = useState(null);
-  const [checkOut, setCheckOut] = useState(null);
-  const [guests, setGuests] = useState(null);
+  const [checkIn, setCheckIn] = useState(getInitialDate('checkIn'));
+  const [checkOut, setCheckOut] = useState(getInitialDate('checkOut'));
+  const [guests, setGuests] = useState(getInitialGuests());
   const [selectedLocation, setSelectedLocation] = useState(null);
 
   // Locations state
@@ -179,7 +191,19 @@ const Hero = () => {
             locationMap.get(key).hotelCount++;
           }
         });
-        setLocations(Array.from(locationMap.values()));
+        const locationsList = Array.from(locationMap.values());
+        setLocations(locationsList);
+
+        // Set initial location from URL params
+        const cityParam = initialParams.city || searchParams.get('city');
+        if (cityParam && !selectedLocation) {
+          const matchedLocation = locationsList.find(
+            loc => loc.city.toLowerCase() === cityParam.toLowerCase()
+          );
+          if (matchedLocation) {
+            setSelectedLocation(matchedLocation);
+          }
+        }
       }
       setLoadingLocations(false);
     };

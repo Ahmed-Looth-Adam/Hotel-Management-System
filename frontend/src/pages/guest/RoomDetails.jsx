@@ -19,8 +19,6 @@ import {
   FormControlLabel,
   FormGroup,
   IconButton,
-  Menu,
-  MenuItem,
   Skeleton,
 } from '@mui/material';
 import {
@@ -32,7 +30,6 @@ import {
   AcUnit,
   LocalBar,
   Bathtub,
-  ArrowBack,
   CheckCircle,
   FlightTakeoff,
   Restaurant,
@@ -42,16 +39,12 @@ import {
   Star as StarIcon,
   ChevronLeft,
   ChevronRight,
-  Language,
-  Menu as MenuIcon,
-  AccountCircle,
   Check,
 } from '@mui/icons-material';
 import { roomService, bookingService, hotelService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { useAuth } from '../../context/AuthContext';
-
-const fastSpring = 'all 0.2s cubic-bezier(0.2, 0, 0, 1)';
+import Hero from '../../components/landing/Hero';
 
 // Room types and base prices from CLAUDE.md
 const ROOM_TYPE_INFO = {
@@ -77,140 +70,6 @@ const AMENITIES = [
   { icon: LocalBar, label: 'Mini Bar' },
   { icon: Bathtub, label: 'Private Bathroom' },
 ];
-
-// Header Component
-const Header = ({ onBackClick }) => {
-  const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
-  const [menuAnchor, setMenuAnchor] = useState(null);
-
-  const handleMenuOpen = (event) => setMenuAnchor(event.currentTarget);
-  const handleMenuClose = () => setMenuAnchor(null);
-
-  const handleLogout = async () => {
-    await logout();
-    handleMenuClose();
-    navigate('/');
-  };
-
-  return (
-    <Box
-      sx={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        bgcolor: '#FFFFFF',
-        borderBottom: '1px solid #EBEBEB',
-      }}
-    >
-      <Container
-        maxWidth={false}
-        sx={{
-          px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 },
-          py: 2,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        {/* Logo */}
-        <Box
-          onClick={() => navigate('/')}
-          sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
-        >
-          <Box
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: '8px',
-              bgcolor: '#FF385C',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography sx={{ color: '#FFFFFF', fontWeight: 700, fontSize: '18px' }}>H</Typography>
-          </Box>
-          <Typography
-            sx={{
-              fontWeight: 700,
-              fontSize: '20px',
-              color: '#FF385C',
-              display: { xs: 'none', sm: 'block' },
-            }}
-          >
-            Hotels
-          </Typography>
-        </Box>
-
-        {/* Back button */}
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={onBackClick}
-          sx={{
-            textTransform: 'none',
-            color: '#222222',
-            fontWeight: 500,
-            borderRadius: '24px',
-            px: 2,
-            border: '1px solid #DDDDDD',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-            '&:hover': { boxShadow: '0 2px 4px rgba(0,0,0,0.12)', bgcolor: '#FFFFFF' },
-          }}
-        >
-          Back
-        </Button>
-
-        {/* User Menu */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton sx={{ color: '#222222' }}>
-            <Language />
-          </IconButton>
-          <Box
-            onClick={handleMenuOpen}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              border: '1px solid #DDDDDD',
-              borderRadius: '24px',
-              py: 0.75,
-              px: 1.5,
-              cursor: 'pointer',
-              transition: fastSpring,
-              '&:hover': { boxShadow: '0 2px 4px rgba(0,0,0,0.12)' },
-            }}
-          >
-            <MenuIcon sx={{ fontSize: 18, color: '#222222' }} />
-            <AccountCircle sx={{ fontSize: 30, color: '#717171' }} />
-          </Box>
-          <Menu
-            anchorEl={menuAnchor}
-            open={Boolean(menuAnchor)}
-            onClose={handleMenuClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            PaperProps={{ sx: { mt: 1.5, borderRadius: '12px', minWidth: 200, boxShadow: '0 2px 16px rgba(0,0,0,0.12)' } }}
-          >
-            {isAuthenticated ? (
-              [
-                <MenuItem key="profile" onClick={() => { navigate('/profile'); handleMenuClose(); }}>Profile</MenuItem>,
-                <MenuItem key="bookings" onClick={() => { navigate('/guest/my-bookings'); handleMenuClose(); }}>My Bookings</MenuItem>,
-                <Divider key="divider" />,
-                <MenuItem key="logout" onClick={handleLogout}>Log out</MenuItem>,
-              ]
-            ) : (
-              [
-                <MenuItem key="login" onClick={() => { navigate('/login'); handleMenuClose(); }} sx={{ fontWeight: 600 }}>Log in</MenuItem>,
-                <MenuItem key="register" onClick={() => { navigate('/register'); handleMenuClose(); }}>Sign up</MenuItem>,
-              ]
-            )}
-          </Menu>
-        </Box>
-      </Container>
-    </Box>
-  );
-};
 
 const RoomDetails = () => {
   const { id } = useParams();
@@ -366,7 +225,7 @@ const RoomDetails = () => {
   if (loading) {
     return (
       <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
-        <Header onBackClick={() => navigate(-1)} />
+        <Hero initialCollapsed />
         <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
           <Skeleton variant="text" width={300} height={40} sx={{ mb: 2 }} />
           <Skeleton variant="rounded" height={400} sx={{ borderRadius: '12px', mb: 3 }} />
@@ -385,7 +244,7 @@ const RoomDetails = () => {
   if (!room) {
     return (
       <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
-        <Header onBackClick={() => navigate(-1)} />
+        <Hero initialCollapsed />
         <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
           <Alert severity="error" sx={{ borderRadius: '12px' }}>Room type not found</Alert>
         </Container>
@@ -395,7 +254,7 @@ const RoomDetails = () => {
 
   return (
     <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
-      <Header onBackClick={() => navigate(-1)} />
+      <Hero initialCollapsed />
 
       <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
         {/* Title */}
