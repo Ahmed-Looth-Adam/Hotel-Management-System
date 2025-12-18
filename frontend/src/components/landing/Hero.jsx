@@ -69,7 +69,7 @@ const Hero = () => {
   // Search state
   const [checkIn, setCheckIn] = useState(null);
   const [checkOut, setCheckOut] = useState(null);
-  const [guests, setGuests] = useState(2);
+  const [guests, setGuests] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState(null);
 
   // Locations state
@@ -295,8 +295,8 @@ const Hero = () => {
           transition: fastSpring,
         }}
       >
-        <Typography variant="body2" color="#717171" noWrap>
-          Add guests
+        <Typography variant="body2" fontWeight={600} color="#222222" noWrap>
+          {guests > 0 ? `${guests} guest${guests !== 1 ? 's' : ''}` : 'Who'}
         </Typography>
       </Box>
       <Box
@@ -458,10 +458,10 @@ const Hero = () => {
             </Typography>
             <Typography
               variant="body2"
-              sx={{ color: guests > 0 ? '#222222' : '#717171', fontSize: '14px', mt: 0.25 }}
+              sx={{ color: guests ? '#222222' : '#717171', fontSize: '14px', mt: 0.25 }}
               noWrap
             >
-              {guests} guest{guests !== 1 ? 's' : ''}
+              {guests ? `${guests} guest${guests !== 1 ? 's' : ''}` : 'Add guests'}
             </Typography>
           </Box>
 
@@ -674,12 +674,12 @@ const Hero = () => {
           >
             <IconButton
               size="small"
-              onClick={() => setGuests(Math.max(1, guests - 1))}
-              disabled={guests <= 1}
+              onClick={() => setGuests(Math.max(1, (guests || 1) - 1))}
+              disabled={!guests || guests <= 1}
               sx={{
                 border: '1px solid',
-                borderColor: guests <= 1 ? '#EBEBEB' : '#DDDDDD',
-                color: guests <= 1 ? '#EBEBEB' : '#222222',
+                borderColor: !guests || guests <= 1 ? '#EBEBEB' : '#DDDDDD',
+                color: !guests || guests <= 1 ? '#EBEBEB' : '#222222',
                 width: 32,
                 height: 32,
                 transition: fastSpring,
@@ -689,11 +689,11 @@ const Hero = () => {
               <Remove sx={{ fontSize: 16 }} />
             </IconButton>
             <Typography sx={{ minWidth: 24, textAlign: 'center', fontWeight: 600, color: '#222222' }}>
-              {guests}
+              {guests || 0}
             </Typography>
             <IconButton
               size="small"
-              onClick={() => setGuests(Math.min(10, guests + 1))}
+              onClick={() => setGuests(Math.min(10, (guests || 0) + 1))}
               disabled={guests >= 10}
               sx={{
                 border: '1px solid',
@@ -994,7 +994,7 @@ const Hero = () => {
               Who's coming?
             </Typography>
             <Typography variant="body2" fontWeight={600} color="#222222">
-              {guests} guest{guests !== 1 ? 's' : ''}
+              {guests ? `${guests} guest${guests !== 1 ? 's' : ''}` : 'Add guests'}
             </Typography>
           </Box>
 
@@ -1006,15 +1006,15 @@ const Hero = () => {
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <IconButton
-                  onClick={(e) => { e.stopPropagation(); setGuests(Math.max(1, guests - 1)); }}
-                  disabled={guests <= 1}
+                  onClick={(e) => { e.stopPropagation(); setGuests(Math.max(1, (guests || 1) - 1)); }}
+                  disabled={!guests || guests <= 1}
                   sx={{ border: '1px solid #DDDDDD' }}
                 >
                   <Remove />
                 </IconButton>
-                <Typography fontWeight={600}>{guests}</Typography>
+                <Typography fontWeight={600}>{guests || 0}</Typography>
                 <IconButton
-                  onClick={(e) => { e.stopPropagation(); setGuests(Math.min(10, guests + 1)); }}
+                  onClick={(e) => { e.stopPropagation(); setGuests(Math.min(10, (guests || 0) + 1)); }}
                   sx={{ border: '1px solid #DDDDDD' }}
                 >
                   <Add />
@@ -1049,7 +1049,7 @@ const Hero = () => {
             setCheckIn(null);
             setCheckOut(null);
             setSelectedLocation(null);
-            setGuests(1);
+            setGuests(null);
           }}
         >
           Clear all

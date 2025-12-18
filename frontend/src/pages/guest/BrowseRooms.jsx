@@ -1,58 +1,525 @@
 /**
  * Browse Rooms Page - Guest view for browsing available rooms
- *
- * Features:
- * - Search by date range, guests, hotel
- * - Filter by room type, price range
- * - Card-based room display with images
- * - Direct booking link
- *
- * Created By: Ismail Wasiu Abdul Samad, UWE ID: 24050765
+ * Airbnb-style design matching the landing page
  */
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  Box,
   Container,
   Typography,
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  CardMedia,
   Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   Paper,
-  Divider,
-  CircularProgress,
-  alpha,
+  IconButton,
   Skeleton,
+  Menu,
+  MenuItem,
+  Divider,
 } from '@mui/material';
 import {
-  Search,
+  FavoriteBorder,
+  Favorite,
+  Star as StarIcon,
+  ChevronLeft,
+  ChevronRight,
   Hotel as HotelIcon,
   Person,
   KingBed,
-  MeetingRoom,
-  Visibility,
+  ArrowBack,
   LocationOn,
+  CalendarToday,
+  Group,
+  Public,
+  Language,
+  Menu as MenuIcon,
+  AccountCircle,
 } from '@mui/icons-material';
 import { roomService, hotelService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
+import { useAuth } from '../../context/AuthContext';
 
-// Room types matching CLAUDE.md documentation
-const ROOM_TYPES = [
-  { value: 'standard', label: 'Standard Double', color: '#607d8b' },
-  { value: 'deluxe', label: 'Deluxe King', color: '#1976d2' },
-  { value: 'suite', label: 'Family Suite', color: '#7b1fa2' },
-  { value: 'penthouse', label: 'Penthouse', color: '#c62828' },
-];
+// Airbnb-style animation timing
+const fastSpring = 'all 0.2s cubic-bezier(0.2, 0, 0, 1)';
+
+// Room types and base prices from CLAUDE.md
+const ROOM_TYPE_INFO = {
+  standard: { label: 'Standard Double', price: 120, capacity: 2 },
+  deluxe: { label: 'Deluxe King', price: 180, capacity: 2 },
+  suite: { label: 'Family Suite', price: 240, capacity: 4 },
+  penthouse: { label: 'Penthouse', price: 500, capacity: 4 },
+};
+
+// Room Type Card - Airbnb style
+const RoomTypeCard = ({ roomType, hotel, availableCount, onClick }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const typeInfo = ROOM_TYPE_INFO[roomType.category] || ROOM_TYPE_INFO.standard;
+  const room = roomType.sampleRoom;
+
+  // Get images from the room - check multiple possible structures
+  const getImages = () => {
+    // Check room galleries
+    if (room?.galleries && room.galleries.length > 0) {
+      const gallery = room.galleries[0];
+      if (gallery.images && gallery.images.length > 0) {
+        return gallery.images.map(img =>
+          img.image?.startsWith('http') ? img.image : `http://localhost:8000${img.image}`
+        );
+      }
+    }
+    // Check direct image field
+    if (room?.image) {
+      const imgUrl = room.image.startsWith('http') ? room.image : `http://localhost:8000${room.image}`;
+      return [imgUrl];
+    }
+    // Check images array
+    if (room?.images && room.images.length > 0) {
+      return room.images.map(img => {
+        const url = typeof img === 'string' ? img : img.image || img.url;
+        return url?.startsWith('http') ? url : `http://localhost:8000${url}`;
+      });
+    }
+    // Check room_type images
+    if (room?.room_type?.image) {
+      const imgUrl = room.room_type.image.startsWith('http') ? room.room_type.image : `http://localhost:8000${room.room_type.image}`;
+      return [imgUrl];
+    }
+    // Use hotel gallery as fallback
+    if (hotel?.galleries && hotel.galleries.length > 0) {
+      const gallery = hotel.galleries[0];
+      if (gallery.images && gallery.images.length > 0) {
+        return gallery.images.map(img =>
+          img.image?.startsWith('http') ? img.image : `http://localhost:8000${img.image}`
+        );
+      }
+    }
+    return [];
+  };
+
+  const images = getImages();
+  const hasMultipleImages = images.length > 1;
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation();
+    setIsFavorite(!isFavorite);
+  };
+
+  return (
+    <Box
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      sx={{
+        cursor: 'pointer',
+        width: '100%',
+      }}
+    >
+      {/* Image Container */}
+      <Box
+        sx={{
+          position: 'relative',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          aspectRatio: '20/19',
+          bgcolor: '#F7F7F7',
+          mb: 1.5,
+        }}
+      >
+        {images.length > 0 ? (
+          <Box
+            component="img"
+            src={images[currentImageIndex]}
+            alt={typeInfo.label}
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transition: 'transform 0.5s cubic-bezier(0.2, 0, 0, 1)',
+              transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+            }}
+          />
+        ) : (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: '#EBEBEB',
+            }}
+          >
+            <HotelIcon sx={{ fontSize: 48, color: '#DDDDDD' }} />
+          </Box>
+        )}
+
+        {/* Favorite Button */}
+        <IconButton
+          onClick={handleFavoriteClick}
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            color: isFavorite ? '#FF385C' : '#FFFFFF',
+            transition: fastSpring,
+            '&:hover': { transform: 'scale(1.1)' },
+            '&:active': { transform: 'scale(0.9)' },
+          }}
+        >
+          {isFavorite ? (
+            <Favorite sx={{ fontSize: 24, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
+          ) : (
+            <FavoriteBorder
+              sx={{
+                fontSize: 24,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                stroke: 'rgba(0,0,0,0.5)',
+                strokeWidth: 2,
+              }}
+            />
+          )}
+        </IconButton>
+
+        {/* Navigation Arrows */}
+        {hasMultipleImages && isHovered && (
+          <>
+            <IconButton
+              onClick={handlePrevImage}
+              sx={{
+                position: 'absolute',
+                left: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                bgcolor: 'rgba(255,255,255,0.9)',
+                width: 28,
+                height: 28,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                transition: fastSpring,
+                '&:hover': {
+                  bgcolor: '#FFFFFF',
+                  transform: 'translateY(-50%) scale(1.04)',
+                },
+              }}
+            >
+              <ChevronLeft sx={{ fontSize: 16, color: '#222222' }} />
+            </IconButton>
+            <IconButton
+              onClick={handleNextImage}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                bgcolor: 'rgba(255,255,255,0.9)',
+                width: 28,
+                height: 28,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                transition: fastSpring,
+                '&:hover': {
+                  bgcolor: '#FFFFFF',
+                  transform: 'translateY(-50%) scale(1.04)',
+                },
+              }}
+            >
+              <ChevronRight sx={{ fontSize: 16, color: '#222222' }} />
+            </IconButton>
+          </>
+        )}
+
+        {/* Dots Indicator */}
+        {hasMultipleImages && (
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 12,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: 0.5,
+            }}
+          >
+            {images.slice(0, 5).map((_, index) => (
+              <Box
+                key={index}
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  bgcolor: index === currentImageIndex ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
+                  transition: fastSpring,
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                }}
+              />
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {/* Content */}
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.25 }}>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              fontSize: '15px',
+              color: '#222222',
+              lineHeight: 1.3,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              mr: 1,
+            }}
+          >
+            {typeInfo.label}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <StarIcon sx={{ fontSize: 14, color: '#222222' }} />
+            <Typography sx={{ fontSize: '14px', color: '#222222', fontWeight: 500 }}>
+              {hotel?.star_rating || 4}.0
+            </Typography>
+          </Box>
+        </Box>
+
+        <Typography
+          sx={{
+            fontSize: '14px',
+            color: '#717171',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            mb: 0.25,
+          }}
+        >
+          {hotel?.name || 'Hotel'}
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Person sx={{ fontSize: 14, color: '#717171' }} />
+            <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+              {typeInfo.capacity} guests
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+            {availableCount} available
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '15px', color: '#222222' }}>
+            £{typeInfo.price}
+          </Typography>
+          <Typography sx={{ fontSize: '15px', color: '#222222' }}>
+            night
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+};
+
+const LoadingSkeleton = () => (
+  <Box sx={{ width: '100%' }}>
+    <Skeleton
+      variant="rounded"
+      sx={{
+        borderRadius: '12px',
+        aspectRatio: '20/19',
+        mb: 1.5,
+      }}
+    />
+    <Skeleton variant="text" width="70%" height={20} />
+    <Skeleton variant="text" width="50%" height={18} />
+    <Skeleton variant="text" width="40%" height={18} />
+    <Skeleton variant="text" width="30%" height={20} />
+  </Box>
+);
+
+// Header Component - Matching landing page style
+const Header = ({ onBackClick }) => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+  const [menuAnchor, setMenuAnchor] = useState(null);
+
+  const handleMenuOpen = (event) => setMenuAnchor(event.currentTarget);
+  const handleMenuClose = () => setMenuAnchor(null);
+
+  const handleLogout = async () => {
+    await logout();
+    handleMenuClose();
+    navigate('/');
+  };
+
+  return (
+    <Box
+      sx={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        bgcolor: '#FFFFFF',
+        borderBottom: '1px solid #EBEBEB',
+      }}
+    >
+      <Container
+        maxWidth={false}
+        sx={{
+          px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 },
+          py: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        {/* Logo */}
+        <Box
+          onClick={() => navigate('/')}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            cursor: 'pointer',
+          }}
+        >
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '8px',
+              bgcolor: '#FF385C',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography sx={{ color: '#FFFFFF', fontWeight: 700, fontSize: '18px' }}>
+              H
+            </Typography>
+          </Box>
+          <Typography
+            sx={{
+              fontWeight: 700,
+              fontSize: '20px',
+              color: '#FF385C',
+              display: { xs: 'none', sm: 'block' },
+            }}
+          >
+            Hotels
+          </Typography>
+        </Box>
+
+        {/* Center - Back button */}
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={onBackClick}
+          sx={{
+            textTransform: 'none',
+            color: '#222222',
+            fontWeight: 500,
+            borderRadius: '24px',
+            px: 2,
+            border: '1px solid #DDDDDD',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+            '&:hover': {
+              boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
+              bgcolor: '#FFFFFF',
+            },
+          }}
+        >
+          Back to all stays
+        </Button>
+
+        {/* Right Side - User Menu */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton sx={{ color: '#222222' }}>
+            <Language />
+          </IconButton>
+
+          <Box
+            onClick={handleMenuOpen}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              border: '1px solid #DDDDDD',
+              borderRadius: '24px',
+              py: 0.75,
+              px: 1.5,
+              cursor: 'pointer',
+              transition: fastSpring,
+              '&:hover': {
+                boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
+              },
+            }}
+          >
+            <MenuIcon sx={{ fontSize: 18, color: '#222222' }} />
+            <AccountCircle sx={{ fontSize: 30, color: '#717171' }} />
+          </Box>
+
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={handleMenuClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{
+              sx: {
+                mt: 1.5,
+                borderRadius: '12px',
+                minWidth: 200,
+                boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
+              },
+            }}
+          >
+            {isAuthenticated ? (
+              [
+                <MenuItem key="profile" onClick={() => { navigate('/profile'); handleMenuClose(); }}>
+                  Profile
+                </MenuItem>,
+                <MenuItem key="bookings" onClick={() => { navigate('/guest/my-bookings'); handleMenuClose(); }}>
+                  My Bookings
+                </MenuItem>,
+                <Divider key="divider" />,
+                <MenuItem key="logout" onClick={handleLogout}>
+                  Log out
+                </MenuItem>,
+              ]
+            ) : (
+              [
+                <MenuItem key="login" onClick={() => { navigate('/login'); handleMenuClose(); }} sx={{ fontWeight: 600 }}>
+                  Log in
+                </MenuItem>,
+                <MenuItem key="register" onClick={() => { navigate('/register'); handleMenuClose(); }}>
+                  Sign up
+                </MenuItem>,
+              ]
+            )}
+          </Menu>
+        </Box>
+      </Container>
+    </Box>
+  );
+};
 
 const BrowseRooms = () => {
   const navigate = useNavigate();
@@ -64,33 +531,30 @@ const BrowseRooms = () => {
   const [hotels, setHotels] = useState([]);
   const [filters, setFilters] = useState({
     hotel: searchParams.get('hotel') || '',
+    city: searchParams.get('city') || '',
+    country: searchParams.get('country') || '',
     checkIn: searchParams.get('checkIn') || '',
     checkOut: searchParams.get('checkOut') || '',
     guests: parseInt(searchParams.get('guests')) || 2,
-    roomType: searchParams.get('roomType') || '',
   });
+
+  // Get current hotel if filtering by hotel
+  const currentHotel = filters.hotel ? hotels.find((h) => h.id == filters.hotel) : null;
 
   useEffect(() => {
     fetchInitialData();
   }, []);
 
-  // Re-fetch when query params change
-  useEffect(() => {
-    const hotelParam = searchParams.get('hotel');
-    if (hotelParam && hotelParam !== filters.hotel) {
-      setFilters((prev) => ({ ...prev, hotel: hotelParam }));
-    }
-  }, [searchParams]);
-
   const fetchInitialData = async () => {
     setLoading(true);
     const params = {
       is_active: true,
-      is_available: true,
+      status: 'available',
     };
 
-    // Apply initial filters from URL
     const hotelParam = searchParams.get('hotel');
+    const cityParam = searchParams.get('city');
+    const countryParam = searchParams.get('country');
     if (hotelParam) params.hotel = hotelParam;
 
     const [roomsResult, hotelsResult] = await Promise.all([
@@ -98,400 +562,283 @@ const BrowseRooms = () => {
       hotelService.getAll({ is_active: true }),
     ]);
 
+    let hotelData = [];
+    if (hotelsResult.success) {
+      hotelData = Array.isArray(hotelsResult.data)
+        ? hotelsResult.data
+        : hotelsResult.data?.results || [];
+      setHotels(hotelData);
+    }
+
     if (roomsResult.success) {
-      const data = Array.isArray(roomsResult.data)
+      let data = Array.isArray(roomsResult.data)
         ? roomsResult.data
         : roomsResult.data?.results || [];
+
+      // Filter by country
+      if (countryParam && data.length > 0) {
+        const countryLower = countryParam.toLowerCase();
+        const hotelsInCountry = hotelData.filter(h =>
+          h.country?.toLowerCase() === countryLower
+        );
+        const hotelIdsInCountry = hotelsInCountry.map(h => h.id);
+        data = data.filter(room =>
+          hotelIdsInCountry.includes(room.hotel) ||
+          room.hotel_country?.toLowerCase() === countryLower
+        );
+      }
+
+      // Filter by city
+      if (cityParam && data.length > 0) {
+        const cityLower = cityParam.toLowerCase();
+        const hotelsInCity = hotelData.filter(h =>
+          h.city?.toLowerCase() === cityLower
+        );
+        const hotelIdsInCity = hotelsInCity.map(h => h.id);
+        data = data.filter(room =>
+          hotelIdsInCity.includes(room.hotel) ||
+          room.hotel_city?.toLowerCase() === cityLower
+        );
+      }
+
       setRooms(data);
     } else {
       showError('Failed to load rooms');
     }
 
-    if (hotelsResult.success) {
-      const data = Array.isArray(hotelsResult.data)
-        ? hotelsResult.data
-        : hotelsResult.data?.results || [];
-      setHotels(data);
-    }
     setLoading(false);
   };
 
-  const handleSearch = async () => {
-    setLoading(true);
-    const params = {
-      is_active: true,
-      is_available: true,
-    };
-    if (filters.hotel) params.hotel = filters.hotel;
-    if (filters.roomType) params.room_type_category = filters.roomType;
-    if (filters.guests) params.max_occupancy__gte = filters.guests;
+  // Group rooms by type and get unique types with count
+  const getRoomTypes = () => {
+    const typeMap = new Map();
 
-    const result = await roomService.getAll(params);
-    if (result.success) {
-      const data = Array.isArray(result.data)
-        ? result.data
-        : result.data?.results || [];
-      setRooms(data);
-    } else {
-      showError('Search failed');
-    }
-    setLoading(false);
+    rooms.forEach(room => {
+      const category = room.room_type_category || 'standard';
+      if (!typeMap.has(category)) {
+        typeMap.set(category, {
+          category,
+          count: 1,
+          sampleRoom: room,
+          hotelId: room.hotel,
+        });
+      } else {
+        typeMap.get(category).count++;
+      }
+    });
+
+    return Array.from(typeMap.values());
   };
 
-  const handleBookRoom = (roomId) => {
+  const roomTypes = getRoomTypes();
+
+  const handleRoomTypeClick = (roomType) => {
+    // Navigate to room details with the sample room
     const queryParams = new URLSearchParams();
     if (filters.checkIn) queryParams.append('checkIn', filters.checkIn);
     if (filters.checkOut) queryParams.append('checkOut', filters.checkOut);
-    if (filters.guests) queryParams.append('guests', filters.guests);
-    navigate(`/guest/rooms/${roomId}?${queryParams.toString()}`);
+    if (filters.guests) queryParams.append('guests', filters.guests.toString());
+    navigate(`/guest/rooms/${roomType.sampleRoom.id}?${queryParams.toString()}`);
   };
 
-  const getRoomTypeInfo = (type) => {
-    return ROOM_TYPES.find((t) => t.value === type) || { label: type, color: '#607d8b' };
+  // Responsive padding
+  const containerSx = { px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 } };
+
+  // Responsive grid columns
+  const gridColumns = {
+    xs: 'repeat(1, 1fr)',
+    sm: 'repeat(2, 1fr)',
+    md: 'repeat(3, 1fr)',
+    lg: 'repeat(4, 1fr)',
+    xl: 'repeat(5, 1fr)',
   };
 
-  const getRoomImage = (room) => {
-    // Check if room has gallery images
-    if (room.galleries && room.galleries.length > 0) {
-      const gallery = room.galleries[0];
-      if (gallery.images && gallery.images.length > 0) {
-        return `http://localhost:8000${gallery.images[0].image}`;
-      }
-    }
-    return null;
-  };
-
-  // Base prices per room type (from CLAUDE.md)
-  const getBasePrice = (roomType) => {
-    const prices = {
-      standard: 120,
-      deluxe: 180,
-      suite: 240,
-      penthouse: 500,
-    };
-    return prices[roomType] || 120;
-  };
+  if (loading) {
+    return (
+      <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
+        <Header onBackClick={() => navigate('/')} />
+        <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
+          <Skeleton variant="text" width={300} height={40} sx={{ mb: 1 }} />
+          <Skeleton variant="text" width={200} height={24} sx={{ mb: 4 }} />
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: gridColumns,
+              gap: 3,
+            }}
+          >
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <LoadingSkeleton key={i} />
+            ))}
+          </Box>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} gutterBottom>
-          Find Your Perfect Room
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Browse our selection of rooms across all hotels
-        </Typography>
-      </Box>
+    <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
+      {/* Sticky Header */}
+      <Header onBackClick={() => navigate('/')} />
 
-      {/* Search Filters */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          mb: 4,
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={2.5}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Hotel</InputLabel>
-              <Select
-                value={filters.hotel}
-                label="Hotel"
-                onChange={(e) => setFilters({ ...filters, hotel: e.target.value })}
-                sx={{ borderRadius: 2 }}
-              >
-                <MenuItem value="">All Hotels</MenuItem>
-                {hotels.map((hotel) => (
-                  <MenuItem key={hotel.id} value={hotel.id}>
-                    {hotel.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Check-in"
-              type="date"
-              value={filters.checkIn}
-              onChange={(e) => setFilters({ ...filters, checkIn: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-              InputProps={{ sx: { borderRadius: 2 } }}
-            />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Check-out"
-              type="date"
-              value={filters.checkOut}
-              onChange={(e) => setFilters({ ...filters, checkOut: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-              InputProps={{ sx: { borderRadius: 2 } }}
-            />
-          </Grid>
-          <Grid item xs={12} md={1.5}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Guests"
-              type="number"
-              value={filters.guests}
-              onChange={(e) => setFilters({ ...filters, guests: parseInt(e.target.value) || 1 })}
-              InputProps={{ inputProps: { min: 1, max: 10 }, sx: { borderRadius: 2 } }}
-            />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Room Type</InputLabel>
-              <Select
-                value={filters.roomType}
-                label="Room Type"
-                onChange={(e) => setFilters({ ...filters, roomType: e.target.value })}
-                sx={{ borderRadius: 2 }}
-              >
-                <MenuItem value="">All Types</MenuItem>
-                {ROOM_TYPES.map((type) => (
-                  <MenuItem key={type.value} value={type.value}>
-                    {type.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={2}>
+      <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
+        {/* Page Header */}
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            sx={{
+              fontSize: { xs: '26px', md: '32px' },
+              fontWeight: 600,
+              color: '#222222',
+              mb: 1,
+            }}
+          >
+            {currentHotel
+              ? currentHotel.name
+              : filters.country
+                ? `Stays in ${filters.country}`
+                : filters.city
+                  ? `Stays in ${filters.city}`
+                  : 'Browse Rooms'}
+          </Typography>
+          {currentHotel && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <LocationOn sx={{ fontSize: 18, color: '#717171' }} />
+              <Typography sx={{ fontSize: '16px', color: '#717171' }}>
+                {currentHotel.city}, {currentHotel.country}
+              </Typography>
+              {currentHotel.star_rating && (
+                <>
+                  <Box sx={{ mx: 1, color: '#DDDDDD' }}>•</Box>
+                  <StarIcon sx={{ fontSize: 16, color: '#222222' }} />
+                  <Typography sx={{ fontSize: '16px', color: '#222222' }}>
+                    {currentHotel.star_rating}.0
+                  </Typography>
+                </>
+              )}
+            </Box>
+          )}
+          <Typography sx={{ fontSize: '16px', color: '#717171' }}>
+            {roomTypes.length} room type{roomTypes.length !== 1 ? 's' : ''} available
+          </Typography>
+        </Box>
+
+        {/* Search Summary */}
+        {(filters.checkIn || filters.checkOut || filters.guests !== 2) && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              mb: 4,
+              borderRadius: '12px',
+              bgcolor: '#F7F7F7',
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 2,
+            }}
+          >
+            <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#222222' }}>
+              Your search:
+            </Typography>
+            {(filters.checkIn || filters.checkOut) && (
+              <Chip
+                icon={<CalendarToday sx={{ fontSize: 16 }} />}
+                label={
+                  filters.checkIn && filters.checkOut
+                    ? `${filters.checkIn} → ${filters.checkOut}`
+                    : filters.checkIn || filters.checkOut
+                }
+                size="small"
+                sx={{
+                  bgcolor: '#FFFFFF',
+                  border: '1px solid #DDDDDD',
+                  '& .MuiChip-label': { fontWeight: 500 },
+                }}
+                onDelete={() => setFilters({ ...filters, checkIn: '', checkOut: '' })}
+              />
+            )}
+            {filters.guests !== 2 && (
+              <Chip
+                icon={<Group sx={{ fontSize: 16 }} />}
+                label={`${filters.guests} guest${filters.guests !== 1 ? 's' : ''}`}
+                size="small"
+                sx={{
+                  bgcolor: '#FFFFFF',
+                  border: '1px solid #DDDDDD',
+                  '& .MuiChip-label': { fontWeight: 500 },
+                }}
+                onDelete={() => setFilters({ ...filters, guests: 2 })}
+              />
+            )}
+          </Paper>
+        )}
+
+        {/* Room Types Grid */}
+        {roomTypes.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <HotelIcon sx={{ fontSize: 64, color: '#DDDDDD', mb: 2 }} />
+            <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#222222', mb: 1 }}>
+              No rooms available
+            </Typography>
+            <Typography sx={{ fontSize: '14px', color: '#717171', mb: 3 }}>
+              Try adjusting your search or check back later.
+            </Typography>
             <Button
-              fullWidth
-              variant="contained"
-              startIcon={<Search />}
-              onClick={handleSearch}
+              variant="outlined"
+              onClick={() => navigate('/')}
               sx={{
-                height: 40,
-                borderRadius: 2,
+                borderRadius: '8px',
                 textTransform: 'none',
                 fontWeight: 600,
+                borderColor: '#222222',
+                color: '#222222',
+                '&:hover': {
+                  borderColor: '#222222',
+                  bgcolor: '#F7F7F7',
+                },
               }}
             >
-              Search
+              Back to Home
             </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Results Count */}
-      {!loading && (
-        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            {rooms.length} room{rooms.length !== 1 ? 's' : ''} found
-          </Typography>
-          {filters.hotel && hotels.find((h) => h.id == filters.hotel) && (
-            <Chip
-              label={hotels.find((h) => h.id == filters.hotel)?.name}
-              size="small"
-              onDelete={() => setFilters({ ...filters, hotel: '' })}
-              sx={{ ml: 1 }}
-            />
-          )}
-        </Box>
-      )}
-
-      {/* Results */}
-      {loading ? (
-        <Grid container spacing={3}>
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
-              <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
-                <Skeleton variant="rectangular" height={200} />
-                <CardContent>
-                  <Skeleton variant="text" width="60%" height={28} />
-                  <Skeleton variant="text" width="80%" />
-                  <Skeleton variant="text" width="40%" />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      ) : rooms.length === 0 ? (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 6,
-            textAlign: 'center',
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <MeetingRoom sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No rooms found matching your criteria
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Try adjusting your filters or selecting a different hotel
-          </Typography>
-          <Button
-            variant="outlined"
-            onClick={() => {
-              setFilters({
-                hotel: '',
-                checkIn: '',
-                checkOut: '',
-                guests: 2,
-                roomType: '',
-              });
-              fetchInitialData();
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: gridColumns,
+              gap: 3,
             }}
-            sx={{ borderRadius: 2, textTransform: 'none' }}
           >
-            Clear Filters
-          </Button>
-        </Paper>
-      ) : (
-        <Grid container spacing={3}>
-          {rooms.map((room) => {
-            const typeInfo = getRoomTypeInfo(room.room_type_category);
-            const imageUrl = getRoomImage(room);
-            const basePrice = getBasePrice(room.room_type_category);
-
-            return (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={room.id}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: 3,
-                    overflow: 'hidden',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
+            {roomTypes.map((roomType, index) => (
+              <Box
+                key={roomType.category}
+                sx={{
+                  opacity: 0,
+                  animation: `fadeInUp 0.4s ease-out ${index * 0.05}s forwards`,
+                  '@keyframes fadeInUp': {
+                    from: {
+                      opacity: 0,
+                      transform: 'translateY(20px)',
                     },
-                  }}
-                >
-                  {/* Room Image */}
-                  {imageUrl ? (
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={imageUrl}
-                      alt={`Room ${room.room_number}`}
-                      sx={{ objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <Box
-                      sx={{
-                        height: 200,
-                        bgcolor: alpha(typeInfo.color, 0.1),
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <HotelIcon sx={{ fontSize: 64, color: alpha(typeInfo.color, 0.3) }} />
-                    </Box>
-                  )}
-
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    {/* Room Type Chip */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                      <Typography variant="h6" fontWeight={600}>
-                        Room {room.room_number}
-                      </Typography>
-                      <Chip
-                        label={typeInfo.label}
-                        size="small"
-                        sx={{
-                          bgcolor: alpha(typeInfo.color, 0.1),
-                          color: typeInfo.color,
-                          fontWeight: 600,
-                          fontSize: '0.7rem',
-                        }}
-                      />
-                    </Box>
-
-                    {/* Hotel Name */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-                      <LocationOn sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {room.hotel_name}
-                      </Typography>
-                    </Box>
-
-                    <Divider sx={{ my: 1.5 }} />
-
-                    {/* Room Details */}
-                    <Box sx={{ display: 'flex', gap: 2, mb: 1.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Person fontSize="small" color="action" />
-                        <Typography variant="body2">{room.max_occupancy} guests</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <KingBed fontSize="small" color="action" />
-                        <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                          {room.bed_size}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* View */}
-                    {room.view_name && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Visibility fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          {room.view_name}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {/* Price */}
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        From
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                        <Typography variant="h5" fontWeight={700}>
-                          £{basePrice}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          / night
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-
-                  <CardActions sx={{ p: 2, pt: 0 }}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={() => handleBookRoom(room.id)}
-                      sx={{
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        py: 1.25,
-                      }}
-                    >
-                      View & Book
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      )}
-    </Container>
+                    to: {
+                      opacity: 1,
+                      transform: 'translateY(0)',
+                    },
+                  },
+                }}
+              >
+                <RoomTypeCard
+                  roomType={roomType}
+                  hotel={currentHotel || hotels.find(h => h.id === roomType.hotelId)}
+                  availableCount={roomType.count}
+                  onClick={() => handleRoomTypeClick(roomType)}
+                />
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Container>
+    </Box>
   );
 };
 

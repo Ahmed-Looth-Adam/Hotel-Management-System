@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -6,6 +6,7 @@ import {
   Typography,
   Skeleton,
   IconButton,
+  Button,
 } from '@mui/material';
 import {
   FavoriteBorder,
@@ -14,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Hotel as HotelIcon,
+  ArrowForward,
 } from '@mui/icons-material';
 import hotelService from '../../services/hotelService';
 
@@ -63,6 +65,9 @@ const HotelCard = ({ hotel, onClick }) => {
       sx={{
         cursor: 'pointer',
         width: '100%',
+        minWidth: { xs: '280px', sm: '260px' },
+        maxWidth: { xs: '320px', sm: '300px' },
+        flexShrink: 0,
       }}
     >
       {/* Image Container */}
@@ -82,6 +87,9 @@ const HotelCard = ({ hotel, onClick }) => {
             src={images[currentImageIndex]}
             alt={hotel.name}
             sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '100%',
               objectFit: 'cover',
@@ -92,6 +100,9 @@ const HotelCard = ({ hotel, onClick }) => {
         ) : (
           <Box
             sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '100%',
               display: 'flex',
@@ -234,7 +245,7 @@ const HotelCard = ({ hotel, onClick }) => {
               mr: 1,
             }}
           >
-            {hotel.city}, {hotel.country}
+            {hotel.name}
           </Typography>
           {hotel.star_rating && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -256,7 +267,7 @@ const HotelCard = ({ hotel, onClick }) => {
             mb: 0.25,
           }}
         >
-          {hotel.name}
+          {hotel.city}
         </Typography>
 
         <Typography
@@ -271,7 +282,7 @@ const HotelCard = ({ hotel, onClick }) => {
 
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
           <Typography sx={{ fontWeight: 600, fontSize: '15px', color: '#222222' }}>
-            £120
+            £{hotel.min_price || hotel.cheapest_price || 120}
           </Typography>
           <Typography sx={{ fontSize: '15px', color: '#222222' }}>
             night
@@ -283,7 +294,7 @@ const HotelCard = ({ hotel, onClick }) => {
 };
 
 const LoadingSkeleton = () => (
-  <Box sx={{ width: '100%' }}>
+  <Box sx={{ width: '100%', minWidth: '260px', maxWidth: '300px', flexShrink: 0 }}>
     <Skeleton
       variant="rounded"
       sx={{
@@ -298,6 +309,161 @@ const LoadingSkeleton = () => (
     <Skeleton variant="text" width="30%" height={20} />
   </Box>
 );
+
+// Horizontal scrollable section for each country
+const CountrySection = ({ country, hotels, onHotelClick, onShowAll }) => {
+  const scrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const ref = scrollRef.current;
+    if (ref) {
+      ref.addEventListener('scroll', checkScroll);
+      return () => ref.removeEventListener('scroll', checkScroll);
+    }
+  }, [hotels]);
+
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = 320;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  return (
+    <Box sx={{ mb: 5 }}>
+      {/* Section Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2.5,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: { xs: '22px', md: '24px' },
+            fontWeight: 600,
+            color: '#222222',
+          }}
+        >
+          Stays in {country}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            onClick={onShowAll}
+            sx={{
+              color: '#222222',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '14px',
+              '&:hover': {
+                bgcolor: 'transparent',
+                textDecoration: 'underline',
+              },
+            }}
+            endIcon={<ArrowForward sx={{ fontSize: 18 }} />}
+          >
+            Show all
+          </Button>
+          {/* Scroll Arrows - Desktop only */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
+            <IconButton
+              onClick={() => scroll('left')}
+              disabled={!canScrollLeft}
+              sx={{
+                width: 32,
+                height: 32,
+                border: '1px solid',
+                borderColor: canScrollLeft ? '#222222' : '#EBEBEB',
+                color: canScrollLeft ? '#222222' : '#EBEBEB',
+                '&:hover': {
+                  bgcolor: canScrollLeft ? '#F7F7F7' : 'transparent',
+                },
+              }}
+            >
+              <ChevronLeft sx={{ fontSize: 18 }} />
+            </IconButton>
+            <IconButton
+              onClick={() => scroll('right')}
+              disabled={!canScrollRight}
+              sx={{
+                width: 32,
+                height: 32,
+                border: '1px solid',
+                borderColor: canScrollRight ? '#222222' : '#EBEBEB',
+                color: canScrollRight ? '#222222' : '#EBEBEB',
+                '&:hover': {
+                  bgcolor: canScrollRight ? '#F7F7F7' : 'transparent',
+                },
+              }}
+            >
+              <ChevronRight sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Scrollable Hotels Row */}
+      <Box
+        ref={scrollRef}
+        sx={{
+          display: 'flex',
+          gap: 2.5,
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+          pb: 1,
+          mx: { xs: -2, sm: -3, md: -5, lg: -10, xl: -12 },
+          px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 },
+        }}
+      >
+        {hotels.map((hotel, index) => (
+          <Box
+            key={hotel.id}
+            sx={{
+              scrollSnapAlign: 'start',
+              opacity: 0,
+              animation: `fadeInUp 0.4s ease-out ${index * 0.05}s forwards`,
+              '@keyframes fadeInUp': {
+                from: {
+                  opacity: 0,
+                  transform: 'translateY(20px)',
+                },
+                to: {
+                  opacity: 1,
+                  transform: 'translateY(0)',
+                },
+              },
+            }}
+          >
+            <HotelCard
+              hotel={hotel}
+              onClick={() => onHotelClick(hotel)}
+            />
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+};
 
 const FeaturedListings = () => {
   const navigate = useNavigate();
@@ -315,7 +481,7 @@ const FeaturedListings = () => {
       const data = Array.isArray(result.data)
         ? result.data
         : result.data?.results || [];
-      setHotels(data.slice(0, 12));
+      setHotels(data);
     }
     setLoading(false);
   };
@@ -324,33 +490,51 @@ const FeaturedListings = () => {
     navigate(`/guest/rooms?hotel=${hotel.id}`);
   };
 
+  const handleShowAll = (country) => {
+    // Navigate to browse rooms with country filter
+    navigate(`/guest/rooms?country=${encodeURIComponent(country)}`);
+  };
+
+  // Group hotels by country
+  const groupedByCountry = hotels.reduce((acc, hotel) => {
+    const country = hotel.country || 'Other';
+    if (!acc[country]) {
+      acc[country] = [];
+    }
+    acc[country].push(hotel);
+    return acc;
+  }, {});
+
+  // Sort countries alphabetically, but put countries with more hotels first
+  const sortedCountries = Object.keys(groupedByCountry).sort((a, b) => {
+    const diff = groupedByCountry[b].length - groupedByCountry[a].length;
+    if (diff !== 0) return diff;
+    return a.localeCompare(b);
+  });
+
   // Responsive padding for containers
   const containerSx = { px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 } };
-
-  // Responsive grid columns
-  const gridColumns = {
-    xs: 'repeat(1, 1fr)',
-    sm: 'repeat(2, 1fr)',
-    md: 'repeat(3, 1fr)',
-    lg: 'repeat(4, 1fr)',
-    xl: 'repeat(5, 1fr)',
-    '2xl': 'repeat(6, 1fr)',
-  };
 
   if (loading) {
     return (
       <Container maxWidth={false} sx={{ py: 3, ...containerSx }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: gridColumns,
-            gap: { xs: 3, md: 3 },
-          }}
-        >
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <LoadingSkeleton key={i} />
-          ))}
-        </Box>
+        {/* Loading skeletons for sections */}
+        {[1, 2].map((section) => (
+          <Box key={section} sx={{ mb: 5 }}>
+            <Skeleton variant="text" width={200} height={32} sx={{ mb: 2 }} />
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 2.5,
+                overflowX: 'hidden',
+              }}
+            >
+              {[1, 2, 3, 4, 5].map((i) => (
+                <LoadingSkeleton key={i} />
+              ))}
+            </Box>
+          </Box>
+        ))}
       </Container>
     );
   }
@@ -372,39 +556,16 @@ const FeaturedListings = () => {
   }
 
   return (
-    <Container maxWidth={false} sx={{ py: 3, ...containerSx }}>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: gridColumns,
-          gap: { xs: 3, md: 3 },
-        }}
-      >
-        {hotels.map((hotel, index) => (
-          <Box
-            key={hotel.id}
-            sx={{
-              opacity: 0,
-              animation: `fadeInUp 0.4s ease-out ${index * 0.05}s forwards`,
-              '@keyframes fadeInUp': {
-                from: {
-                  opacity: 0,
-                  transform: 'translateY(20px)',
-                },
-                to: {
-                  opacity: 1,
-                  transform: 'translateY(0)',
-                },
-              },
-            }}
-          >
-            <HotelCard
-              hotel={hotel}
-              onClick={() => handleHotelClick(hotel)}
-            />
-          </Box>
-        ))}
-      </Box>
+    <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
+      {sortedCountries.map((country) => (
+        <CountrySection
+          key={country}
+          country={country}
+          hotels={groupedByCountry[country]}
+          onHotelClick={handleHotelClick}
+          onShowAll={() => handleShowAll(country)}
+        />
+      ))}
     </Container>
   );
 };

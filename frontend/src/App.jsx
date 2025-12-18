@@ -174,28 +174,24 @@ function App() {
                 }
               />
 
-              {/* Guest Portal Routes */}
-              <Route
-                path="/guest/rooms"
-                element={
-                  <ProtectedRoute>
-                    <BrowseRooms />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/guest/rooms/:id"
-                element={
-                  <ProtectedRoute>
-                    <RoomDetails />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Guest Portal Routes - Public (no login required to browse) */}
+              <Route path="/guest/rooms" element={<BrowseRooms />} />
+              <Route path="/guest/rooms/:id" element={<RoomDetails />} />
+
+              {/* Guest Portal Routes - Protected (login required) */}
               <Route
                 path="/guest/my-bookings"
                 element={
                   <ProtectedRoute>
                     <MyBookings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/guest/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
                   </ProtectedRoute>
                 }
               />

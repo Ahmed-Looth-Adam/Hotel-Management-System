@@ -43,7 +43,7 @@ class BookingListSerializer(serializers.ModelSerializer):
     """Serializer for booking list view"""
     user_name = serializers.SerializerMethodField()
     hotel_name = serializers.CharField(source='hotel.name', read_only=True, allow_null=True)
-    room_type = serializers.CharField(source='room.room_type_category', read_only=True, allow_null=True)
+    room_type = serializers.SerializerMethodField()
     number_of_nights = serializers.ReadOnlyField()
 
     class Meta:
@@ -51,7 +51,7 @@ class BookingListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'booking_reference', 'user', 'user_name',
             'hotel', 'hotel_name', 'room', 'room_number', 'room_type',
-            'check_in_date', 'check_out_date', 'number_of_nights',
+            'room_type_requested', 'check_in_date', 'check_out_date', 'number_of_nights',
             'guests_count', 'status', 'payment_status',
             'total_price', 'created_at'
         ]
@@ -59,13 +59,19 @@ class BookingListSerializer(serializers.ModelSerializer):
     def get_user_name(self, obj):
         return obj.user.get_full_name() or obj.user.username
 
+    def get_room_type(self, obj):
+        # Return room's type if assigned, otherwise return requested type
+        if obj.room and hasattr(obj.room, 'room_type_category'):
+            return obj.room.room_type_category
+        return obj.room_type_requested
+
 
 class BookingDetailSerializer(serializers.ModelSerializer):
     """Serializer for booking detail view"""
     user_name = serializers.SerializerMethodField()
     user_email = serializers.CharField(source='user.email', read_only=True)
     hotel_name = serializers.CharField(source='hotel.name', read_only=True, allow_null=True)
-    room_type = serializers.CharField(source='room.room_type_category', read_only=True, allow_null=True)
+    room_type = serializers.SerializerMethodField()
     room_view = serializers.CharField(source='room.view.name', read_only=True, allow_null=True)
     number_of_nights = serializers.ReadOnlyField()
     booking_guests = BookingGuestSerializer(many=True, read_only=True)
@@ -77,7 +83,7 @@ class BookingDetailSerializer(serializers.ModelSerializer):
         model = Booking
         fields = [
             'id', 'booking_reference', 'user', 'user_name', 'user_email',
-            'hotel', 'hotel_name', 'room', 'room_number', 'room_type', 'room_view',
+            'hotel', 'hotel_name', 'room', 'room_number', 'room_type', 'room_type_requested', 'room_view',
             'check_in_date', 'check_out_date', 'number_of_nights',
             'guests_count', 'actual_guests_checked_in', 'number_of_rooms',
             'status', 'payment_status', 'payment_method',
@@ -94,6 +100,12 @@ class BookingDetailSerializer(serializers.ModelSerializer):
     def get_user_name(self, obj):
         return obj.user.get_full_name() or obj.user.username
 
+    def get_room_type(self, obj):
+        # Return room's type if assigned, otherwise return requested type
+        if obj.room and hasattr(obj.room, 'room_type_category'):
+            return obj.room.room_type_category
+        return obj.room_type_requested
+
     def get_checked_in_by_name(self, obj):
         if obj.checked_in_by:
             return obj.checked_in_by.get_full_name() or obj.checked_in_by.username
@@ -108,11 +120,33 @@ class BookingDetailSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     """Default booking serializer for create/update"""
     user = serializers.ReadOnlyField(source='user.username')
+    # Accept room_type from frontend and map to room_type_requested
+    room_type = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    # Ancillary services (stored but not processed here - for future implementation)
+    ancillary_services = serializers.ListField(
+        child=serializers.CharField(),
+        write_only=True,
+        required=False,
+        default=list
+    )
 
     class Meta:
         model = Booking
         fields = '__all__'
         read_only_fields = ['booking_reference', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'room': {'required': False, 'allow_null': True},
+            'room_number': {'required': False, 'allow_blank': True},
+        }
+
+    def create(self, validated_data):
+        # Map room_type to room_type_requested
+        room_type = validated_data.pop('room_type', None)
+        if room_type:
+            validated_data['room_type_requested'] = room_type
+        # Remove ancillary_services for now (can be handled separately)
+        validated_data.pop('ancillary_services', None)
+        return super().create(validated_data)
 
 
 class BookingCreateSerializer(serializers.Serializer):

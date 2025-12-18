@@ -25,12 +25,20 @@ class Booking(models.Model):
         ('refunded', 'Refunded'),
     ]
 
+    ROOM_TYPE_CHOICES = [
+        ('standard', 'Standard Double'),
+        ('deluxe', 'Deluxe King'),
+        ('suite', 'Family Suite'),
+        ('penthouse', 'Penthouse'),
+    ]
+
     # Core booking information
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bookings')
     hotel = models.ForeignKey('hotels.Hotel', on_delete=models.CASCADE, related_name='bookings', null=True)
-    room = models.ForeignKey('hotels.Room', on_delete=models.CASCADE, related_name='bookings', null=True)
+    room = models.ForeignKey('hotels.Room', on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
+    room_type_requested = models.CharField(max_length=20, choices=ROOM_TYPE_CHOICES, blank=True)
     booking_reference = models.CharField(max_length=20, unique=True, blank=True)
-    room_number = models.CharField(max_length=10)  # Legacy field for backward compatibility
+    room_number = models.CharField(max_length=10, blank=True)  # Assigned at check-in by front desk
 
     # Dates
     check_in_date = models.DateField()

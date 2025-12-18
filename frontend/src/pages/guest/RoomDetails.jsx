@@ -1,35 +1,27 @@
 /**
- * Room Details Page - View room details and make booking
- *
- * Features:
- * - Room information display with images
- * - Booking form with date selection
- * - Price calculation based on room type
- * - Ancillary services selection
- * - Amenities display
- *
- * Created By: Ismail Wasiu Abdul Samad, UWE ID: 24050765
+ * Room Type Details Page - View room type details and make booking
+ * Books a room TYPE, not a specific room. Room assignment happens at check-in.
+ * Airbnb-style design matching the landing page.
  */
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  Box,
   Container,
   Typography,
-  Box,
-  Grid,
-  Paper,
   Button,
   TextField,
   Divider,
-  Chip,
   Alert,
   CircularProgress,
   Checkbox,
   FormControlLabel,
   FormGroup,
-  alpha,
-  CardMedia,
+  IconButton,
+  Menu,
+  MenuItem,
+  Skeleton,
 } from '@mui/material';
 import {
   Hotel as HotelIcon,
@@ -46,19 +38,27 @@ import {
   Restaurant,
   Spa,
   Schedule,
-  Visibility,
-  Layers,
+  LocationOn,
+  Star as StarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Language,
+  Menu as MenuIcon,
+  AccountCircle,
+  Check,
 } from '@mui/icons-material';
 import { roomService, bookingService, hotelService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { useAuth } from '../../context/AuthContext';
 
+const fastSpring = 'all 0.2s cubic-bezier(0.2, 0, 0, 1)';
+
 // Room types and base prices from CLAUDE.md
-const ROOM_TYPES = {
-  standard: { label: 'Standard Double', price: 120, color: '#607d8b' },
-  deluxe: { label: 'Deluxe King', price: 180, color: '#1976d2' },
-  suite: { label: 'Family Suite', price: 240, color: '#7b1fa2' },
-  penthouse: { label: 'Penthouse', price: 500, color: '#c62828' },
+const ROOM_TYPE_INFO = {
+  standard: { label: 'Standard Double', price: 120, capacity: 2, bedSize: 'Double' },
+  deluxe: { label: 'Deluxe King', price: 180, capacity: 2, bedSize: 'King' },
+  suite: { label: 'Family Suite', price: 240, capacity: 4, bedSize: 'King + Sofa Bed' },
+  penthouse: { label: 'Penthouse', price: 500, capacity: 4, bedSize: 'Super King' },
 };
 
 // Ancillary services from CLAUDE.md
@@ -69,16 +69,162 @@ const ANCILLARY_SERVICES = [
   { id: 'late_checkout', label: 'Late Check-out (until 2 PM)', price: 40, icon: Schedule, perPerson: false },
 ];
 
+// Standard amenities for all rooms
+const AMENITIES = [
+  { icon: Wifi, label: 'Free WiFi' },
+  { icon: Tv, label: 'Smart TV' },
+  { icon: AcUnit, label: 'Air Conditioning' },
+  { icon: LocalBar, label: 'Mini Bar' },
+  { icon: Bathtub, label: 'Private Bathroom' },
+];
+
+// Header Component
+const Header = ({ onBackClick }) => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+  const [menuAnchor, setMenuAnchor] = useState(null);
+
+  const handleMenuOpen = (event) => setMenuAnchor(event.currentTarget);
+  const handleMenuClose = () => setMenuAnchor(null);
+
+  const handleLogout = async () => {
+    await logout();
+    handleMenuClose();
+    navigate('/');
+  };
+
+  return (
+    <Box
+      sx={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        bgcolor: '#FFFFFF',
+        borderBottom: '1px solid #EBEBEB',
+      }}
+    >
+      <Container
+        maxWidth={false}
+        sx={{
+          px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 },
+          py: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        {/* Logo */}
+        <Box
+          onClick={() => navigate('/')}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
+        >
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '8px',
+              bgcolor: '#FF385C',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography sx={{ color: '#FFFFFF', fontWeight: 700, fontSize: '18px' }}>H</Typography>
+          </Box>
+          <Typography
+            sx={{
+              fontWeight: 700,
+              fontSize: '20px',
+              color: '#FF385C',
+              display: { xs: 'none', sm: 'block' },
+            }}
+          >
+            Hotels
+          </Typography>
+        </Box>
+
+        {/* Back button */}
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={onBackClick}
+          sx={{
+            textTransform: 'none',
+            color: '#222222',
+            fontWeight: 500,
+            borderRadius: '24px',
+            px: 2,
+            border: '1px solid #DDDDDD',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+            '&:hover': { boxShadow: '0 2px 4px rgba(0,0,0,0.12)', bgcolor: '#FFFFFF' },
+          }}
+        >
+          Back
+        </Button>
+
+        {/* User Menu */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton sx={{ color: '#222222' }}>
+            <Language />
+          </IconButton>
+          <Box
+            onClick={handleMenuOpen}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              border: '1px solid #DDDDDD',
+              borderRadius: '24px',
+              py: 0.75,
+              px: 1.5,
+              cursor: 'pointer',
+              transition: fastSpring,
+              '&:hover': { boxShadow: '0 2px 4px rgba(0,0,0,0.12)' },
+            }}
+          >
+            <MenuIcon sx={{ fontSize: 18, color: '#222222' }} />
+            <AccountCircle sx={{ fontSize: 30, color: '#717171' }} />
+          </Box>
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={handleMenuClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{ sx: { mt: 1.5, borderRadius: '12px', minWidth: 200, boxShadow: '0 2px 16px rgba(0,0,0,0.12)' } }}
+          >
+            {isAuthenticated ? (
+              [
+                <MenuItem key="profile" onClick={() => { navigate('/profile'); handleMenuClose(); }}>Profile</MenuItem>,
+                <MenuItem key="bookings" onClick={() => { navigate('/guest/my-bookings'); handleMenuClose(); }}>My Bookings</MenuItem>,
+                <Divider key="divider" />,
+                <MenuItem key="logout" onClick={handleLogout}>Log out</MenuItem>,
+              ]
+            ) : (
+              [
+                <MenuItem key="login" onClick={() => { navigate('/login'); handleMenuClose(); }} sx={{ fontWeight: 600 }}>Log in</MenuItem>,
+                <MenuItem key="register" onClick={() => { navigate('/register'); handleMenuClose(); }}>Sign up</MenuItem>,
+              ]
+            )}
+          </Menu>
+        </Box>
+      </Container>
+    </Box>
+  );
+};
+
 const RoomDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { showSuccess, showError } = useNotification();
 
   const [room, setRoom] = useState(null);
+  const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   const [formData, setFormData] = useState({
     checkIn: searchParams.get('checkIn') || '',
     checkOut: searchParams.get('checkOut') || '',
@@ -86,26 +232,23 @@ const RoomDetails = () => {
     specialRequests: '',
   });
   const [selectedServices, setSelectedServices] = useState([]);
-  const [priceBreakdown, setPriceBreakdown] = useState({
-    roomTotal: 0,
-    servicesTotal: 0,
-    total: 0,
-    nights: 0,
-  });
 
   useEffect(() => {
-    fetchRoom();
+    fetchData();
   }, [id]);
 
-  useEffect(() => {
-    calculatePrice();
-  }, [formData.checkIn, formData.checkOut, formData.guests, room, selectedServices]);
-
-  const fetchRoom = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const result = await roomService.getById(id);
-    if (result.success) {
-      setRoom(result.data);
+    const roomResult = await roomService.getById(id);
+    if (roomResult.success) {
+      setRoom(roomResult.data);
+      // Fetch hotel details
+      if (roomResult.data.hotel) {
+        const hotelResult = await hotelService.getById(roomResult.data.hotel);
+        if (hotelResult.success) {
+          setHotel(hotelResult.data);
+        }
+      }
     } else {
       showError('Failed to load room details');
       navigate('/guest/rooms');
@@ -113,58 +256,72 @@ const RoomDetails = () => {
     setLoading(false);
   };
 
-  const calculatePrice = () => {
-    if (!room || !formData.checkIn || !formData.checkOut) {
-      setPriceBreakdown({ roomTotal: 0, servicesTotal: 0, total: 0, nights: 0 });
-      return;
-    }
+  const roomTypeCategory = room?.room_type_category || 'standard';
+  const typeInfo = ROOM_TYPE_INFO[roomTypeCategory] || ROOM_TYPE_INFO.standard;
 
+  // Get images
+  const getImages = () => {
+    // Check room galleries
+    if (room?.galleries && room.galleries.length > 0) {
+      const gallery = room.galleries[0];
+      if (gallery.images && gallery.images.length > 0) {
+        return gallery.images.map(img =>
+          img.image?.startsWith('http') ? img.image : `http://localhost:8000${img.image}`
+        );
+      }
+    }
+    // Check hotel galleries as fallback
+    if (hotel?.galleries && hotel.galleries.length > 0) {
+      const gallery = hotel.galleries[0];
+      if (gallery.images && gallery.images.length > 0) {
+        return gallery.images.map(img =>
+          img.image?.startsWith('http') ? img.image : `http://localhost:8000${img.image}`
+        );
+      }
+    }
+    return [];
+  };
+
+  const images = getImages();
+  const hasMultipleImages = images.length > 1;
+
+  // Calculate price
+  const calculatePrice = () => {
+    if (!formData.checkIn || !formData.checkOut) {
+      return { roomTotal: 0, servicesTotal: 0, total: 0, nights: 0 };
+    }
     const checkIn = new Date(formData.checkIn);
     const checkOut = new Date(formData.checkOut);
     const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
 
-    if (nights > 0) {
-      const roomType = ROOM_TYPES[room.room_type_category] || ROOM_TYPES.standard;
-      const roomTotal = roomType.price * nights;
+    if (nights <= 0) return { roomTotal: 0, servicesTotal: 0, total: 0, nights: 0 };
 
-      // Calculate services total
-      let servicesTotal = 0;
-      selectedServices.forEach((serviceId) => {
-        const service = ANCILLARY_SERVICES.find((s) => s.id === serviceId);
-        if (service) {
-          if (service.perPerson) {
-            // Per person per day
-            servicesTotal += service.price * formData.guests * nights;
-          } else {
-            // Flat fee
-            servicesTotal += service.price;
-          }
-        }
-      });
+    const roomTotal = typeInfo.price * nights;
+    let servicesTotal = 0;
+    selectedServices.forEach((serviceId) => {
+      const service = ANCILLARY_SERVICES.find((s) => s.id === serviceId);
+      if (service) {
+        servicesTotal += service.perPerson
+          ? service.price * formData.guests * nights
+          : service.price;
+      }
+    });
 
-      setPriceBreakdown({
-        roomTotal,
-        servicesTotal,
-        total: roomTotal + servicesTotal,
-        nights,
-      });
-    } else {
-      setPriceBreakdown({ roomTotal: 0, servicesTotal: 0, total: 0, nights: 0 });
-    }
+    return { roomTotal, servicesTotal, total: roomTotal + servicesTotal, nights };
   };
+
+  const priceBreakdown = calculatePrice();
 
   const handleServiceToggle = (serviceId) => {
     setSelectedServices((prev) =>
-      prev.includes(serviceId)
-        ? prev.filter((id) => id !== serviceId)
-        : [...prev, serviceId]
+      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId]
     );
   };
 
   const handleBooking = async () => {
-    if (!user) {
-      showError('Please log in to complete your booking');
-      navigate('/login');
+    if (!isAuthenticated) {
+      // Save current URL to redirect back after login
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
     }
 
@@ -178,15 +335,15 @@ const RoomDetails = () => {
       return;
     }
 
-    if (formData.guests > room.max_occupancy) {
-      showError(`Maximum ${room.max_occupancy} guests allowed for this room`);
+    if (formData.guests > typeInfo.capacity) {
+      showError(`Maximum ${typeInfo.capacity} guests allowed for this room type`);
       return;
     }
 
     setBooking(true);
     const result = await bookingService.create({
-      room: room.id,
       hotel: room.hotel,
+      room_type: roomTypeCategory,
       check_in_date: formData.checkIn,
       check_out_date: formData.checkOut,
       guests_count: formData.guests,
@@ -196,7 +353,7 @@ const RoomDetails = () => {
     });
 
     if (result.success) {
-      showSuccess('Booking created successfully!');
+      showSuccess('Booking created successfully! Room will be assigned at check-in.');
       navigate('/guest/my-bookings');
     } else {
       showError(result.error?.message || result.error?.detail || 'Failed to create booking');
@@ -204,341 +361,327 @@ const RoomDetails = () => {
     setBooking(false);
   };
 
-  const getRoomImage = () => {
-    if (room?.galleries && room.galleries.length > 0) {
-      const gallery = room.galleries[0];
-      if (gallery.images && gallery.images.length > 0) {
-        return `http://localhost:8000${gallery.images[0].image}`;
-      }
-    }
-    return null;
-  };
-
-  const getRoomTypeInfo = () => {
-    return ROOM_TYPES[room?.room_type_category] || ROOM_TYPES.standard;
-  };
+  const containerSx = { px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 } };
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <CircularProgress />
+      <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
+        <Header onBackClick={() => navigate(-1)} />
+        <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
+          <Skeleton variant="text" width={300} height={40} sx={{ mb: 2 }} />
+          <Skeleton variant="rounded" height={400} sx={{ borderRadius: '12px', mb: 3 }} />
+          <Box sx={{ display: 'flex', gap: 4 }}>
+            <Box sx={{ flex: 1 }}>
+              <Skeleton variant="text" width="60%" height={30} />
+              <Skeleton variant="text" width="40%" height={24} />
+            </Box>
+            <Skeleton variant="rounded" width={400} height={500} sx={{ borderRadius: '12px' }} />
+          </Box>
+        </Container>
       </Box>
     );
   }
 
   if (!room) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Alert severity="error">Room not found</Alert>
-      </Container>
+      <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
+        <Header onBackClick={() => navigate(-1)} />
+        <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
+          <Alert severity="error" sx={{ borderRadius: '12px' }}>Room type not found</Alert>
+        </Container>
+      </Box>
     );
   }
 
-  const roomTypeInfo = getRoomTypeInfo();
-  const imageUrl = getRoomImage();
-
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Button
-        startIcon={<ArrowBack />}
-        onClick={() => navigate('/guest/rooms')}
-        sx={{ mb: 3, textTransform: 'none' }}
-      >
-        Back to Rooms
-      </Button>
+    <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
+      <Header onBackClick={() => navigate(-1)} />
 
-      <Grid container spacing={4}>
-        {/* Room Information */}
-        <Grid item xs={12} md={7}>
-          <Paper
-            elevation={0}
-            sx={{
-              borderRadius: 3,
-              overflow: 'hidden',
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            {/* Room Image */}
-            {imageUrl ? (
-              <CardMedia
-                component="img"
-                height="350"
-                image={imageUrl}
-                alt={`Room ${room.room_number}`}
-                sx={{ objectFit: 'cover' }}
-              />
-            ) : (
-              <Box
-                sx={{
-                  height: 350,
-                  bgcolor: alpha(roomTypeInfo.color, 0.1),
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <HotelIcon sx={{ fontSize: 100, color: alpha(roomTypeInfo.color, 0.3) }} />
-              </Box>
-            )}
-
-            <Box sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
-                <Box>
-                  <Typography variant="h4" fontWeight={700}>
-                    Room {room.room_number}
-                  </Typography>
-                  <Typography variant="subtitle1" color="text.secondary">
-                    {room.hotel_name || room.hotel?.name}
-                  </Typography>
-                </Box>
-                <Chip
-                  label={roomTypeInfo.label}
-                  sx={{
-                    bgcolor: alpha(roomTypeInfo.color, 0.1),
-                    color: roomTypeInfo.color,
-                    fontWeight: 600,
-                  }}
-                />
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Room Details */}
-              <Grid container spacing={2}>
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                    <Person sx={{ color: 'primary.main', mb: 0.5 }} />
-                    <Typography variant="body2" color="text.secondary">
-                      Max Guests
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600}>
-                      {room.max_occupancy}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                    <KingBed sx={{ color: 'primary.main', mb: 0.5 }} />
-                    <Typography variant="body2" color="text.secondary">
-                      Bed
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600} sx={{ textTransform: 'capitalize' }}>
-                      {room.bed_size}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                    <Layers sx={{ color: 'primary.main', mb: 0.5 }} />
-                    <Typography variant="body2" color="text.secondary">
-                      Floor
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600}>
-                      {room.floor}
-                    </Typography>
-                  </Box>
-                </Grid>
-                {room.view_name && (
-                  <Grid item xs={6} sm={3}>
-                    <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                      <Visibility sx={{ color: 'primary.main', mb: 0.5 }} />
-                      <Typography variant="body2" color="text.secondary">
-                        View
-                      </Typography>
-                      <Typography variant="h6" fontWeight={600} noWrap>
-                        {room.view_name}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                )}
-              </Grid>
-
-              {/* Amenities */}
-              <Typography variant="h6" fontWeight={600} sx={{ mt: 3, mb: 2 }}>
-                Room Amenities
-              </Typography>
-              <Grid container spacing={1}>
-                {[
-                  { icon: <Wifi />, label: 'Free WiFi' },
-                  { icon: <Tv />, label: 'Smart TV' },
-                  { icon: <AcUnit />, label: 'Air Conditioning' },
-                  { icon: <LocalBar />, label: 'Mini Bar' },
-                  { icon: <Bathtub />, label: 'Private Bathroom' },
-                ].map((amenity, index) => (
-                  <Grid item xs={6} sm={4} key={index}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1 }}>
-                      <Box sx={{ color: 'success.main' }}>{amenity.icon}</Box>
-                      <Typography variant="body2">{amenity.label}</Typography>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* Booking Form */}
-        <Grid item xs={12} md={5}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              position: 'sticky',
-              top: 100,
-              borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 3 }}>
-              <Typography variant="h4" fontWeight={700}>
-                £{roomTypeInfo.price}
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                / night
-              </Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Check-in Date"
-                type="date"
-                value={formData.checkIn}
-                onChange={(e) => setFormData({ ...formData, checkIn: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                size="small"
-                inputProps={{ min: new Date().toISOString().split('T')[0] }}
-                InputProps={{ sx: { borderRadius: 2 } }}
-              />
-              <TextField
-                label="Check-out Date"
-                type="date"
-                value={formData.checkOut}
-                onChange={(e) => setFormData({ ...formData, checkOut: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                size="small"
-                inputProps={{ min: formData.checkIn || new Date().toISOString().split('T')[0] }}
-                InputProps={{ sx: { borderRadius: 2 } }}
-              />
-              <TextField
-                label="Number of Guests"
-                type="number"
-                value={formData.guests}
-                onChange={(e) => setFormData({ ...formData, guests: parseInt(e.target.value) || 1 })}
-                inputProps={{ min: 1, max: room.max_occupancy }}
-                fullWidth
-                size="small"
-                helperText={`Maximum ${room.max_occupancy} guests`}
-                InputProps={{ sx: { borderRadius: 2 } }}
-              />
-
-              {/* Ancillary Services */}
-              <Box sx={{ mt: 1 }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                  Add Extra Services
+      <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
+        {/* Title */}
+        <Typography sx={{ fontSize: { xs: '24px', md: '28px' }, fontWeight: 600, color: '#222222', mb: 1 }}>
+          {typeInfo.label}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+          {hotel && (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <StarIcon sx={{ fontSize: 16, color: '#222222' }} />
+                <Typography sx={{ fontSize: '14px', color: '#222222', fontWeight: 500 }}>
+                  {hotel.star_rating || 4}.0
                 </Typography>
-                <FormGroup>
-                  {ANCILLARY_SERVICES.map((service) => {
-                    const Icon = service.icon;
-                    return (
-                      <FormControlLabel
-                        key={service.id}
-                        control={
-                          <Checkbox
-                            checked={selectedServices.includes(service.id)}
-                            onChange={() => handleServiceToggle(service.id)}
-                            size="small"
-                          />
-                        }
-                        label={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Icon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                            <Typography variant="body2">
-                              {service.label}
-                            </Typography>
-                            <Typography variant="body2" color="primary.main" fontWeight={600}>
-                              £{service.price}{service.perPerson ? '/person/day' : ''}
+              </Box>
+              <Typography sx={{ color: '#717171' }}>·</Typography>
+              <Typography sx={{ fontSize: '14px', color: '#717171', textDecoration: 'underline', cursor: 'pointer' }}>
+                {hotel.name}
+              </Typography>
+              <Typography sx={{ color: '#717171' }}>·</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <LocationOn sx={{ fontSize: 16, color: '#717171' }} />
+                <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+                  {hotel.city}, {hotel.country}
+                </Typography>
+              </Box>
+            </>
+          )}
+        </Box>
+
+        {/* Image Gallery */}
+        <Box
+          sx={{
+            position: 'relative',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            height: { xs: 300, md: 450 },
+            bgcolor: '#F7F7F7',
+            mb: 4,
+          }}
+        >
+          {images.length > 0 ? (
+            <Box
+              component="img"
+              src={images[currentImageIndex]}
+              alt={typeInfo.label}
+              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#EBEBEB' }}>
+              <HotelIcon sx={{ fontSize: 80, color: '#DDDDDD' }} />
+            </Box>
+          )}
+          {hasMultipleImages && (
+            <>
+              <IconButton
+                onClick={() => setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)}
+                sx={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', bgcolor: 'rgba(255,255,255,0.9)', '&:hover': { bgcolor: '#FFFFFF' } }}
+              >
+                <ChevronLeft />
+              </IconButton>
+              <IconButton
+                onClick={() => setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)}
+                sx={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', bgcolor: 'rgba(255,255,255,0.9)', '&:hover': { bgcolor: '#FFFFFF' } }}
+              >
+                <ChevronRight />
+              </IconButton>
+              <Box sx={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 0.5 }}>
+                {images.map((_, idx) => (
+                  <Box
+                    key={idx}
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: idx === currentImageIndex ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setCurrentImageIndex(idx)}
+                  />
+                ))}
+              </Box>
+            </>
+          )}
+        </Box>
+
+        {/* Content */}
+        <Box sx={{ display: 'flex', gap: 6, flexDirection: { xs: 'column', md: 'row' } }}>
+          {/* Left - Room Info */}
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ borderBottom: '1px solid #EBEBEB', pb: 3, mb: 3 }}>
+              <Typography sx={{ fontSize: '22px', fontWeight: 600, color: '#222222', mb: 1 }}>
+                {typeInfo.label} at {hotel?.name || 'Hotel'}
+              </Typography>
+              <Typography sx={{ fontSize: '16px', color: '#717171' }}>
+                {typeInfo.capacity} guests · {typeInfo.bedSize} bed · Private bathroom
+              </Typography>
+              <Typography sx={{ fontSize: '14px', color: '#717171', mt: 1 }}>
+                Room will be assigned at check-in based on availability
+              </Typography>
+            </Box>
+
+            {/* Amenities */}
+            <Box sx={{ borderBottom: '1px solid #EBEBEB', pb: 3, mb: 3 }}>
+              <Typography sx={{ fontSize: '22px', fontWeight: 600, color: '#222222', mb: 2 }}>
+                What this room offers
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                {AMENITIES.map((amenity, idx) => (
+                  <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <amenity.icon sx={{ fontSize: 24, color: '#222222' }} />
+                    <Typography sx={{ fontSize: '16px', color: '#222222' }}>{amenity.label}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Extra Services */}
+            <Box sx={{ pb: 3 }}>
+              <Typography sx={{ fontSize: '22px', fontWeight: 600, color: '#222222', mb: 2 }}>
+                Add extra services
+              </Typography>
+              <FormGroup>
+                {ANCILLARY_SERVICES.map((service) => {
+                  const Icon = service.icon;
+                  return (
+                    <FormControlLabel
+                      key={service.id}
+                      control={
+                        <Checkbox
+                          checked={selectedServices.includes(service.id)}
+                          onChange={() => handleServiceToggle(service.id)}
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
+                          <Icon sx={{ fontSize: 24, color: '#222222' }} />
+                          <Box>
+                            <Typography sx={{ fontSize: '16px', color: '#222222' }}>{service.label}</Typography>
+                            <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+                              £{service.price}{service.perPerson ? ' per person per day' : ''}
                             </Typography>
                           </Box>
-                        }
-                        sx={{ ml: 0, mb: 0.5 }}
-                      />
-                    );
-                  })}
-                </FormGroup>
+                        </Box>
+                      }
+                      sx={{ m: 0, borderBottom: '1px solid #EBEBEB', '&:last-child': { borderBottom: 'none' } }}
+                    />
+                  );
+                })}
+              </FormGroup>
+            </Box>
+          </Box>
+
+          {/* Right - Booking Card */}
+          <Box sx={{ width: { xs: '100%', md: 400 }, flexShrink: 0 }}>
+            <Box
+              sx={{
+                position: 'sticky',
+                top: 100,
+                border: '1px solid #DDDDDD',
+                borderRadius: '12px',
+                p: 3,
+                boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 3 }}>
+                <Typography sx={{ fontSize: '22px', fontWeight: 600, color: '#222222' }}>
+                  £{typeInfo.price}
+                </Typography>
+                <Typography sx={{ fontSize: '16px', color: '#717171' }}>night</Typography>
               </Box>
 
+              {/* Date & Guest Inputs */}
+              <Box sx={{ border: '1px solid #B0B0B0', borderRadius: '8px', mb: 2 }}>
+                <Box sx={{ display: 'flex', borderBottom: '1px solid #B0B0B0' }}>
+                  <Box sx={{ flex: 1, p: 1.5, borderRight: '1px solid #B0B0B0' }}>
+                    <Typography sx={{ fontSize: '10px', fontWeight: 600, color: '#222222', textTransform: 'uppercase' }}>
+                      Check-in
+                    </Typography>
+                    <TextField
+                      type="date"
+                      value={formData.checkIn}
+                      onChange={(e) => setFormData({ ...formData, checkIn: e.target.value })}
+                      variant="standard"
+                      InputProps={{ disableUnderline: true }}
+                      inputProps={{ min: new Date().toISOString().split('T')[0], style: { padding: 0 } }}
+                      sx={{ '& input': { fontSize: '14px', color: '#222222' } }}
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1, p: 1.5 }}>
+                    <Typography sx={{ fontSize: '10px', fontWeight: 600, color: '#222222', textTransform: 'uppercase' }}>
+                      Check-out
+                    </Typography>
+                    <TextField
+                      type="date"
+                      value={formData.checkOut}
+                      onChange={(e) => setFormData({ ...formData, checkOut: e.target.value })}
+                      variant="standard"
+                      InputProps={{ disableUnderline: true }}
+                      inputProps={{ min: formData.checkIn || new Date().toISOString().split('T')[0], style: { padding: 0 } }}
+                      sx={{ '& input': { fontSize: '14px', color: '#222222' } }}
+                    />
+                  </Box>
+                </Box>
+                <Box sx={{ p: 1.5 }}>
+                  <Typography sx={{ fontSize: '10px', fontWeight: 600, color: '#222222', textTransform: 'uppercase' }}>
+                    Guests
+                  </Typography>
+                  <TextField
+                    type="number"
+                    value={formData.guests}
+                    onChange={(e) => setFormData({ ...formData, guests: Math.min(parseInt(e.target.value) || 1, typeInfo.capacity) })}
+                    variant="standard"
+                    InputProps={{ disableUnderline: true }}
+                    inputProps={{ min: 1, max: typeInfo.capacity, style: { padding: 0 } }}
+                    sx={{ '& input': { fontSize: '14px', color: '#222222' } }}
+                  />
+                </Box>
+              </Box>
+
+              {/* Special Requests */}
               <TextField
-                label="Special Requests"
+                placeholder="Special requests (optional)"
                 multiline
                 rows={2}
                 value={formData.specialRequests}
                 onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
-                placeholder="Any special requests..."
                 fullWidth
                 size="small"
-                InputProps={{ sx: { borderRadius: 2 } }}
+                sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
               />
 
-              <Divider />
-
-              {/* Price Breakdown */}
-              {priceBreakdown.nights > 0 && (
-                <Box sx={{ bgcolor: alpha('#1976d2', 0.05), p: 2, borderRadius: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      £{roomTypeInfo.price} x {priceBreakdown.nights} night{priceBreakdown.nights !== 1 ? 's' : ''}
-                    </Typography>
-                    <Typography variant="body2">£{priceBreakdown.roomTotal}</Typography>
-                  </Box>
-                  {priceBreakdown.servicesTotal > 0 && (
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Extra services
-                      </Typography>
-                      <Typography variant="body2">£{priceBreakdown.servicesTotal}</Typography>
-                    </Box>
-                  )}
-                  <Divider sx={{ my: 1 }} />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography fontWeight={600}>Total</Typography>
-                    <Typography variant="h5" fontWeight={700} color="primary.main">
-                      £{priceBreakdown.total}
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
-
+              {/* Book Button */}
               <Button
                 variant="contained"
-                size="large"
                 fullWidth
                 onClick={handleBooking}
                 disabled={booking || !formData.checkIn || !formData.checkOut}
-                startIcon={booking ? <CircularProgress size={20} /> : <CheckCircle />}
                 sx={{
-                  borderRadius: 2,
+                  bgcolor: '#FF385C',
+                  borderRadius: '8px',
                   py: 1.5,
                   textTransform: 'none',
                   fontWeight: 600,
+                  fontSize: '16px',
+                  '&:hover': { bgcolor: '#E31C5F' },
                 }}
               >
-                {booking ? 'Processing...' : 'Book Now'}
+                {booking ? <CircularProgress size={24} sx={{ color: '#FFFFFF' }} /> : 'Reserve'}
               </Button>
 
-              {!user && (
-                <Alert severity="info" sx={{ borderRadius: 2 }}>
-                  Please log in to complete your booking
-                </Alert>
+              {!isAuthenticated && (
+                <Typography sx={{ fontSize: '12px', color: '#717171', textAlign: 'center', mt: 1 }}>
+                  You'll need to log in to complete your booking
+                </Typography>
+              )}
+
+              {/* Price Breakdown */}
+              {priceBreakdown.nights > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography sx={{ fontSize: '16px', color: '#222222', textDecoration: 'underline' }}>
+                      £{typeInfo.price} x {priceBreakdown.nights} night{priceBreakdown.nights !== 1 ? 's' : ''}
+                    </Typography>
+                    <Typography sx={{ fontSize: '16px', color: '#222222' }}>£{priceBreakdown.roomTotal}</Typography>
+                  </Box>
+                  {priceBreakdown.servicesTotal > 0 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography sx={{ fontSize: '16px', color: '#222222', textDecoration: 'underline' }}>
+                        Extra services
+                      </Typography>
+                      <Typography sx={{ fontSize: '16px', color: '#222222' }}>£{priceBreakdown.servicesTotal}</Typography>
+                    </Box>
+                  )}
+                  <Divider sx={{ my: 2 }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 600, color: '#222222' }}>Total</Typography>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 600, color: '#222222' }}>£{priceBreakdown.total}</Typography>
+                  </Box>
+                </Box>
               )}
             </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Container>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

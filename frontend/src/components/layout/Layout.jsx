@@ -72,6 +72,17 @@ const Layout = ({ children }) => {
     );
   }
 
+  // Guest portal pages - use Airbnb-style layout (no Navbar for unauthenticated)
+  if (isGuestPage && !isAuthenticated) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
+          {children}
+        </Box>
+      </Box>
+    );
+  }
+
   // Not authenticated - show public layout with Navbar
   if (!isAuthenticated) {
     return (
