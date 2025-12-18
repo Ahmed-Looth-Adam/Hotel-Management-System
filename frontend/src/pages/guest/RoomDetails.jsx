@@ -644,7 +644,7 @@ const RoomDetails = () => {
                   '&:hover': { bgcolor: '#E31C5F' },
                 }}
               >
-                {booking ? <CircularProgress size={24} sx={{ color: '#FFFFFF' }} /> : 'Reserve'}
+                {booking ? <CircularProgress size={24} sx={{ color: '#FFFFFF' }} /> : 'Book'}
               </Button>
 
               {!isAuthenticated && (

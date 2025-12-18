@@ -1094,8 +1094,8 @@ const Hero = () => {
               display: { xs: 'none', md: 'flex' },
               alignItems: 'center',
               justifyContent: 'space-between',
-              pt: 2,
-              pb: 2,
+              py: 2,
+              minHeight: isExpanded ? 'auto' : '64px',
             }}
           >
             {/* Logo - Left side */}
