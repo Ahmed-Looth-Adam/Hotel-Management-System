@@ -275,6 +275,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
         display: 'flex',
         alignItems: 'center',
         height: '48px',
+        minWidth: '380px',
         borderRadius: '40px',
         border: '1px solid #DDDDDD',
         boxShadow: '0 1px 2px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05)',
@@ -289,11 +290,13 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
       <Box
         onClick={() => handleCollapsedFieldClick('where')}
         sx={{
-          px: 2,
+          px: 3,
           py: 1.5,
+          minWidth: '120px',
           borderRight: '1px solid #DDDDDD',
           '&:hover': { bgcolor: '#F7F7F7' },
           transition: fastSpring,
+          textAlign: 'center',
         }}
       >
         <Typography variant="body2" fontWeight={600} color="#222222" noWrap>
@@ -303,11 +306,13 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
       <Box
         onClick={() => handleCollapsedFieldClick('dates')}
         sx={{
-          px: 2,
+          px: 3,
           py: 1.5,
+          minWidth: '140px',
           borderRight: '1px solid #DDDDDD',
           '&:hover': { bgcolor: '#F7F7F7' },
           transition: fastSpring,
+          textAlign: 'center',
         }}
       >
         <Typography variant="body2" fontWeight={600} color="#222222" noWrap>
@@ -321,11 +326,13 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
       <Box
         onClick={() => handleCollapsedFieldClick('guests')}
         sx={{
-          px: 2,
+          px: 3,
           py: 1.5,
+          minWidth: '80px',
           flexGrow: 1,
           '&:hover': { bgcolor: '#F7F7F7' },
           transition: fastSpring,
+          textAlign: 'center',
         }}
       >
         <Typography variant="body2" fontWeight={600} color="#222222" noWrap>
@@ -335,14 +342,14 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
       <Box
         onClick={handleSearch}
         sx={{
-          width: 32,
-          height: 32,
+          width: 36,
+          height: 36,
           borderRadius: '50%',
-          bgcolor: '#FF385C',
+          bgcolor: '#667eea',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          mr: 1,
+          mr: 1.5,
           transition: fastSpring,
           '&:hover': { transform: 'scale(1.04)' },
           '&:active': { transform: 'scale(0.96)' },
@@ -503,10 +510,10 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
             sx={{
               width: '48px',
               height: '48px',
-              bgcolor: '#FF385C',
+              bgcolor: '#667eea',
               color: 'white',
               transition: springTransition,
-              '&:hover': { bgcolor: '#E31C5F', transform: 'scale(1.04)' },
+              '&:hover': { bgcolor: '#5a6fd6', transform: 'scale(1.04)' },
               '&:active': { transform: 'scale(0.96)' },
             }}
           >
@@ -559,7 +566,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
               color: '#222222',
             },
             '& .rdrDayToday .rdrDayNumber span:after': {
-              background: '#FF385C',
+              background: '#667eea',
             },
             // Circular start/end selection markers
             '& .rdrStartEdge, & .rdrEndEdge': {
@@ -876,7 +883,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                   onClick={(e) => { e.stopPropagation(); setSelectedLocation(null); setActiveField('dates'); }}
                   sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1, borderRadius: '8px', '&:active': { bgcolor: '#F7F7F7' } }}
                 >
-                  <Box sx={{ p: 1, bgcolor: '#F7F7F7', borderRadius: '8px' }}><NearMe sx={{ color: '#FF385C' }} /></Box>
+                  <Box sx={{ p: 1, bgcolor: '#F7F7F7', borderRadius: '8px' }}><NearMe sx={{ color: '#667eea' }} /></Box>
                   <Typography fontWeight={600}>I'm flexible</Typography>
                 </Box>
                 {locations.slice(0, 3).map((loc) => (
@@ -1071,7 +1078,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          bgcolor: '#FFFFFF',
+          bgcolor: '#faf8ff',
           zIndex: 10
         }}
       >
@@ -1092,7 +1099,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
           onClick={() => { setMobileSearchOpen(false); handleSearch(); }}
           startIcon={<Search />}
           sx={{
-            bgcolor: '#FF385C',
+            bgcolor: '#667eea',
             color: 'white',
             fontWeight: 600,
             textTransform: 'none',
@@ -1100,7 +1107,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
             py: 1.5,
             borderRadius: '12px',
             fontSize: '16px',
-            '&:hover': { bgcolor: '#E31C5F' }
+            '&:hover': { bgcolor: '#5a6fd6' }
           }}
         >
           Search
@@ -1116,19 +1123,19 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          bgcolor: '#FFFFFF',
+          bgcolor: '#faf8ff',
           borderBottom: '1px solid #EBEBEB',
         }}
       >
-        <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 } }}>
+        <Container maxWidth={false} sx={{ px: { xs: 3, sm: 4, md: 6, lg: 12, xl: 14 }, py: 1 }}>
           {/* Top Row - Logo and Menu (fixed height) */}
           <Box
             sx={{
               display: { xs: 'none', md: 'flex' },
               alignItems: 'center',
               justifyContent: 'space-between',
-              py: 2,
-              minHeight: isExpanded ? 'auto' : '64px',
+              py: 2.5,
+              minHeight: isExpanded ? 'auto' : '72px',
             }}
           >
             {/* Logo - Left side */}
@@ -1146,7 +1153,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                   width: 32,
                   height: 32,
                   borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #FF385C 0%, #E61E4D 100%)',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1154,7 +1161,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
               >
                 <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '18px' }}>H</Typography>
               </Box>
-              <Typography sx={{ color: '#FF385C', fontWeight: 700, fontSize: '20px', letterSpacing: '-0.02em' }}>
+              <Typography sx={{ color: '#667eea', fontWeight: 700, fontSize: '20px', letterSpacing: '-0.02em' }}>
                 Hotels
               </Typography>
             </Box>
@@ -1369,7 +1376,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
 
           {loadingLocations ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={32} sx={{ color: '#FF385C' }} />
+              <CircularProgress size={32} sx={{ color: '#667eea' }} />
             </Box>
           ) : locations.length === 0 ? (
             <Typography sx={{ color: '#717171', fontSize: '14px', py: 2 }}>
@@ -1407,7 +1414,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                     justifyContent: 'center',
                   }}
                 >
-                  <NearMe sx={{ fontSize: 24, color: '#FF385C' }} />
+                  <NearMe sx={{ fontSize: 24, color: '#667eea' }} />
                 </Box>
                 <Box>
                   <Typography sx={{ fontWeight: 600, fontSize: '15px', color: '#222222' }}>
@@ -1501,8 +1508,8 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                 py: 0.5,
               }}
             >
-              <Search sx={{ fontSize: 24, color: '#FF385C' }} />
-              <Typography sx={{ fontSize: '10px', fontWeight: 600, color: '#FF385C' }}>
+              <Search sx={{ fontSize: 24, color: '#667eea' }} />
+              <Typography sx={{ fontSize: '10px', fontWeight: 600, color: '#667eea' }}>
                 Explore
               </Typography>
             </Box>

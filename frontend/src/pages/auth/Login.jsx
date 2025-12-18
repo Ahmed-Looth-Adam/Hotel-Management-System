@@ -13,16 +13,17 @@ import {
   Checkbox,
   FormControlLabel,
   CircularProgress,
-  alpha,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   Person as PersonIcon,
   Lock as LockIcon,
-  Hotel as HotelIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+
+// Hotel background image
+const HOTEL_BG_IMAGE = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80';
 
 const validationSchema = Yup.object({
   username: Yup.string().required('Username is required'),
@@ -109,23 +110,28 @@ const Login = () => {
       sx={{
         minHeight: '100vh',
         display: 'flex',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        bgcolor: '#f5f5f5',
       }}
     >
-      {/* Left Side - Branding */}
+      {/* Left Side - Hotel Image */}
       <Box
         sx={{
           flex: 1,
           display: { xs: 'none', md: 'flex' },
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
+          justifyContent: 'flex-end',
+          alignItems: 'flex-start',
           p: 6,
+          pr: 10,
+          mr: -6,
           position: 'relative',
           overflow: 'hidden',
+          backgroundImage: `url(${HOTEL_BG_IMAGE})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       >
-        {/* Background Pattern */}
+        {/* Dark Overlay */}
         <Box
           sx={{
             position: 'absolute',
@@ -133,82 +139,65 @@ const Login = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            opacity: 0.1,
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.2) 100%)',
           }}
         />
 
         {/* Content */}
-        <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 480 }}>
+        <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 500 }}>
+          {/* Logo */}
           <Box
             sx={{
-              width: 80,
-              height: 80,
-              borderRadius: '20px',
-              bgcolor: 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              mx: 'auto',
+              gap: 1.5,
               mb: 4,
             }}
           >
-            <HotelIcon sx={{ fontSize: 40, color: 'white' }} />
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '12px',
+                bgcolor: 'rgba(255,255,255,0.15)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid rgba(255,255,255,0.2)',
+              }}
+            >
+              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '24px' }}>H</Typography>
+            </Box>
+            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '24px', letterSpacing: '-0.02em' }}>
+              Hotels
+            </Typography>
           </Box>
 
           <Typography
-            variant="h3"
             sx={{
               color: 'white',
-              fontWeight: 700,
+              fontWeight: 600,
+              fontSize: { md: '2.5rem', lg: '3rem' },
+              lineHeight: 1.2,
               mb: 2,
-              textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+              letterSpacing: '-0.02em',
             }}
           >
-            Welcome Back
+            Welcome back to luxury
           </Typography>
 
           <Typography
-            variant="h6"
             sx={{
-              color: 'rgba(255,255,255,0.9)',
+              color: 'rgba(255,255,255,0.85)',
               fontWeight: 400,
+              fontSize: '1.1rem',
               lineHeight: 1.6,
-              mb: 4,
+              maxWidth: 400,
             }}
           >
-            Manage your hotels, bookings, and guests all in one place
+            Sign in to manage your bookings and discover exceptional stays around the world.
           </Typography>
-
-          {/* Feature highlights */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
-            {[
-              'Real-time booking management',
-              'Comprehensive guest profiles',
-              'Revenue analytics & reports',
-            ].map((feature, index) => (
-              <Box
-                key={index}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  color: 'rgba(255,255,255,0.85)',
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    bgcolor: 'rgba(255,255,255,0.8)',
-                  }}
-                />
-                <Typography variant="body1">{feature}</Typography>
-              </Box>
-            ))}
-          </Box>
         </Box>
       </Box>
 
@@ -222,6 +211,8 @@ const Login = () => {
           bgcolor: 'white',
           borderRadius: { xs: 0, md: '32px 0 0 32px' },
           boxShadow: { md: '-20px 0 60px rgba(0,0,0,0.15)' },
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <Box sx={{ p: { xs: 4, sm: 6 }, maxWidth: 400, mx: 'auto', width: '100%' }}>
@@ -231,22 +222,26 @@ const Login = () => {
               display: { xs: 'flex', md: 'none' },
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 1.5,
               mb: 4,
             }}
           >
             <Box
               sx={{
-                width: 56,
-                height: 56,
-                borderRadius: '14px',
+                width: 48,
+                height: 48,
+                borderRadius: '12px',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <HotelIcon sx={{ fontSize: 28, color: 'white' }} />
+              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '24px' }}>H</Typography>
             </Box>
+            <Typography sx={{ color: '#667eea', fontWeight: 700, fontSize: '24px', letterSpacing: '-0.02em' }}>
+              Hotels
+            </Typography>
           </Box>
 
           <Typography

@@ -19,9 +19,9 @@ const theme = createTheme({
     mode: 'light',
 
     primary: {
-      main: '#000000',      // Pure Black for primary actions/text
-      light: '#333333',
-      dark: '#000000',
+      main: '#667eea',      // Purple accent for primary actions
+      light: '#8a9bef',
+      dark: '#5a6fd6',
       contrastText: '#ffffff',
     },
 
@@ -90,18 +90,18 @@ const theme = createTheme({
           },
         },
         containedPrimary: {
-          backgroundColor: '#000000',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: '#ffffff',
           '&:hover': {
-            backgroundColor: '#333333',
+            background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)',
           },
         },
         outlinedPrimary: {
-          borderColor: '#222222',
-          color: '#222222',
+          borderColor: '#667eea',
+          color: '#667eea',
           '&:hover': {
-            backgroundColor: '#f7f7f7',
-            borderColor: '#000000',
+            backgroundColor: 'rgba(102, 126, 234, 0.08)',
+            borderColor: '#5a6fd6',
           },
         }
       },
@@ -134,8 +134,36 @@ const theme = createTheme({
         root: {
           borderRadius: 32, // Pill shape
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderWidth: '1px',
-            borderColor: '#000000',
+            borderWidth: '2px',
+            borderColor: '#667eea',
+          }
+        }
+      }
+    },
+
+    MuiCheckbox: {
+      styleOverrides: {
+        root: {
+          '&.Mui-checked': {
+            color: '#667eea',
+          }
+        }
+      }
+    },
+
+    MuiTabs: {
+      styleOverrides: {
+        indicator: {
+          backgroundColor: '#667eea',
+        }
+      }
+    },
+
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          '&.Mui-selected': {
+            color: '#667eea',
           }
         }
       }

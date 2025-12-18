@@ -4,18 +4,31 @@ import * as Yup from 'yup';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Box,
-  Container,
   Typography,
   TextField,
   Button,
   Alert,
-  Paper,
-  Grid,
   InputAdornment,
   IconButton,
+  CircularProgress,
+  Collapse,
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import {
+  Visibility,
+  VisibilityOff,
+  Person as PersonIcon,
+  Email as EmailIcon,
+  Lock as LockIcon,
+  ExpandMore,
+  ExpandLess,
+  Phone as PhoneIcon,
+  Home as HomeIcon,
+  CalendarMonth as CalendarIcon,
+} from '@mui/icons-material';
 import authService from '../../services/authService';
+
+// Hotel background image (different from login for variety)
+const HOTEL_BG_IMAGE = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1920&q=80';
 
 const validationSchema = Yup.object({
   username: Yup.string()
@@ -29,7 +42,7 @@ const validationSchema = Yup.object({
     .min(8, 'Password must be at least 8 characters')
     .matches(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+      'Must contain uppercase, lowercase, and number'
     )
     .required('Password is required'),
   password2: Yup.string()
@@ -40,7 +53,8 @@ const validationSchema = Yup.object({
   last_name: Yup.string()
     .max(150, 'Last name must not exceed 150 characters'),
   phone_number: Yup.string()
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, 'Invalid phone number'),
+    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, 'Invalid phone number')
+    .nullable(),
   date_of_birth: Yup.date()
     .max(new Date(), 'Date of birth cannot be in the future')
     .nullable(),
@@ -58,6 +72,7 @@ const Register = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
+  const [showOptional, setShowOptional] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -81,7 +96,12 @@ const Register = () => {
       setError('');
       setSuccess('');
 
-      const result = await authService.register(values);
+      // Clean up empty optional fields
+      const cleanedValues = Object.fromEntries(
+        Object.entries(values).filter(([_, v]) => v !== '')
+      );
+
+      const result = await authService.register(cleanedValues);
 
       if (result.success) {
         setSuccess('Registration successful! Redirecting to login...');
@@ -89,7 +109,6 @@ const Register = () => {
           navigate('/login');
         }, 2000);
       } else {
-        // Handle validation errors from backend
         const errors = result.error;
         if (typeof errors === 'object') {
           const errorMessages = Object.entries(errors)
@@ -105,71 +124,275 @@ const Register = () => {
     },
   });
 
+  // Common text field styling
+  const textFieldSx = {
+    mb: 2,
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      bgcolor: '#f8f9fa',
+      '&:hover': {
+        bgcolor: '#f8f9fa',
+      },
+      '&.Mui-focused': {
+        bgcolor: 'white',
+      },
+    },
+  };
+
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Create Account
-        </Typography>
-        <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-          Register for your hotel management account
-        </Typography>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        bgcolor: '#f5f5f5',
+      }}
+    >
+      {/* Left Side - Hotel Image */}
+      <Box
+        sx={{
+          flex: 1,
+          display: { xs: 'none', lg: 'flex' },
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          alignItems: 'flex-start',
+          p: 6,
+          pr: 10,
+          mr: -6,
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundImage: `url(${HOTEL_BG_IMAGE})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Dark Overlay */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.2) 100%)',
+          }}
+        />
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+        {/* Content */}
+        <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 500 }}>
+          {/* Logo */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              mb: 4,
+            }}
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '12px',
+                bgcolor: 'rgba(255,255,255,0.15)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid rgba(255,255,255,0.2)',
+              }}
+            >
+              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '24px' }}>H</Typography>
+            </Box>
+            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '24px', letterSpacing: '-0.02em' }}>
+              Hotels
+            </Typography>
+          </Box>
 
-        {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {success}
-          </Alert>
-        )}
-
-        <Box component="form" onSubmit={formik.handleSubmit} noValidate>
-          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-            Account Information
+          <Typography
+            sx={{
+              color: 'white',
+              fontWeight: 600,
+              fontSize: { lg: '2.5rem', xl: '3rem' },
+              lineHeight: 1.2,
+              mb: 2,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Start your journey today
           </Typography>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                id="username"
-                name="username"
-                label="Username"
-                value={formik.values.username}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.username && Boolean(formik.errors.username)}
-                helperText={formik.touched.username && formik.errors.username}
-                required
-              />
-            </Grid>
+          <Typography
+            sx={{
+              color: 'rgba(255,255,255,0.85)',
+              fontWeight: 400,
+              fontSize: '1.1rem',
+              lineHeight: 1.6,
+              maxWidth: 400,
+            }}
+          >
+            Create an account to unlock exclusive deals and manage your bookings with ease.
+          </Typography>
+        </Box>
+      </Box>
 
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                id="email"
-                name="email"
-                label="Email Address"
-                type="email"
-                value={formik.values.email}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.email && Boolean(formik.errors.email)}
-                helperText={formik.touched.email && formik.errors.email}
-                required
-              />
-            </Grid>
+      {/* Right Side - Registration Form */}
+      <Box
+        sx={{
+          flex: { xs: 1, lg: '0 0 540px' },
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: 'white',
+          borderRadius: { xs: 0, lg: '32px 0 0 32px' },
+          boxShadow: { lg: '-20px 0 60px rgba(0,0,0,0.15)' },
+          overflowY: 'auto',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <Box sx={{ p: { xs: 3, sm: 5 }, maxWidth: 480, mx: 'auto', width: '100%' }}>
+          {/* Mobile Logo */}
+          <Box
+            sx={{
+              display: { xs: 'flex', lg: 'none' },
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1.5,
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '24px' }}>H</Typography>
+            </Box>
+            <Typography sx={{ color: '#667eea', fontWeight: 700, fontSize: '24px', letterSpacing: '-0.02em' }}>
+              Hotels
+            </Typography>
+          </Box>
 
-            <Grid item xs={12} sm={6}>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              color: '#1a1a2e',
+              mb: 1,
+            }}
+          >
+            Create Account
+          </Typography>
+
+          <Typography
+            variant="body1"
+            sx={{
+              color: 'text.secondary',
+              mb: 3,
+            }}
+          >
+            Fill in your details to get started
+          </Typography>
+
+          {error && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+              }}
+              onClose={() => setError('')}
+            >
+              {error}
+            </Alert>
+          )}
+
+          {success && (
+            <Alert
+              severity="success"
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+              }}
+            >
+              {success}
+            </Alert>
+          )}
+
+          <Box component="form" onSubmit={formik.handleSubmit} noValidate>
+            {/* Account Information */}
+            <Typography
+              variant="subtitle2"
+              sx={{
+                color: '#667eea',
+                fontWeight: 600,
+                mb: 2,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                fontSize: '0.75rem',
+              }}
+            >
+              Account Information
+            </Typography>
+
+            <TextField
+              fullWidth
+              id="username"
+              name="username"
+              label="Username"
+              placeholder="Choose a username"
+              value={formik.values.username}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              error={formik.touched.username && Boolean(formik.errors.username)}
+              helperText={formik.touched.username && formik.errors.username}
+              required
+              autoFocus
+              sx={textFieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              id="email"
+              name="email"
+              label="Email Address"
+              placeholder="Enter your email"
+              type="email"
+              value={formik.values.email}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              error={formik.touched.email && Boolean(formik.errors.email)}
+              helperText={formik.touched.email && formik.errors.email}
+              required
+              sx={textFieldSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <EmailIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 fullWidth
                 id="password"
                 name="password"
                 label="Password"
+                placeholder="Create password"
                 type={showPassword ? 'text' : 'password'}
                 value={formik.values.password}
                 onChange={formik.handleChange}
@@ -177,30 +400,33 @@ const Register = () => {
                 error={formik.touched.password && Boolean(formik.errors.password)}
                 helperText={formik.touched.password && formik.errors.password}
                 required
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="toggle password visibility"
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
+                sx={textFieldSx}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockIcon sx={{ color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        size="small"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
                 }}
               />
-            </Grid>
 
-            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 id="password2"
                 name="password2"
-                label="Confirm Password"
+                label="Confirm"
+                placeholder="Confirm password"
                 type={showPassword2 ? 'text' : 'password'}
                 value={formik.values.password2}
                 onChange={formik.handleChange}
@@ -208,173 +434,304 @@ const Register = () => {
                 error={formik.touched.password2 && Boolean(formik.errors.password2)}
                 helperText={formik.touched.password2 && formik.errors.password2}
                 required
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="toggle password visibility"
-                          onClick={() => setShowPassword2(!showPassword2)}
-                          edge="end"
-                        >
-                          {showPassword2 ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
+                sx={textFieldSx}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword2(!showPassword2)}
+                        edge="end"
+                        size="small"
+                      >
+                        {showPassword2 ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+
+            {/* Optional Information Toggle */}
+            <Button
+              fullWidth
+              onClick={() => setShowOptional(!showOptional)}
+              endIcon={showOptional ? <ExpandLess /> : <ExpandMore />}
+              sx={{
+                mt: 1,
+                mb: 2,
+                py: 1.5,
+                borderRadius: 2,
+                textTransform: 'none',
+                color: 'text.secondary',
+                bgcolor: '#f8f9fa',
+                border: '1px dashed #e0e0e0',
+                fontWeight: 500,
+                '&:hover': {
+                  bgcolor: '#f0f0f0',
+                  border: '1px dashed #bdbdbd',
+                },
+              }}
+            >
+              {showOptional ? 'Hide' : 'Add'} Personal Details (Optional)
+            </Button>
+
+            <Collapse in={showOptional}>
+              <Box sx={{ pt: 1 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: '#667eea',
+                    fontWeight: 600,
+                    mb: 2,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  Personal Details
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    id="first_name"
+                    name="first_name"
+                    label="First Name"
+                    placeholder="First name"
+                    value={formik.values.first_name}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.first_name && Boolean(formik.errors.first_name)}
+                    helperText={formik.touched.first_name && formik.errors.first_name}
+                    sx={textFieldSx}
+                  />
+
+                  <TextField
+                    fullWidth
+                    id="last_name"
+                    name="last_name"
+                    label="Last Name"
+                    placeholder="Last name"
+                    value={formik.values.last_name}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.last_name && Boolean(formik.errors.last_name)}
+                    helperText={formik.touched.last_name && formik.errors.last_name}
+                    sx={textFieldSx}
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    id="phone_number"
+                    name="phone_number"
+                    label="Phone Number"
+                    placeholder="+44 123 456 7890"
+                    value={formik.values.phone_number}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.phone_number && Boolean(formik.errors.phone_number)}
+                    helperText={formik.touched.phone_number && formik.errors.phone_number}
+                    sx={textFieldSx}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneIcon sx={{ color: 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    id="date_of_birth"
+                    name="date_of_birth"
+                    label="Date of Birth"
+                    type="date"
+                    value={formik.values.date_of_birth}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.date_of_birth && Boolean(formik.errors.date_of_birth)}
+                    helperText={formik.touched.date_of_birth && formik.errors.date_of_birth}
+                    sx={textFieldSx}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <CalendarIcon sx={{ color: 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: '#667eea',
+                    fontWeight: 600,
+                    mb: 2,
+                    mt: 1,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  Address
+                </Typography>
+
+                <TextField
+                  fullWidth
+                  id="address"
+                  name="address"
+                  label="Street Address"
+                  placeholder="Enter your address"
+                  value={formik.values.address}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.address && Boolean(formik.errors.address)}
+                  helperText={formik.touched.address && formik.errors.address}
+                  sx={textFieldSx}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <HomeIcon sx={{ color: 'text.secondary' }} />
                       </InputAdornment>
                     ),
-                  },
+                  }}
+                />
+
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    id="city"
+                    name="city"
+                    label="City"
+                    placeholder="City"
+                    value={formik.values.city}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.city && Boolean(formik.errors.city)}
+                    helperText={formik.touched.city && formik.errors.city}
+                    sx={textFieldSx}
+                  />
+
+                  <TextField
+                    fullWidth
+                    id="postal_code"
+                    name="postal_code"
+                    label="Postal Code"
+                    placeholder="Postal code"
+                    value={formik.values.postal_code}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.postal_code && Boolean(formik.errors.postal_code)}
+                    helperText={formik.touched.postal_code && formik.errors.postal_code}
+                    sx={textFieldSx}
+                  />
+                </Box>
+
+                <TextField
+                  fullWidth
+                  id="country"
+                  name="country"
+                  label="Country"
+                  placeholder="Country"
+                  value={formik.values.country}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.country && Boolean(formik.errors.country)}
+                  helperText={formik.touched.country && formik.errors.country}
+                  sx={textFieldSx}
+                />
+              </Box>
+            </Collapse>
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={formik.isSubmitting}
+              sx={{
+                mt: 2,
+                py: 1.5,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontSize: '1rem',
+                fontWeight: 600,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)',
+                  boxShadow: '0 6px 20px rgba(102, 126, 234, 0.5)',
+                  transform: 'translateY(-1px)',
+                },
+                '&:disabled': {
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  opacity: 0.7,
+                },
+              }}
+            >
+              {formik.isSubmitting ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} sx={{ color: 'white' }} />
+                  <span>Creating Account...</span>
+                </Box>
+              ) : (
+                'Create Account'
+              )}
+            </Button>
+
+            <Box sx={{ mt: 3, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Already have an account?{' '}
+                <Link
+                  to="/login"
+                  style={{
+                    textDecoration: 'none',
+                    color: '#667eea',
+                    fontWeight: 600,
+                  }}
+                >
+                  Sign in
+                </Link>
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Footer */}
+          <Box sx={{ mt: 4, textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              By creating an account, you agree to our{' '}
+              <Link
+                to="#"
+                style={{
+                  textDecoration: 'none',
+                  color: '#667eea',
                 }}
-              />
-            </Grid>
-          </Grid>
-
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-            Personal Information (Optional)
-          </Typography>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                id="first_name"
-                name="first_name"
-                label="First Name"
-                value={formik.values.first_name}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.first_name && Boolean(formik.errors.first_name)}
-                helperText={formik.touched.first_name && formik.errors.first_name}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                id="last_name"
-                name="last_name"
-                label="Last Name"
-                value={formik.values.last_name}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.last_name && Boolean(formik.errors.last_name)}
-                helperText={formik.touched.last_name && formik.errors.last_name}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                id="phone_number"
-                name="phone_number"
-                label="Phone Number"
-                value={formik.values.phone_number}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.phone_number && Boolean(formik.errors.phone_number)}
-                helperText={formik.touched.phone_number && formik.errors.phone_number}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                id="date_of_birth"
-                name="date_of_birth"
-                label="Date of Birth"
-                type="date"
-                value={formik.values.date_of_birth}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.date_of_birth && Boolean(formik.errors.date_of_birth)}
-                helperText={formik.touched.date_of_birth && formik.errors.date_of_birth}
-                slotProps={{
-                  inputLabel: {
-                    shrink: true,
-                  },
+              >
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link
+                to="#"
+                style={{
+                  textDecoration: 'none',
+                  color: '#667eea',
                 }}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                id="address"
-                name="address"
-                label="Address"
-                multiline
-                rows={2}
-                value={formik.values.address}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.address && Boolean(formik.errors.address)}
-                helperText={formik.touched.address && formik.errors.address}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                id="city"
-                name="city"
-                label="City"
-                value={formik.values.city}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.city && Boolean(formik.errors.city)}
-                helperText={formik.touched.city && formik.errors.city}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                id="country"
-                name="country"
-                label="Country"
-                value={formik.values.country}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.country && Boolean(formik.errors.country)}
-                helperText={formik.touched.country && formik.errors.country}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                id="postal_code"
-                name="postal_code"
-                label="Postal Code"
-                value={formik.values.postal_code}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.postal_code && Boolean(formik.errors.postal_code)}
-                helperText={formik.touched.postal_code && formik.errors.postal_code}
-              />
-            </Grid>
-          </Grid>
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            size="large"
-            disabled={formik.isSubmitting}
-            sx={{ mt: 3, mb: 2 }}
-          >
-            {formik.isSubmitting ? 'Registering...' : 'Register'}
-          </Button>
-
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2">
-              Already have an account?{' '}
-              <Link to="/login" style={{ textDecoration: 'none', color: 'primary.main' }}>
-                Sign in here
+              >
+                Privacy Policy
               </Link>
             </Typography>
           </Box>
         </Box>
-      </Paper>
-    </Container>
+      </Box>
+    </Box>
   );
 };
 

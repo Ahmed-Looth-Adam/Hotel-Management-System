@@ -372,7 +372,7 @@ const RoomDetails = () => {
                       borderRadius: '8px',
                       overflow: 'hidden',
                       cursor: 'pointer',
-                      border: idx === currentImageIndex ? '3px solid #FF385C' : '3px solid transparent',
+                      border: idx === currentImageIndex ? '3px solid #667eea' : '3px solid transparent',
                       opacity: idx === currentImageIndex ? 1 : 0.7,
                       transition: 'all 0.2s ease',
                       '&:hover': { opacity: 1, transform: 'scale(1.02)' },
@@ -508,13 +508,14 @@ const RoomDetails = () => {
                 onClick={handleBooking}
                 disabled={booking || !formData.checkIn || !formData.checkOut}
                 sx={{
-                  bgcolor: '#FF385C',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   borderRadius: '8px',
                   py: 1.5,
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: '16px',
-                  '&:hover': { bgcolor: '#E31C5F' },
+                  '&:hover': { background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)' },
+                  '&.Mui-disabled': { background: '#DDDDDD', color: '#999999' },
                 }}
               >
                 {booking ? <CircularProgress size={24} sx={{ color: '#FFFFFF' }} /> : 'Book'}
@@ -567,7 +568,7 @@ const RoomDetails = () => {
                         <Checkbox
                           checked={selectedServices.includes(service.id)}
                           onChange={() => handleServiceToggle(service.id)}
-                          sx={{ '&.Mui-checked': { color: '#FF385C' } }}
+                          sx={{ '&.Mui-checked': { color: '#667eea' } }}
                         />
                       }
                       label={
