@@ -43,14 +43,19 @@ class BookingListSerializer(serializers.ModelSerializer):
     """Serializer for booking list view"""
     user_name = serializers.SerializerMethodField()
     hotel_name = serializers.CharField(source='hotel.name', read_only=True, allow_null=True)
+    hotel_city = serializers.CharField(source='hotel.city', read_only=True, allow_null=True)
+    hotel_country = serializers.CharField(source='hotel.country', read_only=True, allow_null=True)
     room_type = serializers.SerializerMethodField()
+    room_type_label = serializers.SerializerMethodField()
+    room_image = serializers.SerializerMethodField()
     number_of_nights = serializers.ReadOnlyField()
 
     class Meta:
         model = Booking
         fields = [
             'id', 'booking_reference', 'user', 'user_name',
-            'hotel', 'hotel_name', 'room', 'room_number', 'room_type',
+            'hotel', 'hotel_name', 'hotel_city', 'hotel_country',
+            'room', 'room_number', 'room_type', 'room_type_label', 'room_image',
             'room_type_requested', 'check_in_date', 'check_out_date', 'number_of_nights',
             'guests_count', 'status', 'payment_status',
             'total_price', 'created_at'
@@ -64,6 +69,39 @@ class BookingListSerializer(serializers.ModelSerializer):
         if obj.room and hasattr(obj.room, 'room_type_category'):
             return obj.room.room_type_category
         return obj.room_type_requested
+
+    def get_room_type_label(self, obj):
+        # Return human-readable room type label
+        room_type_labels = {
+            'standard': 'Standard Double',
+            'deluxe': 'Deluxe King',
+            'suite': 'Family Suite',
+            'penthouse': 'Penthouse',
+        }
+        room_type = self.get_room_type(obj)
+        return room_type_labels.get(room_type, room_type or 'Room')
+
+    def get_room_image(self, obj):
+        # Try to get image from room's gallery first
+        if obj.room and obj.room.gallery:
+            images = obj.room.gallery.images.all()
+            if images.exists():
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(images.first().image.url)
+                return images.first().image.url
+        # Fall back to hotel's gallery
+        if obj.hotel:
+            from hotels.models import Gallery
+            hotel_gallery = Gallery.objects.filter(hotel=obj.hotel, gallery_type='hotel').first()
+            if hotel_gallery:
+                images = hotel_gallery.images.all()
+                if images.exists():
+                    request = self.context.get('request')
+                    if request:
+                        return request.build_absolute_uri(images.first().image.url)
+                    return images.first().image.url
+        return None
 
 
 class BookingDetailSerializer(serializers.ModelSerializer):

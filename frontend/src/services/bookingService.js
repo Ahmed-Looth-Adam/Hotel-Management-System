@@ -23,6 +23,23 @@ const bookingService = {
   },
 
   /**
+   * Get current user's bookings
+   * @param {Object} params - Query parameters
+   * @returns {Promise} API response
+   */
+  getMyBookings: async (params = {}) => {
+    try {
+      const response = await bookingsApi.get('/bookings/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data || 'Failed to fetch your bookings',
+      };
+    }
+  },
+
+  /**
    * Get booking by ID
    * @param {number} id - Booking ID
    * @returns {Promise} API response

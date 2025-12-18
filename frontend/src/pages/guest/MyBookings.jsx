@@ -1,11 +1,6 @@
 /**
  * My Bookings Page - Guest view for their bookings
- *
- * Features:
- * - List of user's bookings
- * - Booking status display
- * - Cancel booking with fee information
- * - View booking details
+ * Airbnb-style beautiful booking management
  *
  * Created By: Ismail Wasiu Abdul Samad, UWE ID: 24050765
  */
@@ -16,63 +11,47 @@ import {
   Container,
   Typography,
   Box,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
   Button,
   Chip,
-  Divider,
   Dialog,
   DialogContent,
   DialogActions,
   TextField,
   CircularProgress,
-  Paper,
-  Tab,
-  Tabs,
   Alert,
-  Avatar,
-  alpha,
   IconButton,
 } from '@mui/material';
 import {
-  EventNote,
   Hotel as HotelIcon,
   Cancel,
-  Visibility,
   CheckCircle,
   Schedule,
-  CalendarToday,
-  Person,
-  MeetingRoom,
-  Warning as WarningIcon,
+  CalendarMonth,
+  People,
   Close as CloseIcon,
-  Add as AddIcon,
+  ArrowBack,
+  LocationOn,
+  LuggageOutlined,
 } from '@mui/icons-material';
+import Hero from '../../components/landing/Hero';
 import { bookingService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { useAuth } from '../../context/AuthContext';
 
 const statusConfig = {
-  pending: { color: 'warning', icon: <Schedule />, label: 'Pending', bgColor: '#fff3e0' },
-  confirmed: { color: 'info', icon: <CheckCircle />, label: 'Confirmed', bgColor: '#e3f2fd' },
-  checked_in: { color: 'success', icon: <HotelIcon />, label: 'Checked In', bgColor: '#e8f5e9' },
-  checked_out: { color: 'default', icon: <CheckCircle />, label: 'Completed', bgColor: '#f5f5f5' },
-  cancelled: { color: 'error', icon: <Cancel />, label: 'Cancelled', bgColor: '#ffebee' },
-  completed: { color: 'success', icon: <CheckCircle />, label: 'Completed', bgColor: '#e8f5e9' },
-  no_show: { color: 'error', icon: <Cancel />, label: 'No Show', bgColor: '#ffebee' },
+  pending: { label: 'Pending', color: '#F59E0B', bgColor: '#FEF3C7' },
+  confirmed: { label: 'Confirmed', color: '#667eea', bgColor: '#EEF2FF' },
+  checked_in: { label: 'Checked In', color: '#10B981', bgColor: '#D1FAE5' },
+  checked_out: { label: 'Completed', color: '#6B7280', bgColor: '#F3F4F6' },
+  cancelled: { label: 'Cancelled', color: '#EF4444', bgColor: '#FEE2E2' },
+  completed: { label: 'Completed', color: '#10B981', bgColor: '#D1FAE5' },
+  no_show: { label: 'No Show', color: '#EF4444', bgColor: '#FEE2E2' },
 };
 
-// Cancellation fees from CLAUDE.md
 const getCancellationFee = (checkInDate, totalPrice) => {
   const now = new Date();
   const checkIn = new Date(checkInDate);
   const daysUntilCheckIn = Math.ceil((checkIn - now) / (1000 * 60 * 60 * 24));
-
-  // Calculate first night price (estimate as 1/nights of total)
-  // For simplicity, assume first night is same proportion
-  const firstNightPrice = totalPrice / Math.max(1, Math.ceil((new Date(checkInDate) - now) / (1000 * 60 * 60 * 24)));
 
   if (daysUntilCheckIn > 14) {
     return { fee: 0, description: 'Free cancellation (more than 14 days notice)', type: 'free' };
@@ -89,7 +68,7 @@ const MyBookings = () => {
   const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
-  const [tabValue, setTabValue] = useState(0);
+  const [activeTab, setActiveTab] = useState('upcoming');
   const [cancelDialog, setCancelDialog] = useState({ open: false, booking: null });
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
@@ -129,14 +108,14 @@ const MyBookings = () => {
   const getFilteredBookings = (tab) => {
     const now = new Date();
     switch (tab) {
-      case 0: // Upcoming
+      case 'upcoming':
         return bookings.filter(b =>
           ['pending', 'confirmed'].includes(b.status) &&
           new Date(b.check_in_date) >= now
         );
-      case 1: // Current
+      case 'current':
         return bookings.filter(b => b.status === 'checked_in');
-      case 2: // Past
+      case 'past':
         return bookings.filter(b =>
           ['checked_out', 'completed', 'cancelled', 'no_show'].includes(b.status) ||
           new Date(b.check_out_date) < now
@@ -146,14 +125,20 @@ const MyBookings = () => {
     }
   };
 
-  const filteredBookings = getFilteredBookings(tabValue);
+  const filteredBookings = getFilteredBookings(activeTab);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
-      weekday: 'short',
       day: 'numeric',
       month: 'short',
       year: 'numeric',
+    });
+  };
+
+  const formatDateShort = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
     });
   };
 
@@ -163,10 +148,19 @@ const MyBookings = () => {
     return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
   };
 
+  const tabs = [
+    { id: 'upcoming', label: 'Upcoming', count: getFilteredBookings('upcoming').length },
+    { id: 'current', label: 'Current', count: getFilteredBookings('current').length },
+    { id: 'past', label: 'Past', count: getFilteredBookings('past').length },
+  ];
+
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <CircularProgress />
+      <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
+        <Hero initialCollapsed hideBottomNav />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+          <CircularProgress sx={{ color: '#667eea' }} />
+        </Box>
       </Box>
     );
   }
@@ -176,325 +170,392 @@ const MyBookings = () => {
     : null;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>
-            <EventNote />
-          </Avatar>
-          <Box>
-            <Typography variant="h4" fontWeight={700}>
-              My Bookings
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Manage your hotel reservations
-            </Typography>
+    <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
+      <Hero initialCollapsed hideBottomNav />
+
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+          <Box
+            onClick={() => navigate('/')}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 22, color: '#222222' }} />
           </Box>
+          <Typography sx={{ fontSize: { xs: '24px', md: '32px' }, fontWeight: 700, color: '#222222' }}>
+            My Bookings
+          </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/guest/rooms')}
-          sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
-        >
-          Book New Room
-        </Button>
-      </Box>
 
-      {/* Tabs */}
-      <Paper
-        elevation={0}
-        sx={{
-          mb: 3,
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Tabs
-          value={tabValue}
-          onChange={(e, v) => setTabValue(v)}
-          indicatorColor="primary"
-          textColor="primary"
-          sx={{ px: 2 }}
-        >
-          <Tab label={`Upcoming (${getFilteredBookings(0).length})`} />
-          <Tab label={`Current Stay (${getFilteredBookings(1).length})`} />
-          <Tab label={`Past (${getFilteredBookings(2).length})`} />
-        </Tabs>
-      </Paper>
-
-      {/* Bookings List */}
-      {filteredBookings.length === 0 ? (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 6,
-            textAlign: 'center',
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <EventNote sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No bookings found
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {tabValue === 0 ? "You don't have any upcoming bookings" :
-             tabValue === 1 ? "You're not currently checked in" :
-             "No past bookings to show"}
-          </Typography>
-          {tabValue === 0 && (
-            <Button
-              variant="contained"
-              onClick={() => navigate('/guest/rooms')}
-              sx={{ borderRadius: 2, textTransform: 'none' }}
+        {/* Tabs */}
+        <Box sx={{ display: 'flex', gap: 1, mb: 4 }}>
+          {tabs.map((tab) => (
+            <Box
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              sx={{
+                px: 3,
+                py: 1.5,
+                borderRadius: '100px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                bgcolor: activeTab === tab.id ? '#667eea' : 'transparent',
+                border: activeTab === tab.id ? 'none' : '1px solid #DDDDDD',
+                '&:hover': {
+                  bgcolor: activeTab === tab.id ? '#667eea' : '#F7F7F7',
+                },
+              }}
             >
-              Browse Rooms
-            </Button>
-          )}
-        </Paper>
-      ) : (
-        <Grid container spacing={3}>
-          {filteredBookings.map((booking) => {
-            const status = statusConfig[booking.status] || statusConfig.pending;
-            const nights = calculateNights(booking.check_in_date, booking.check_out_date);
+              <Typography
+                sx={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: activeTab === tab.id ? '#FFFFFF' : '#222222',
+                }}
+              >
+                {tab.label} {tab.count > 0 && `(${tab.count})`}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
 
-            return (
-              <Grid item xs={12} md={6} key={booking.id}>
-                <Card
-                  elevation={0}
+        {/* Bookings List */}
+        {filteredBookings.length === 0 ? (
+          <Box
+            sx={{
+              py: 8,
+              textAlign: 'center',
+              bgcolor: '#F7F7F7',
+              borderRadius: '16px',
+            }}
+          >
+            <LuggageOutlined sx={{ fontSize: 64, color: '#DDDDDD', mb: 2 }} />
+            <Typography sx={{ fontSize: '20px', fontWeight: 600, color: '#222222', mb: 1 }}>
+              No {activeTab} bookings
+            </Typography>
+            <Typography sx={{ fontSize: '15px', color: '#717171', mb: 3 }}>
+              {activeTab === 'upcoming' ? "You don't have any upcoming trips" :
+               activeTab === 'current' ? "You're not currently checked in anywhere" :
+               "You haven't completed any trips yet"}
+            </Typography>
+            {activeTab === 'upcoming' && (
+              <Button
+                variant="contained"
+                onClick={() => navigate('/guest/rooms')}
+                sx={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '10px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.2,
+                }}
+              >
+                Start exploring
+              </Button>
+            )}
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {filteredBookings.map((booking) => {
+              const status = statusConfig[booking.status] || statusConfig.pending;
+              const nights = calculateNights(booking.check_in_date, booking.check_out_date);
+
+              return (
+                <Box
+                  key={booking.id}
                   sx={{
-                    borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    transition: 'all 0.2s ease',
+                    borderRadius: '16px',
+                    border: '1px solid #EBEBEB',
+                    overflow: 'hidden',
+                    transition: 'all 0.2s',
                     '&:hover': {
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                      boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
                     },
                   }}
                 >
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
-                      <Box>
-                        <Typography variant="h6" fontWeight={600}>
-                          {booking.hotel_name || 'Hotel'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Ref: {booking.booking_reference}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        icon={status.icon}
-                        label={status.label}
-                        size="small"
+                  {/* Card Header with Status */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      px: 3,
+                      py: 1.5,
+                      bgcolor: status.bgColor,
+                      borderBottom: '1px solid #EBEBEB',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      {booking.status === 'confirmed' && <CheckCircle sx={{ fontSize: 18, color: status.color }} />}
+                      {booking.status === 'pending' && <Schedule sx={{ fontSize: 18, color: status.color }} />}
+                      {booking.status === 'checked_in' && <HotelIcon sx={{ fontSize: 18, color: status.color }} />}
+                      {['cancelled', 'no_show'].includes(booking.status) && <Cancel sx={{ fontSize: 18, color: status.color }} />}
+                      <Typography sx={{ fontSize: '14px', fontWeight: 600, color: status.color }}>
+                        {status.label}
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '13px', color: '#717171' }}>
+                      Ref: {booking.booking_reference}
+                    </Typography>
+                  </Box>
+
+                  {/* Card Body */}
+                  <Box sx={{ p: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      {/* Room/Hotel Image */}
+                      <Box
                         sx={{
-                          bgcolor: status.bgColor,
-                          color: `${status.color}.main`,
-                          fontWeight: 600,
-                          '& .MuiChip-icon': { color: 'inherit' },
+                          width: 140,
+                          height: 140,
+                          borderRadius: '12px',
+                          flexShrink: 0,
+                          overflow: 'hidden',
+                          bgcolor: '#F7F7F7',
                         }}
-                      />
-                    </Box>
-
-                    <Divider sx={{ my: 2 }} />
-
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CalendarToday sx={{ fontSize: 18, color: 'text.secondary' }} />
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Check-in</Typography>
-                            <Typography variant="body2" fontWeight={500}>{formatDate(booking.check_in_date)}</Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CalendarToday sx={{ fontSize: 18, color: 'text.secondary' }} />
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Check-out</Typography>
-                            <Typography variant="body2" fontWeight={500}>{formatDate(booking.check_out_date)}</Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <MeetingRoom sx={{ fontSize: 18, color: 'text.secondary' }} />
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Room</Typography>
-                            <Typography variant="body2" fontWeight={500}>{booking.room_number}</Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Person sx={{ fontSize: 18, color: 'text.secondary' }} />
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Guests</Typography>
-                            <Typography variant="body2" fontWeight={500}>{booking.guests_count}</Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                    </Grid>
-
-                    <Box
-                      sx={{
-                        mt: 2,
-                        p: 2,
-                        bgcolor: alpha('#1976d2', 0.05),
-                        borderRadius: 2,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        {nights} night{nights > 1 ? 's' : ''}
-                      </Typography>
-                      <Typography variant="h5" fontWeight={700} color="primary.main">
-                        £{parseFloat(booking.total_price || 0).toFixed(2)}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-
-                  <CardActions sx={{ px: 2, pb: 2 }}>
-                    <Button
-                      size="small"
-                      startIcon={<Visibility />}
-                      onClick={() => navigate(`/bookings/${booking.id}`)}
-                      sx={{ textTransform: 'none', fontWeight: 600 }}
-                    >
-                      View Details
-                    </Button>
-                    {['pending', 'confirmed'].includes(booking.status) && (
-                      <Button
-                        size="small"
-                        color="error"
-                        startIcon={<Cancel />}
-                        onClick={() => setCancelDialog({ open: true, booking })}
-                        sx={{ textTransform: 'none', fontWeight: 600 }}
                       >
-                        Cancel
-                      </Button>
-                    )}
-                  </CardActions>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      )}
+                        {booking.room_image ? (
+                          <Box
+                            component="img"
+                            src={booking.room_image}
+                            alt={booking.hotel_name}
+                            sx={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: '100%',
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <HotelIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.8)' }} />
+                          </Box>
+                        )}
+                      </Box>
 
-      {/* Cancel Dialog with Fee Info */}
-      <Dialog
-        open={cancelDialog.open}
-        onClose={() => setCancelDialog({ open: false, booking: null })}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
-      >
-        {/* Header */}
-        <Box
-          sx={{
-            background: 'linear-gradient(180deg, #d32f2f 0%, #b71c1c 100%)',
-            color: '#ffffff',
-            px: 3,
-            py: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 40, height: 40 }}>
-              <WarningIcon />
-            </Avatar>
-            <Typography variant="h6" fontWeight={600}>
-              Cancel Booking
-            </Typography>
+                      {/* Booking Details */}
+                      <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        {/* Top: Hotel name, location, room type */}
+                        <Box>
+                          <Typography sx={{ fontSize: '20px', fontWeight: 700, color: '#222222', mb: 0.5 }}>
+                            {booking.hotel_name || 'Hotel'}
+                          </Typography>
+
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <LocationOn sx={{ fontSize: 16, color: '#717171' }} />
+                            <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+                              {booking.hotel_city}{booking.hotel_country && `, ${booking.hotel_country}`}
+                            </Typography>
+                          </Box>
+
+                          <Typography sx={{ fontSize: '15px', fontWeight: 600, color: '#222222' }}>
+                            {booking.room_type_label || booking.room_type_requested || 'Standard'}
+                          </Typography>
+                        </Box>
+
+                        {/* Bottom: Check-in/out details */}
+                        <Box sx={{ display: 'flex', gap: 4, mt: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <CalendarMonth sx={{ fontSize: 18, color: '#717171' }} />
+                            <Box>
+                              <Typography sx={{ fontSize: '13px', color: '#717171' }}>
+                                {formatDate(booking.check_in_date)} → {formatDate(booking.check_out_date)}
+                              </Typography>
+                              <Typography sx={{ fontSize: '12px', color: '#222222', fontWeight: 500 }}>
+                                {nights} night{nights !== 1 ? 's' : ''}
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <People sx={{ fontSize: 18, color: '#717171' }} />
+                            <Typography sx={{ fontSize: '13px', color: '#222222', fontWeight: 500 }}>
+                              {booking.guests_count} guest{booking.guests_count !== 1 ? 's' : ''}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+
+                      {/* Price & Actions */}
+                      <Box sx={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <Box>
+                          <Typography sx={{ fontSize: '12px', color: '#717171', mb: 0.5 }}>Total</Typography>
+                          <Typography sx={{ fontSize: '24px', fontWeight: 700, color: '#222222' }}>
+                            £{parseFloat(booking.total_price || 0).toFixed(0)}
+                          </Typography>
+                        </Box>
+
+                        {['pending', 'confirmed'].includes(booking.status) && (
+                          <Button
+                            size="small"
+                            onClick={() => setCancelDialog({ open: true, booking })}
+                            sx={{
+                              color: '#EF4444',
+                              textTransform: 'none',
+                              fontSize: '13px',
+                              fontWeight: 500,
+                              px: 0,
+                              py: 0,
+                              minWidth: 'auto',
+                              '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+                            }}
+                          >
+                            Cancel booking
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+              );
+            })}
           </Box>
-          <IconButton
-            onClick={() => setCancelDialog({ open: false, booking: null })}
-            sx={{ color: '#ffffff' }}
-            size="small"
-          >
-            <CloseIcon />
-          </IconButton>
-        </Box>
+        )}
 
-        <DialogContent sx={{ p: 3 }}>
-          {cancellationInfo && (
-            <Alert
-              severity={cancellationInfo.type === 'free' ? 'success' : cancellationInfo.type === 'partial' ? 'warning' : 'error'}
-              sx={{ mb: 3, borderRadius: 2 }}
+        {/* Cancel Dialog */}
+        <Dialog
+          open={cancelDialog.open}
+          onClose={() => setCancelDialog({ open: false, booking: null })}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: '16px', overflow: 'hidden' } }}
+        >
+          <Box
+            sx={{
+              bgcolor: '#222222',
+              color: '#FFFFFF',
+              px: 3,
+              py: 2.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Typography sx={{ fontSize: '18px', fontWeight: 600 }}>
+              Cancel booking
+            </Typography>
+            <IconButton
+              onClick={() => setCancelDialog({ open: false, booking: null })}
+              sx={{ color: '#FFFFFF', p: 0.5 }}
             >
-              <Typography variant="subtitle2" fontWeight={600}>
-                Cancellation Fee: {cancellationInfo.type === 'free' ? 'None' : `£${cancellationInfo.fee.toFixed(2)}`}
-              </Typography>
-              <Typography variant="body2">
-                {cancellationInfo.description}
-              </Typography>
-            </Alert>
-          )}
+              <CloseIcon />
+            </IconButton>
+          </Box>
 
-          {cancelDialog.booking && (
-            <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Booking Details
-              </Typography>
-              <Typography variant="body2">
-                <strong>Hotel:</strong> {cancelDialog.booking.hotel_name}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Room:</strong> {cancelDialog.booking.room_number}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Check-in:</strong> {formatDate(cancelDialog.booking.check_in_date)}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Total:</strong> £{parseFloat(cancelDialog.booking.total_price || 0).toFixed(2)}
-              </Typography>
-            </Box>
-          )}
+          <DialogContent sx={{ p: 3 }}>
+            {cancellationInfo && (
+              <Alert
+                severity={cancellationInfo.type === 'free' ? 'success' : cancellationInfo.type === 'partial' ? 'warning' : 'error'}
+                sx={{ mb: 3, borderRadius: '10px' }}
+              >
+                <Typography sx={{ fontSize: '14px', fontWeight: 600 }}>
+                  Cancellation fee: {cancellationInfo.type === 'free' ? 'None' : `£${cancellationInfo.fee.toFixed(2)}`}
+                </Typography>
+                <Typography sx={{ fontSize: '13px' }}>
+                  {cancellationInfo.description}
+                </Typography>
+              </Alert>
+            )}
 
-          <Typography variant="body1" gutterBottom>
-            Are you sure you want to cancel this booking?
-          </Typography>
+            {cancelDialog.booking && (
+              <Box sx={{ mb: 3, p: 2.5, bgcolor: '#F7F7F7', borderRadius: '12px' }}>
+                <Typography sx={{ fontSize: '16px', fontWeight: 600, color: '#222222', mb: 0.5 }}>
+                  {cancelDialog.booking.hotel_name}
+                </Typography>
+                <Typography sx={{ fontSize: '13px', color: '#717171', mb: 1 }}>
+                  {cancelDialog.booking.hotel_city}{cancelDialog.booking.hotel_country && `, ${cancelDialog.booking.hotel_country}`}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  <Box>
+                    <Typography sx={{ fontSize: '11px', color: '#717171', textTransform: 'uppercase' }}>Room</Typography>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 500, color: '#222222' }}>
+                      {cancelDialog.booking.room_type_label || cancelDialog.booking.room_type_requested || 'Standard'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontSize: '11px', color: '#717171', textTransform: 'uppercase' }}>Dates</Typography>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 500, color: '#222222' }}>
+                      {formatDate(cancelDialog.booking.check_in_date)} - {formatDate(cancelDialog.booking.check_out_date)}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontSize: '11px', color: '#717171', textTransform: 'uppercase' }}>Total</Typography>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#222222' }}>
+                      £{parseFloat(cancelDialog.booking.total_price || 0).toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            )}
 
-          <TextField
-            fullWidth
-            label="Reason for cancellation (optional)"
-            multiline
-            rows={3}
-            value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
-            sx={{ mt: 2 }}
-            InputProps={{ sx: { borderRadius: 2 } }}
-          />
-        </DialogContent>
+            <Typography sx={{ fontSize: '15px', color: '#222222', mb: 2 }}>
+              Are you sure you want to cancel this booking?
+            </Typography>
 
-        <DialogActions sx={{ px: 3, py: 2, bgcolor: 'grey.50', borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button
-            onClick={() => setCancelDialog({ open: false, booking: null })}
-            sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
-          >
-            Keep Booking
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleCancelBooking}
-            disabled={cancelling}
-            sx={{ borderRadius: 2, textTransform: 'none', px: 3, fontWeight: 600 }}
-          >
-            {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+            <TextField
+              fullWidth
+              label="Reason for cancellation (optional)"
+              multiline
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+            />
+          </DialogContent>
+
+          <DialogActions sx={{ px: 3, py: 2.5, borderTop: '1px solid #EBEBEB' }}>
+            <Button
+              onClick={() => setCancelDialog({ open: false, booking: null })}
+              sx={{
+                borderRadius: '10px',
+                textTransform: 'none',
+                px: 3,
+                py: 1,
+                color: '#222222',
+                border: '1px solid #222222',
+                '&:hover': { bgcolor: '#F7F7F7' },
+              }}
+            >
+              Keep booking
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleCancelBooking}
+              disabled={cancelling}
+              sx={{
+                borderRadius: '10px',
+                textTransform: 'none',
+                px: 3,
+                py: 1,
+                fontWeight: 600,
+                bgcolor: '#EF4444',
+                '&:hover': { bgcolor: '#DC2626' },
+              }}
+            >
+              {cancelling ? 'Cancelling...' : 'Cancel booking'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </Box>
   );
 };
 

@@ -199,9 +199,12 @@ const BookingConfirmation = () => {
 
       const bookingData = {
         room: parseInt(id),
+        hotel: hotel?.id,
         check_in_date: checkIn,
         check_out_date: checkOut,
-        number_of_guests: guests,
+        guests_count: guests,
+        total_price: totalPrice,
+        room_type: room?.room_type_category || 'standard',
         special_requests: specialRequests,
         ancillary_services: selectedServices,
       };
