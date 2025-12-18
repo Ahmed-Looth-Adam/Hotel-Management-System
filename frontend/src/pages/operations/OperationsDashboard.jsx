@@ -35,35 +35,53 @@ import {
   CheckCircle,
   Cancel,
   Refresh,
+  Business as BusinessIcon,
 } from '@mui/icons-material';
 import { operationsService, hotelService, bookingService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
+import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/loading/LoadingSpinner';
 
 const OperationsDashboard = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { showSuccess, showError } = useNotification();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [hotels, setHotels] = useState([]);
-  const [selectedHotel, setSelectedHotel] = useState(searchParams.get('hotel') || '');
   const [dashboardData, setDashboardData] = useState(null);
   const [lateCheckoutDialog, setLateCheckoutDialog] = useState({ open: false, request: null });
   const [notes, setNotes] = useState('');
 
+  // Check if user is staff/manager and needs hotel assignment
+  const isStaffOrManager = user?.role === 'staff' || user?.role === 'manager';
+  const hasAssignedHotel = user?.assigned_hotel;
+  const showNoHotelAssigned = isStaffOrManager && !hasAssignedHotel;
+
+  // Use assigned hotel for staff/manager, otherwise use search param or default
+  const [selectedHotel, setSelectedHotel] = useState(
+    hasAssignedHotel ? user.assigned_hotel : (searchParams.get('hotel') || '')
+  );
+
   useEffect(() => {
     const fetchHotels = async () => {
+      if (showNoHotelAssigned) {
+        setLoading(false);
+        return;
+      }
+
       const result = await hotelService.getAll({ is_active: true });
       if (result.success) {
         const hotelList = result.data.results || result.data;
         setHotels(hotelList);
-        if (!selectedHotel && hotelList.length > 0) {
+        // Only auto-select first hotel for admins, staff/managers use assigned hotel
+        if (!selectedHotel && hotelList.length > 0 && !isStaffOrManager) {
           setSelectedHotel(hotelList[0].id);
         }
       }
     };
     fetchHotels();
-  }, []);
+  }, [showNoHotelAssigned]);
 
   const fetchDashboardData = async () => {
     if (!selectedHotel) return;
@@ -130,6 +148,40 @@ const OperationsDashboard = () => {
     }
   };
 
+  // Get assigned hotel name for display
+  const assignedHotelName = hotels.find(h => h.id === user?.assigned_hotel)?.name || user?.assigned_hotel_name;
+
+  // Show "No hotel assigned" message for staff/manager without assigned hotel
+  if (showNoHotelAssigned) {
+    return (
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Dashboard color="primary" sx={{ fontSize: 32 }} />
+            <Typography variant="h4" component="h1">Operations Dashboard</Typography>
+          </Box>
+        </Box>
+        <Paper
+          sx={{
+            p: 6,
+            textAlign: 'center',
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <BusinessIcon sx={{ fontSize: 80, color: 'grey.300', mb: 2 }} />
+          <Typography variant="h5" color="text.secondary" gutterBottom>
+            No Hotel Assigned
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto' }}>
+            You are not currently assigned to any hotel. Please contact your administrator to be assigned to a hotel.
+          </Typography>
+        </Paper>
+      </Container>
+    );
+  }
+
   if (loading && !dashboardData) {
     return <LoadingSpinner message="Loading dashboard..." />;
   }
@@ -146,19 +198,36 @@ const OperationsDashboard = () => {
           <Dashboard color="primary" sx={{ fontSize: 32 }} />
           <Typography variant="h4" component="h1">Operations Dashboard</Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Hotel</InputLabel>
-            <Select
-              value={selectedHotel}
-              label="Hotel"
-              onChange={(e) => setSelectedHotel(e.target.value)}
-            >
-              {hotels.map((hotel) => (
-                <MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          {/* Show hotel dropdown only for admin, show assigned hotel name for staff/manager */}
+          {isStaffOrManager && hasAssignedHotel ? (
+            <Chip
+              icon={<BusinessIcon />}
+              label={assignedHotelName || 'Assigned Hotel'}
+              sx={{
+                height: 40,
+                px: 1,
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                bgcolor: '#e3f2fd',
+                color: '#1976d2',
+                '& .MuiChip-icon': { color: '#1976d2' },
+              }}
+            />
+          ) : (
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Hotel</InputLabel>
+              <Select
+                value={selectedHotel}
+                label="Hotel"
+                onChange={(e) => setSelectedHotel(e.target.value)}
+              >
+                {hotels.map((hotel) => (
+                  <MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
           <IconButton onClick={fetchDashboardData} title="Refresh">
             <Refresh />
           </IconButton>

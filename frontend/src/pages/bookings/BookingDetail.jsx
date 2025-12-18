@@ -17,6 +17,12 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -27,10 +33,12 @@ import {
   Login,
   Logout,
   Cancel,
+  Badge as BadgeIcon,
 } from '@mui/icons-material';
 import { bookingService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import LoadingSpinner from '../../components/loading/LoadingSpinner';
+import CheckInModal from '../../components/bookings/CheckInModal';
 
 const statusColors = {
   pending: 'warning',
@@ -46,7 +54,7 @@ const BookingDetail = () => {
   const { showSuccess, showError } = useNotification();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [checkInDialog, setCheckInDialog] = useState(false);
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [checkOutDialog, setCheckOutDialog] = useState(false);
   const [notes, setNotes] = useState('');
   const [additionalCharges, setAdditionalCharges] = useState(0);
@@ -67,16 +75,9 @@ const BookingDetail = () => {
     fetchBooking();
   }, [id]);
 
-  const handleCheckIn = async () => {
-    const result = await bookingService.checkIn(id, { notes });
-    if (result.success) {
-      showSuccess('Guest checked in successfully');
-      setCheckInDialog(false);
-      setNotes('');
-      fetchBooking();
-    } else {
-      showError(result.error?.message || 'Failed to check in');
-    }
+  const handleCheckInSuccess = (data) => {
+    showSuccess(`Guest checked in successfully to Room ${data.room_number}`);
+    fetchBooking();
   };
 
   const handleCheckOut = async () => {
@@ -134,9 +135,14 @@ const BookingDetail = () => {
           {booking.status === 'confirmed' && (
             <Button
               variant="contained"
-              color="success"
+              color="primary"
               startIcon={<Login />}
-              onClick={() => setCheckInDialog(true)}
+              onClick={() => setCheckInModalOpen(true)}
+              sx={{
+                '&:hover': {
+                  backgroundColor: '#5a67d8',
+                },
+              }}
             >
               Check In
             </Button>
@@ -147,6 +153,11 @@ const BookingDetail = () => {
               color="primary"
               startIcon={<Logout />}
               onClick={() => setCheckOutDialog(true)}
+              sx={{
+                '&:hover': {
+                  backgroundColor: '#5a67d8',
+                },
+              }}
             >
               Check Out
             </Button>
@@ -232,10 +243,28 @@ const BookingDetail = () => {
                 <ListItemText primary="Hotel" secondary={booking.hotel_name} />
               </ListItem>
               <ListItem>
-                <ListItemText primary="Room" secondary={`Room ${booking.room_number}`} />
+                <ListItemText
+                  primary="Room"
+                  secondary={
+                    booking.room_number ? (
+                      `Room ${booking.room_number}`
+                    ) : (
+                      <Chip
+                        label="To be assigned"
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                        sx={{ mt: 0.5 }}
+                      />
+                    )
+                  }
+                />
               </ListItem>
               <ListItem>
-                <ListItemText primary="Room Type" secondary={booking.room_type} />
+                <ListItemText
+                  primary="Room Type"
+                  secondary={booking.room_type || booking.room_type_requested || 'Standard'}
+                />
               </ListItem>
               {booking.room_view && (
                 <ListItem>
@@ -284,19 +313,47 @@ const BookingDetail = () => {
             </Typography>
             <List dense>
               <ListItem>
-                <ListItemText primary="Total Price" secondary={`£${parseFloat(booking.total_price || 0).toFixed(2)}`} />
+                <ListItemText
+                  primary="Total"
+                  secondary={`£${(
+                    parseFloat(booking.total_price || 0) +
+                    parseFloat(booking.additional_charges || 0) +
+                    (booking.service_charges?.reduce((sum, s) => sum + parseFloat(s.total_price || 0), 0) || 0)
+                  ).toFixed(2)}`}
+                  secondaryTypographyProps={{ fontWeight: 600, color: 'primary.main' }}
+                />
               </ListItem>
+              <ListItem>
+                <ListItemText
+                  primary="Room Charge"
+                  secondary={`£${parseFloat(booking.total_price || 0).toFixed(2)} (${booking.number_of_nights} night${booking.number_of_nights > 1 ? 's' : ''})`}
+                />
+              </ListItem>
+              {/* Service Charges / Ancillary Services */}
+              {booking.service_charges && booking.service_charges.map((service, index) => (
+                <ListItem key={index}>
+                  <ListItemText
+                    primary={service.service_name}
+                    secondary={`£${parseFloat(service.total_price || 0).toFixed(2)}${service.quantity > 1 ? ` (Qty: ${service.quantity})` : ''}`}
+                  />
+                </ListItem>
+              ))}
+              {/* Additional Charges (added at checkout) */}
               {booking.additional_charges > 0 && (
                 <ListItem>
-                  <ListItemText primary="Additional Charges" secondary={`£${parseFloat(booking.additional_charges).toFixed(2)}`} />
+                  <ListItemText
+                    primary="Additional Charges"
+                    secondary={`£${parseFloat(booking.additional_charges).toFixed(2)}`}
+                  />
                 </ListItem>
               )}
-              <ListItem>
-                <ListItemText primary="Payment Method" secondary={booking.payment_method || 'Not specified'} />
-              </ListItem>
+              {/* Promo Code */}
               {booking.promo_code && (
                 <ListItem>
-                  <ListItemText primary="Promo Code" secondary={booking.promo_code} />
+                  <ListItemText
+                    primary="Promo Code"
+                    secondary={booking.promo_code}
+                  />
                 </ListItem>
               )}
             </List>
@@ -310,29 +367,69 @@ const BookingDetail = () => {
             <Typography>{booking.special_requests}</Typography>
           </>
         )}
+
+        {/* Check-in Records Section */}
+        {booking.check_in_records && booking.check_in_records.length > 0 && (
+          <>
+            <Divider sx={{ my: 3 }} />
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <BadgeIcon /> Verified Guest Details
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Guest Type</TableCell>
+                    <TableCell>Full Name</TableCell>
+                    <TableCell>Date of Birth</TableCell>
+                    <TableCell>Nationality</TableCell>
+                    <TableCell>ID Type</TableCell>
+                    <TableCell>ID Number</TableCell>
+                    <TableCell>Address</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {booking.check_in_records.map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell>
+                        <Chip
+                          label={record.guest_type === 'primary' ? 'Primary' : 'Additional'}
+                          size="small"
+                          color={record.guest_type === 'primary' ? 'primary' : 'default'}
+                        />
+                      </TableCell>
+                      <TableCell>{record.full_name}</TableCell>
+                      <TableCell>{record.date_of_birth}</TableCell>
+                      <TableCell>{record.nationality}</TableCell>
+                      <TableCell sx={{ textTransform: 'capitalize' }}>
+                        {record.id_type?.replace('_', ' ')}
+                      </TableCell>
+                      <TableCell>{record.id_number}</TableCell>
+                      <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {record.address}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {booking.check_in_records[0]?.verified_by_name && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                Verified by {booking.check_in_records[0].verified_by_name} on{' '}
+                {new Date(booking.check_in_records[0].verified_at).toLocaleString()}
+              </Typography>
+            )}
+          </>
+        )}
       </Paper>
 
-      {/* Check-in Dialog */}
-      <Dialog open={checkInDialog} onClose={() => setCheckInDialog(false)}>
-        <DialogTitle>Check In Guest</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="Notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCheckInDialog(false)}>Cancel</Button>
-          <Button variant="contained" color="success" onClick={handleCheckIn}>
-            Confirm Check In
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Check-in Modal */}
+      <CheckInModal
+        open={checkInModalOpen}
+        onClose={() => setCheckInModalOpen(false)}
+        booking={booking}
+        onSuccess={handleCheckInSuccess}
+      />
 
       {/* Check-out Dialog */}
       <Dialog open={checkOutDialog} onClose={() => setCheckOutDialog(false)}>

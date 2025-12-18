@@ -10,7 +10,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = [
             'id', 'booking', 'payment_reference', 'amount', 'currency',
-            'payment_method', 'status', 'transaction_id', 'description',
+            'status', 'transaction_id', 'description',
             'processed_by', 'processed_at', 'refund_amount', 'refund_reason',
             'refunded_at', 'created_at', 'updated_at'
         ]

@@ -127,9 +127,26 @@ const bookingService = {
   },
 
   /**
+   * Get available rooms for check-in
+   * @param {number} id - Booking ID
+   * @returns {Promise} API response with available rooms
+   */
+  getAvailableRooms: async (id) => {
+    try {
+      const response = await bookingsApi.get(`/bookings/${id}/available_rooms/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data || 'Failed to fetch available rooms',
+      };
+    }
+  },
+
+  /**
    * Check in a booking
    * @param {number} id - Booking ID
-   * @param {Object} data - Check-in data (notes, actual_guests)
+   * @param {Object} data - Check-in data (room_id, guests[], notes)
    * @returns {Promise} API response
    */
   checkIn: async (id, data = {}) => {

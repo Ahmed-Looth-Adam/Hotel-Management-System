@@ -20,20 +20,10 @@ class Payment(models.Model):
         ('partially_refunded', 'Partially Refunded'),
     ]
 
-    PAYMENT_METHOD_CHOICES = [
-        ('credit_card', 'Credit Card'),
-        ('debit_card', 'Debit Card'),
-        ('bank_transfer', 'Bank Transfer'),
-        ('cash', 'Cash'),
-        ('paypal', 'PayPal'),
-        ('stripe', 'Stripe'),
-    ]
-
     booking = models.ForeignKey('bookings.Booking', on_delete=models.CASCADE, related_name='payments')
     payment_reference = models.CharField(max_length=50, unique=True, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='GBP')
-    payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
 
     # Transaction details

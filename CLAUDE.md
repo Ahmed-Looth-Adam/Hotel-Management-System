@@ -361,13 +361,13 @@ Out of Service -> Available (fixed)
 ## Booking Status Flow
 
 ```
-Pending -> Confirmed (payment received)
 Confirmed -> Checked In (guest arrives)
 Checked In -> Checked Out (guest leaves)
-Checked Out -> Completed (final payment processed)
-Any -> Cancelled (cancellation requested)
+Confirmed -> Cancelled (cancellation requested)
 Confirmed -> No Show (guest doesn't arrive)
 ```
+
+Note: Payment is processed during booking creation, so bookings start with "Confirmed" status and "Paid" payment status.
 
 ## Notes for Development
 

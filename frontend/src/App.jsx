@@ -33,7 +33,7 @@ import PasswordReset from './pages/profile/PasswordReset';
 import PasswordResetConfirm from './pages/profile/PasswordResetConfirm';
 
 // Hotel management pages
-import { BookingsList, BookingDetail, BookingForm } from './pages/bookings';
+import { BookingsList, BookingDetail } from './pages/bookings';
 import { OperationsDashboard } from './pages/operations';
 
 // Admin pages
@@ -237,14 +237,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <BookingsList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/bookings/new"
-                element={
-                  <ProtectedRoute>
-                    <BookingForm />
                   </ProtectedRoute>
                 }
               />

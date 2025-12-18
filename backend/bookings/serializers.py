@@ -2,7 +2,7 @@
 # -> Ahmed Looth Adam, UWE ID: 24050761
 
 from rest_framework import serializers
-from .models import Booking, BookingGuest, RoomReassignment
+from .models import Booking, BookingGuest, RoomReassignment, CheckInRecord
 
 
 class BookingGuestSerializer(serializers.ModelSerializer):
@@ -36,6 +36,26 @@ class RoomReassignmentSerializer(serializers.ModelSerializer):
     def get_reassigned_by_name(self, obj):
         if obj.reassigned_by:
             return obj.reassigned_by.get_full_name() or obj.reassigned_by.username
+        return None
+
+
+class CheckInRecordSerializer(serializers.ModelSerializer):
+    """Serializer for check-in records"""
+    verified_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CheckInRecord
+        fields = [
+            'id', 'booking', 'guest_type', 'full_name', 'date_of_birth',
+            'nationality', 'id_type', 'id_number', 'id_expiry_date',
+            'address', 'phone', 'email', 'verified_by', 'verified_by_name',
+            'verified_at', 'notes'
+        ]
+        read_only_fields = ['verified_at', 'verified_by']
+
+    def get_verified_by_name(self, obj):
+        if obj.verified_by:
+            return obj.verified_by.get_full_name() or obj.verified_by.username
         return None
 
 
@@ -104,6 +124,15 @@ class BookingListSerializer(serializers.ModelSerializer):
         return None
 
 
+class ServiceChargeSerializer(serializers.Serializer):
+    """Serializer for booking service charges"""
+    id = serializers.IntegerField()
+    service_name = serializers.CharField()
+    quantity = serializers.IntegerField()
+    unit_price = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
 class BookingDetailSerializer(serializers.ModelSerializer):
     """Serializer for booking detail view"""
     user_name = serializers.SerializerMethodField()
@@ -114,8 +143,10 @@ class BookingDetailSerializer(serializers.ModelSerializer):
     number_of_nights = serializers.ReadOnlyField()
     booking_guests = BookingGuestSerializer(many=True, read_only=True)
     room_reassignments = RoomReassignmentSerializer(many=True, read_only=True)
+    check_in_records = serializers.SerializerMethodField()
     checked_in_by_name = serializers.SerializerMethodField()
     checked_out_by_name = serializers.SerializerMethodField()
+    service_charges = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -124,13 +155,13 @@ class BookingDetailSerializer(serializers.ModelSerializer):
             'hotel', 'hotel_name', 'room', 'room_number', 'room_type', 'room_type_requested', 'room_view',
             'check_in_date', 'check_out_date', 'number_of_nights',
             'guests_count', 'actual_guests_checked_in', 'number_of_rooms',
-            'status', 'payment_status', 'payment_method',
+            'status', 'payment_status',
             'total_price', 'additional_charges', 'promo_code',
             'special_requests',
             'cancelled_at', 'cancellation_reason',
             'checked_in_at', 'checked_in_by', 'checked_in_by_name', 'check_in_notes',
             'checked_out_at', 'checked_out_by', 'checked_out_by_name', 'check_out_notes', 'room_condition',
-            'booking_guests', 'room_reassignments',
+            'booking_guests', 'room_reassignments', 'check_in_records', 'service_charges',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'booking_reference']
@@ -153,6 +184,20 @@ class BookingDetailSerializer(serializers.ModelSerializer):
         if obj.checked_out_by:
             return obj.checked_out_by.get_full_name() or obj.checked_out_by.username
         return None
+
+    def get_check_in_records(self, obj):
+        """Get check-in records for this booking"""
+        records = obj.check_in_records.all()
+        return CheckInRecordSerializer(records, many=True).data
+
+    def get_service_charges(self, obj):
+        """Get service charges from the payments app"""
+        try:
+            from payments.models import BookingServiceCharge
+            charges = BookingServiceCharge.objects.filter(booking=obj)
+            return ServiceChargeSerializer(charges, many=True).data
+        except Exception:
+            return []
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -196,7 +241,6 @@ class BookingCreateSerializer(serializers.Serializer):
     guests_count = serializers.IntegerField(min_value=1, default=1)
     special_requests = serializers.CharField(required=False, allow_blank=True, default='')
     promo_code = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    payment_method = serializers.CharField(required=False, allow_blank=True, default='')
     guests_info = serializers.ListField(
         child=serializers.DictField(),
         required=False,
@@ -209,10 +253,39 @@ class BookingCreateSerializer(serializers.Serializer):
         return data
 
 
+class CheckInGuestSerializer(serializers.Serializer):
+    """Serializer for guest data during check-in"""
+    guest_type = serializers.ChoiceField(choices=['primary', 'additional'], default='primary')
+    full_name = serializers.CharField(max_length=200)
+    date_of_birth = serializers.DateField()
+    nationality = serializers.CharField(max_length=100)
+    id_type = serializers.ChoiceField(
+        choices=['passport', 'national_id', 'drivers_license', 'other'],
+        default='passport'
+    )
+    id_number = serializers.CharField(max_length=100)
+    id_expiry_date = serializers.DateField(required=False, allow_null=True)
+    address = serializers.CharField()
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
+    email = serializers.EmailField(required=False, allow_blank=True, default='')
+
+
 class CheckInSerializer(serializers.Serializer):
     """Serializer for check-in operations"""
+    room_id = serializers.IntegerField(required=True, help_text="ID of the room to assign")
+    guests = CheckInGuestSerializer(many=True, required=True, help_text="List of guests checking in")
     notes = serializers.CharField(required=False, allow_blank=True, default='')
-    actual_guests = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate_guests(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one guest is required for check-in")
+
+        # Ensure there's exactly one primary guest
+        primary_guests = [g for g in value if g.get('guest_type') == 'primary']
+        if len(primary_guests) != 1:
+            raise serializers.ValidationError("Exactly one primary guest is required")
+
+        return value
 
 
 class CheckOutSerializer(serializers.Serializer):

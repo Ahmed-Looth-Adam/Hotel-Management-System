@@ -58,6 +58,7 @@ import authService from '../../services/authService';
 import UserFormModal from '../../components/admin/UserFormModal';
 import { useNotificationContext } from '../../context/NotificationContext';
 
+const STAFF_ROLES = ['admin', 'manager', 'staff'];
 const ROLES = ['admin', 'manager', 'staff', 'guest'];
 
 const roleConfig = {
@@ -146,9 +147,10 @@ const UserManagement = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 20;
+  // Pagination State - separate for staff and guests
+  const [staffPage, setStaffPage] = useState(1);
+  const [guestPage, setGuestPage] = useState(1);
+  const rowsPerPage = 10;
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -164,7 +166,8 @@ const UserManagement = () => {
 
   useEffect(() => {
     filterUsers();
-    setCurrentPage(1); // Reset to first page when filters change
+    setStaffPage(1);
+    setGuestPage(1);
   }, [users, searchTerm, roleFilter, statusFilter]);
 
   const filterUsers = () => {
@@ -354,15 +357,29 @@ const UserManagement = () => {
     managers: users.filter((u) => u.role === 'manager').length,
   };
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+  // Separate staff and guest users
+  const staffUsers = filteredUsers.filter(u => STAFF_ROLES.includes(u.role));
+  const guestUsers = filteredUsers.filter(u => u.role === 'guest');
 
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
+  // Pagination calculations for staff
+  const staffTotalPages = Math.ceil(staffUsers.length / rowsPerPage);
+  const staffStartIndex = (staffPage - 1) * rowsPerPage;
+  const paginatedStaff = staffUsers.slice(staffStartIndex, staffStartIndex + rowsPerPage);
+
+  // Pagination calculations for guests
+  const guestTotalPages = Math.ceil(guestUsers.length / rowsPerPage);
+  const guestStartIndex = (guestPage - 1) * rowsPerPage;
+  const paginatedGuests = guestUsers.slice(guestStartIndex, guestStartIndex + rowsPerPage);
+
+  const handleStaffPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= staffTotalPages) {
+      setStaffPage(newPage);
+    }
+  };
+
+  const handleGuestPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= guestTotalPages) {
+      setGuestPage(newPage);
     }
   };
 
@@ -581,7 +598,7 @@ const UserManagement = () => {
           </Grid>
         </Paper>
 
-        {/* Users Table */}
+        {/* Staff Table */}
         <Paper
           elevation={0}
           sx={{
@@ -589,11 +606,30 @@ const UserManagement = () => {
             border: '1px solid',
             borderColor: 'divider',
             overflow: 'hidden',
+            mb: 4,
           }}
         >
           {loading && <LinearProgress />}
 
-          {/* Table Header */}
+          {/* Staff Table Header */}
+          <Box
+            sx={{
+              px: 3,
+              py: 2,
+              bgcolor: '#f8f9fa',
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="h6" fontWeight={600} color="text.primary">
+              Staff Users ({staffUsers.length})
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Admins, Managers, and Front Desk Staff
+            </Typography>
+          </Box>
+
+          {/* Table Column Headers */}
           <Box
             sx={{
               display: 'grid',
@@ -625,19 +661,19 @@ const UserManagement = () => {
             </Typography>
           </Box>
 
-          {/* Table Body */}
-          {filteredUsers.length === 0 && !loading ? (
+          {/* Staff Table Body */}
+          {paginatedStaff.length === 0 && !loading ? (
             <Box sx={{ p: 6, textAlign: 'center' }}>
-              <PeopleIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
+              <StaffIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
               <Typography variant="h6" color="text.secondary">
-                No users found
+                No staff users found
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Try adjusting your search or filters
               </Typography>
             </Box>
           ) : (
-            paginatedUsers.map((user, index) => (
+            paginatedStaff.map((user, index) => (
               <Fade in key={user.id} timeout={300 + index * 50}>
                 <Box
                   sx={{
@@ -838,60 +874,319 @@ const UserManagement = () => {
             ))
           )}
 
-          {/* Footer with Pagination */}
+          {/* Staff Pagination */}
+          {staffUsers.length > 0 && (
+            <Box
+              sx={{
+                px: 2,
+                py: 1.5,
+                bgcolor: '#ffffff',
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleStaffPageChange(1)}
+                  disabled={staffPage === 1}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <FirstPageIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handleStaffPageChange(staffPage - 1)}
+                  disabled={staffPage === 1}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mx: 2 }}>
+                  Page {staffPage} of {staffTotalPages || 1}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => handleStaffPageChange(staffPage + 1)}
+                  disabled={staffPage >= staffTotalPages}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handleStaffPageChange(staffTotalPages)}
+                  disabled={staffPage >= staffTotalPages}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <LastPageIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Box>
+          )}
+        </Paper>
+
+        {/* Guests Table */}
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Guests Table Header */}
           <Box
             sx={{
-              px: 2,
-              py: 1.5,
-              bgcolor: '#ffffff',
-              borderTop: '1px solid',
+              px: 3,
+              py: 2,
+              bgcolor: '#f8f9fa',
+              borderBottom: '1px solid',
               borderColor: 'divider',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
             }}
           >
-            {/* Page navigation */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <IconButton
-                size="small"
-                onClick={() => handlePageChange(1)}
-                disabled={currentPage === 1}
-                sx={{ color: 'text.secondary' }}
-              >
-                <FirstPageIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                sx={{ color: 'text.secondary' }}
-              >
-                <ChevronLeftIcon fontSize="small" />
-              </IconButton>
-
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mx: 2 }}>
-                Page {currentPage} of {totalPages || 1}
-              </Typography>
-
-              <IconButton
-                size="small"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-                sx={{ color: 'text.secondary' }}
-              >
-                <ChevronRightIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => handlePageChange(totalPages)}
-                disabled={currentPage >= totalPages}
-                sx={{ color: 'text.secondary' }}
-              >
-                <LastPageIcon fontSize="small" />
-              </IconButton>
-            </Box>
+            <Typography variant="h6" fontWeight={600} color="text.primary">
+              Guests ({guestUsers.length})
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Registered hotel guests
+            </Typography>
           </Box>
+
+          {/* Guests Column Headers */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
+              gap: 2,
+              p: 2,
+              bgcolor: '#ffffff',
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              GUEST
+            </Typography>
+            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              ROLE
+            </Typography>
+            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              STATUS
+            </Typography>
+            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              JOINED
+            </Typography>
+            <Typography variant="subtitle2" fontWeight={600} color="text.secondary" align="center">
+              ACTIONS
+            </Typography>
+          </Box>
+
+          {/* Guests Table Body */}
+          {paginatedGuests.length === 0 && !loading ? (
+            <Box sx={{ p: 6, textAlign: 'center' }}>
+              <GuestIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">
+                No guests found
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Guests will appear here when they register
+              </Typography>
+            </Box>
+          ) : (
+            paginatedGuests.map((user, index) => (
+              <Fade in key={user.id} timeout={300 + index * 50}>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
+                    gap: 2,
+                    p: 2,
+                    alignItems: 'center',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                    },
+                    '&:last-child': {
+                      borderBottom: 'none',
+                    },
+                  }}
+                >
+                  {/* Guest Info */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Badge
+                      overlap="circular"
+                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                      badgeContent={
+                        <Box
+                          sx={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            bgcolor: user.is_active ? 'success.main' : 'grey.400',
+                            border: '2px solid white',
+                          }}
+                        />
+                      }
+                    >
+                      <Avatar
+                        src={getProfilePictureUrl(user.profile_picture)}
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          bgcolor: roleConfig[user.role]?.color || 'grey.400',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {getInitials(user)}
+                      </Avatar>
+                    </Badge>
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        {getFullName(user)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <EmailIcon sx={{ fontSize: 14 }} />
+                        {user.email}
+                      </Typography>
+                      {user.phone_number && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <PhoneIcon sx={{ fontSize: 12 }} />
+                          {user.phone_number}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+
+                  {/* Role */}
+                  <Box>
+                    <RoleBadge role={user.role} />
+                  </Box>
+
+                  {/* Status */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Switch
+                      checked={user.is_active}
+                      onChange={() => handleStatusChange(user.id, user.is_active)}
+                      color="success"
+                      size="small"
+                    />
+                    <Chip
+                      size="small"
+                      label={user.is_active ? 'Active' : 'Inactive'}
+                      sx={{
+                        bgcolor: user.is_active ? 'success.50' : 'grey.100',
+                        color: user.is_active ? 'success.dark' : 'grey.600',
+                        fontWeight: 500,
+                        fontSize: '0.7rem',
+                      }}
+                    />
+                  </Box>
+
+                  {/* Joined Date */}
+                  <Typography variant="body2" color="text.secondary">
+                    {user.created_at
+                      ? new Date(user.created_at).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : 'N/A'}
+                  </Typography>
+
+                  {/* Actions */}
+                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                    <Tooltip title="Edit Guest">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenEdit(user)}
+                        sx={{
+                          bgcolor: 'primary.50',
+                          color: 'primary.main',
+                          '&:hover': { bgcolor: 'primary.100' },
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete Guest">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenDeleteModal(user)}
+                        sx={{
+                          bgcolor: 'error.50',
+                          color: 'error.main',
+                          '&:hover': { bgcolor: 'error.100' },
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              </Fade>
+            ))
+          )}
+
+          {/* Guests Pagination */}
+          {guestUsers.length > 0 && (
+            <Box
+              sx={{
+                px: 2,
+                py: 1.5,
+                bgcolor: '#ffffff',
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleGuestPageChange(1)}
+                  disabled={guestPage === 1}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <FirstPageIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handleGuestPageChange(guestPage - 1)}
+                  disabled={guestPage === 1}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mx: 2 }}>
+                  Page {guestPage} of {guestTotalPages || 1}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => handleGuestPageChange(guestPage + 1)}
+                  disabled={guestPage >= guestTotalPages}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handleGuestPageChange(guestTotalPages)}
+                  disabled={guestPage >= guestTotalPages}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  <LastPageIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Box>
+          )}
         </Paper>
 
         <UserFormModal

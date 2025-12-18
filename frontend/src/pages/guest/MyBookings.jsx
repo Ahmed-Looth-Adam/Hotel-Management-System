@@ -446,7 +446,6 @@ const MyBookings = () => {
           <Box
             sx={{
               bgcolor: '#222222',
-              color: '#FFFFFF',
               px: 3,
               py: 2.5,
               display: 'flex',
@@ -454,7 +453,7 @@ const MyBookings = () => {
               justifyContent: 'space-between',
             }}
           >
-            <Typography sx={{ fontSize: '18px', fontWeight: 600 }}>
+            <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#FFFFFF' }}>
               Cancel booking
             </Typography>
             <IconButton

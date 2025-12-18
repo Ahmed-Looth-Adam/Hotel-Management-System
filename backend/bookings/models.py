@@ -9,17 +9,14 @@ from django.utils import timezone
 
 class Booking(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
         ('confirmed', 'Confirmed'),
         ('checked_in', 'Checked In'),
         ('checked_out', 'Checked Out'),
         ('cancelled', 'Cancelled'),
-        ('completed', 'Completed'),
         ('no_show', 'No Show'),
     ]
 
     PAYMENT_STATUS_CHOICES = [
-        ('pending', 'Pending'),
         ('paid', 'Paid'),
         ('partial', 'Partial'),
         ('refunded', 'Refunded'),
@@ -50,9 +47,8 @@ class Booking(models.Model):
     number_of_rooms = models.PositiveIntegerField(default=1)
 
     # Status and payment
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
-    payment_method = models.CharField(max_length=50, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='confirmed')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='paid')
 
     # Pricing
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -174,12 +170,6 @@ class Booking(models.Model):
         self.save()
         return True
 
-    def complete(self):
-        """Mark booking as completed"""
-        self.status = 'completed'
-        self.save()
-        return True
-
     def can_reassign_room(self):
         """Check if room can be reassigned"""
         return self.status in ['confirmed', 'checked_in'] and not self.is_checked_out()
@@ -225,6 +215,57 @@ class BookingGuest(models.Model):
     special_requirements = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['guest_type', 'full_name']
+
+    def __str__(self):
+        return f"{self.full_name} ({self.guest_type}) - Booking {self.booking.booking_reference}"
+
+
+class CheckInRecord(models.Model):
+    """Guest check-in records with passport/ID verification details"""
+    GUEST_TYPE_CHOICES = [
+        ('primary', 'Primary Guest'),
+        ('additional', 'Additional Guest'),
+    ]
+
+    ID_TYPE_CHOICES = [
+        ('passport', 'Passport'),
+        ('national_id', 'National ID'),
+        ('drivers_license', 'Driver\'s License'),
+        ('other', 'Other'),
+    ]
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='check_in_records')
+    guest_type = models.CharField(max_length=20, choices=GUEST_TYPE_CHOICES, default='primary')
+
+    # Personal details (as verified from passport/ID at front desk)
+    full_name = models.CharField(max_length=200, help_text="Full name as on passport/ID")
+    date_of_birth = models.DateField()
+    nationality = models.CharField(max_length=100)
+
+    # ID/Passport details
+    id_type = models.CharField(max_length=20, choices=ID_TYPE_CHOICES, default='passport')
+    id_number = models.CharField(max_length=100)
+    id_expiry_date = models.DateField(null=True, blank=True)
+
+    # Address as on ID document
+    address = models.TextField(help_text="Address as shown on passport/ID")
+
+    # Contact (optional, for during stay)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+
+    # Verification details
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='verified_check_ins'
+    )
+    verified_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
 
     class Meta:
         ordering = ['guest_type', 'full_name']
