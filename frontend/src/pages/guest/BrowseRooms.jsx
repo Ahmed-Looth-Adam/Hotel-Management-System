@@ -15,8 +15,6 @@ import {
   Skeleton,
 } from '@mui/material';
 import {
-  FavoriteBorder,
-  Favorite,
   Star as StarIcon,
   ChevronLeft,
   ChevronRight,
@@ -46,7 +44,6 @@ const ROOM_TYPE_INFO = {
 // Room Type Card - Airbnb style
 const RoomTypeCard = ({ roomType, hotel, availableCount, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const typeInfo = ROOM_TYPE_INFO[roomType.category] || ROOM_TYPE_INFO.standard;
@@ -105,11 +102,6 @@ const RoomTypeCard = ({ roomType, hotel, availableCount, onClick }) => {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const handleFavoriteClick = (e) => {
-    e.stopPropagation();
-    setIsFavorite(!isFavorite);
-  };
-
   return (
     <Box
       onClick={onClick}
@@ -164,33 +156,6 @@ const RoomTypeCard = ({ roomType, hotel, availableCount, onClick }) => {
             <HotelIcon sx={{ fontSize: 48, color: '#DDDDDD' }} />
           </Box>
         )}
-
-        {/* Favorite Button */}
-        <IconButton
-          onClick={handleFavoriteClick}
-          sx={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            color: isFavorite ? '#FF385C' : '#FFFFFF',
-            transition: fastSpring,
-            '&:hover': { transform: 'scale(1.1)' },
-            '&:active': { transform: 'scale(0.9)' },
-          }}
-        >
-          {isFavorite ? (
-            <Favorite sx={{ fontSize: 24, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
-          ) : (
-            <FavoriteBorder
-              sx={{
-                fontSize: 24,
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-                stroke: 'rgba(0,0,0,0.5)',
-                strokeWidth: 2,
-              }}
-            />
-          )}
-        </IconButton>
 
         {/* Navigation Arrows */}
         {hasMultipleImages && isHovered && (

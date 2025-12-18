@@ -29,8 +29,8 @@ import {
   NearMe,
   Close,
   ArrowBack,
-  FavoriteBorder,
   PersonOutline,
+  CardTravel,
 } from '@mui/icons-material';
 import { Dialog, Slide } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -1507,7 +1507,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
               </Typography>
             </Box>
 
-            {/* Bookings / Wishlists */}
+            {/* Bookings */}
             <Box
               onClick={() => navigate(isAuthenticated ? '/guest/my-bookings' : '/login')}
               sx={{
@@ -1519,7 +1519,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                 py: 0.5,
               }}
             >
-              <FavoriteBorder sx={{ fontSize: 24, color: '#717171' }} />
+              <CardTravel sx={{ fontSize: 24, color: '#717171' }} />
               <Typography sx={{ fontSize: '10px', fontWeight: 500, color: '#717171' }}>
                 Bookings
               </Typography>
