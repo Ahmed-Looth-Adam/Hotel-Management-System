@@ -48,6 +48,7 @@ import ManagerStaffManagement from './pages/Manager/ManagerStaffManagement';
 // Guest pages
 import BrowseRooms from './pages/guest/BrowseRooms';
 import RoomDetails from './pages/guest/RoomDetails';
+import BookingConfirmation from './pages/guest/BookingConfirmation';
 import MyBookings from './pages/guest/MyBookings';
 
 // Report pages
@@ -179,6 +180,14 @@ function App() {
               <Route path="/guest/rooms/:id" element={<RoomDetails />} />
 
               {/* Guest Portal Routes - Protected (login required) */}
+              <Route
+                path="/guest/booking/:id/confirm"
+                element={
+                  <ProtectedRoute>
+                    <BookingConfirmation />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/guest/my-bookings"
                 element={

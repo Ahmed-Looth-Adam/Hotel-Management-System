@@ -489,36 +489,39 @@ const BrowseRooms = () => {
       <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
         {/* Page Header */}
         <Box sx={{ mb: 4 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => navigate('/')}
-            sx={{
-              textTransform: 'none',
-              color: '#222222',
-              fontWeight: 500,
-              mb: 2,
-              ml: -1,
-              '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
-            }}
-          >
-            Back to home
-          </Button>
-          <Typography
-            sx={{
-              fontSize: { xs: '26px', md: '32px' },
-              fontWeight: 600,
-              color: '#222222',
-              mb: 1,
-            }}
-          >
-            {currentHotel
-              ? currentHotel.name
-              : filters.country
-                ? `Stays in ${filters.country}`
-                : filters.city
-                  ? `Stays in ${filters.city}`
-                  : 'Browse Rooms'}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Box
+              onClick={() => navigate('/')}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+              }}
+            >
+              <ArrowBack sx={{ fontSize: 22, color: '#222222' }} />
+            </Box>
+            <Typography
+              sx={{
+                fontSize: { xs: '26px', md: '32px' },
+                fontWeight: 600,
+                color: '#222222',
+              }}
+            >
+              {currentHotel
+                ? currentHotel.name
+                : filters.country
+                  ? `Stays in ${filters.country}`
+                  : filters.city
+                    ? `Stays in ${filters.city}`
+                    : 'Browse Rooms'}
+            </Typography>
+          </Box>
           {currentHotel && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <LocationOn sx={{ fontSize: 18, color: '#717171' }} />

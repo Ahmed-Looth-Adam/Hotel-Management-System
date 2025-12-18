@@ -125,28 +125,25 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
   };
 
   useEffect(() => {
-    // Skip scroll-based expand/collapse on results pages (when initialCollapsed)
-    if (initialCollapsed) return;
-
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 10);
 
-      // Only collapse when scrolled down enough
+      // Collapse when scrolled down enough
       if (scrollY > 80) {
-        setExpandedSafe(false);
         setActiveField(null);
+        setIsExpanded(false);
       }
 
-      // Only expand when at the very top
-      if (scrollY < 10) {
-        setExpandedSafe(true);
+      // Only auto-expand when at the very top on landing page (not initialCollapsed)
+      if (!initialCollapsed && scrollY < 10) {
+        setIsExpanded(true);
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isExpanded, initialCollapsed]);
+  }, [initialCollapsed]);
 
   // Handle manual expand (clicking collapsed bar)
   const handleExpandSearch = () => {
@@ -349,7 +346,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          mr: 1.5,
+          mr: 1,
           transition: fastSpring,
           '&:hover': { transform: 'scale(1.04)' },
           '&:active': { transform: 'scale(0.96)' },

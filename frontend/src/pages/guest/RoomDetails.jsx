@@ -14,7 +14,6 @@ import {
   TextField,
   Divider,
   Alert,
-  CircularProgress,
   Checkbox,
   FormControlLabel,
   FormGroup,
@@ -35,8 +34,9 @@ import {
   Schedule,
   LocationOn,
   Star as StarIcon,
+  ArrowBack,
 } from '@mui/icons-material';
-import { roomService, bookingService, hotelService } from '../../services';
+import { roomService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { useAuth } from '../../context/AuthContext';
 import Hero from '../../components/landing/Hero';
@@ -71,12 +71,11 @@ const RoomDetails = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated } = useAuth();
-  const { showSuccess, showError } = useNotification();
+  const { showError } = useNotification();
 
   const [room, setRoom] = useState(null);
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [booking, setBooking] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const [formData, setFormData] = useState({
@@ -181,13 +180,7 @@ const RoomDetails = () => {
     );
   };
 
-  const handleBooking = async () => {
-    if (!isAuthenticated) {
-      // Save current URL to redirect back after login
-      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-      return;
-    }
-
+  const handleBooking = () => {
     if (!formData.checkIn || !formData.checkOut) {
       showError('Please select check-in and check-out dates');
       return;
@@ -203,25 +196,22 @@ const RoomDetails = () => {
       return;
     }
 
-    setBooking(true);
-    const result = await bookingService.create({
-      hotel: room.hotel,
-      room_type: roomTypeCategory,
-      check_in_date: formData.checkIn,
-      check_out_date: formData.checkOut,
-      guests_count: formData.guests,
-      special_requests: formData.specialRequests,
-      total_price: priceBreakdown.total,
-      ancillary_services: selectedServices,
+    // Navigate to booking confirmation page with all details
+    const params = new URLSearchParams({
+      checkIn: formData.checkIn,
+      checkOut: formData.checkOut,
+      guests: formData.guests.toString(),
     });
 
-    if (result.success) {
-      showSuccess('Booking created successfully! Room will be assigned at check-in.');
-      navigate('/guest/my-bookings');
-    } else {
-      showError(result.error?.message || result.error?.detail || 'Failed to create booking');
+    if (selectedServices.length > 0) {
+      params.set('services', selectedServices.join(','));
     }
-    setBooking(false);
+
+    if (formData.specialRequests.trim()) {
+      params.set('specialRequests', formData.specialRequests.trim());
+    }
+
+    navigate(`/guest/booking/${id}/confirm?${params.toString()}`);
   };
 
   const containerSx = { px: { xs: 4, sm: 7, md: 12, lg: 20, xl: 28 } };
@@ -262,9 +252,27 @@ const RoomDetails = () => {
 
       <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
         {/* Title */}
-        <Typography sx={{ fontSize: { xs: '24px', md: '28px' }, fontWeight: 600, color: '#222222', mb: 1 }}>
-          {typeInfo.label}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+          <Box
+            onClick={() => navigate(-1)}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 22, color: '#222222' }} />
+          </Box>
+          <Typography sx={{ fontSize: { xs: '24px', md: '28px' }, fontWeight: 600, color: '#222222' }}>
+            {typeInfo.label}
+          </Typography>
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
           {hotel && (
             <>
@@ -506,7 +514,7 @@ const RoomDetails = () => {
                 variant="contained"
                 fullWidth
                 onClick={handleBooking}
-                disabled={booking || !formData.checkIn || !formData.checkOut}
+                disabled={!formData.checkIn || !formData.checkOut}
                 sx={{
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   borderRadius: '8px',
@@ -518,7 +526,7 @@ const RoomDetails = () => {
                   '&.Mui-disabled': { background: '#DDDDDD', color: '#999999' },
                 }}
               >
-                {booking ? <CircularProgress size={24} sx={{ color: '#FFFFFF' }} /> : 'Book'}
+                Book
               </Button>
 
               {!isAuthenticated && (
