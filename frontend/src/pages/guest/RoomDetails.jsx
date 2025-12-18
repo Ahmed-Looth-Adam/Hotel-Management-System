@@ -18,7 +18,6 @@ import {
   Checkbox,
   FormControlLabel,
   FormGroup,
-  IconButton,
   Skeleton,
 } from '@mui/material';
 import {
@@ -30,16 +29,12 @@ import {
   AcUnit,
   LocalBar,
   Bathtub,
-  CheckCircle,
   FlightTakeoff,
   Restaurant,
   Spa,
   Schedule,
   LocationOn,
   Star as StarIcon,
-  ChevronLeft,
-  ChevronRight,
-  Check,
 } from '@mui/icons-material';
 import { roomService, bookingService, hotelService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
@@ -101,8 +96,11 @@ const RoomDetails = () => {
     const roomResult = await roomService.getById(id);
     if (roomResult.success) {
       setRoom(roomResult.data);
-      // Fetch hotel details
-      if (roomResult.data.hotel) {
+      // Hotel is already included in the room detail response (via HotelListSerializer)
+      if (roomResult.data.hotel && typeof roomResult.data.hotel === 'object') {
+        setHotel(roomResult.data.hotel);
+      } else if (roomResult.data.hotel) {
+        // Fallback: fetch hotel if only ID is returned
         const hotelResult = await hotelService.getById(roomResult.data.hotel);
         if (hotelResult.success) {
           setHotel(hotelResult.data);
@@ -120,7 +118,13 @@ const RoomDetails = () => {
 
   // Get images
   const getImages = () => {
-    // Check room galleries
+    // Check room's own gallery (singular - from RoomDetailSerializer)
+    if (room?.gallery?.images && room.gallery.images.length > 0) {
+      return room.gallery.images.map(img =>
+        img.image?.startsWith('http') ? img.image : `http://localhost:8000${img.image}`
+      );
+    }
+    // Check room galleries (plural - alternative structure)
     if (room?.galleries && room.galleries.length > 0) {
       const gallery = room.galleries[0];
       if (gallery.images && gallery.images.length > 0) {
@@ -220,7 +224,7 @@ const RoomDetails = () => {
     setBooking(false);
   };
 
-  const containerSx = { px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 } };
+  const containerSx = { px: { xs: 4, sm: 7, md: 12, lg: 20, xl: 28 } };
 
   if (loading) {
     return (
@@ -285,66 +289,108 @@ const RoomDetails = () => {
           )}
         </Box>
 
-        {/* Image Gallery */}
-        <Box
-          sx={{
-            position: 'relative',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            height: { xs: 300, md: 450 },
-            bgcolor: '#F7F7F7',
-            mb: 4,
-          }}
-        >
-          {images.length > 0 ? (
+        {/* Main Content - Two Column Layout */}
+        <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', lg: 'row' }, alignItems: 'flex-start' }}>
+          {/* Left Column - Gallery + Room Info */}
+          <Box sx={{ flex: 1 }}>
+            {/* Gallery */}
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' }, mb: 4 }}>
+            {/* Main Image */}
             <Box
-              component="img"
-              src={images[currentImageIndex]}
-              alt={typeInfo.label}
-              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#EBEBEB' }}>
-              <HotelIcon sx={{ fontSize: 80, color: '#DDDDDD' }} />
+              sx={{
+                position: 'relative',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                height: { xs: 280, md: 380 },
+                width: { xs: '100%', md: 580 },
+                flexShrink: 0,
+                bgcolor: '#F7F7F7',
+              }}
+            >
+              {images.length > 0 ? (
+                <Box
+                  component="img"
+                  src={images[currentImageIndex]}
+                  alt={typeInfo.label}
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    transition: 'opacity 0.3s ease',
+                  }}
+                />
+              ) : (
+                <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#EBEBEB' }}>
+                  <HotelIcon sx={{ fontSize: 80, color: '#DDDDDD' }} />
+                </Box>
+              )}
+              {images.length > 0 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 12,
+                    right: 12,
+                    bgcolor: 'rgba(0,0,0,0.7)',
+                    color: '#FFFFFF',
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  {currentImageIndex + 1} / {images.length}
+                </Box>
+              )}
             </Box>
-          )}
-          {hasMultipleImages && (
-            <>
-              <IconButton
-                onClick={() => setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)}
-                sx={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', bgcolor: 'rgba(255,255,255,0.9)', '&:hover': { bgcolor: '#FFFFFF' } }}
+
+            {/* Thumbnails */}
+            {images.length > 1 && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'row', md: 'column' },
+                  gap: 1.5,
+                  width: { xs: '100%', md: 130 },
+                  height: { xs: 80, md: 380 },
+                  overflowX: { xs: 'auto', md: 'hidden' },
+                  overflowY: { xs: 'hidden', md: 'auto' },
+                  flexShrink: 0,
+                  '&::-webkit-scrollbar': { width: 6, height: 6 },
+                  '&::-webkit-scrollbar-track': { bgcolor: '#F7F7F7', borderRadius: 3 },
+                  '&::-webkit-scrollbar-thumb': { bgcolor: '#DDDDDD', borderRadius: 3, '&:hover': { bgcolor: '#BBBBBB' } },
+                }}
               >
-                <ChevronLeft />
-              </IconButton>
-              <IconButton
-                onClick={() => setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)}
-                sx={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', bgcolor: 'rgba(255,255,255,0.9)', '&:hover': { bgcolor: '#FFFFFF' } }}
-              >
-                <ChevronRight />
-              </IconButton>
-              <Box sx={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 0.5 }}>
-                {images.map((_, idx) => (
+                {images.map((img, idx) => (
                   <Box
                     key={idx}
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      bgcolor: idx === currentImageIndex ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
-                      cursor: 'pointer',
-                    }}
                     onClick={() => setCurrentImageIndex(idx)}
-                  />
+                    sx={{
+                      flexShrink: 0,
+                      width: { xs: 100, md: '100%' },
+                      height: { xs: '100%', md: 85 },
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      border: idx === currentImageIndex ? '3px solid #FF385C' : '3px solid transparent',
+                      opacity: idx === currentImageIndex ? 1 : 0.7,
+                      transition: 'all 0.2s ease',
+                      '&:hover': { opacity: 1, transform: 'scale(1.02)' },
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={img}
+                      alt={`${typeInfo.label} - ${idx + 1}`}
+                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </Box>
                 ))}
               </Box>
-            </>
-          )}
-        </Box>
+            )}
+            </Box>
 
-        {/* Content */}
-        <Box sx={{ display: 'flex', gap: 6, flexDirection: { xs: 'column', md: 'row' } }}>
-          {/* Left - Room Info */}
-          <Box sx={{ flex: 1 }}>
+            {/* Room Info - Inside Left Column */}
             <Box sx={{ borderBottom: '1px solid #EBEBEB', pb: 3, mb: 3 }}>
               <Typography sx={{ fontSize: '22px', fontWeight: 600, color: '#222222', mb: 1 }}>
                 {typeInfo.label} at {hotel?.name || 'Hotel'}
@@ -358,11 +404,11 @@ const RoomDetails = () => {
             </Box>
 
             {/* Amenities */}
-            <Box sx={{ borderBottom: '1px solid #EBEBEB', pb: 3, mb: 3 }}>
+            <Box sx={{ pb: 3 }}>
               <Typography sx={{ fontSize: '22px', fontWeight: 600, color: '#222222', mb: 2 }}>
                 What this room offers
               </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 200px))', gap: 2 }}>
                 {AMENITIES.map((amenity, idx) => (
                   <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <amenity.icon sx={{ fontSize: 24, color: '#222222' }} />
@@ -371,53 +417,19 @@ const RoomDetails = () => {
                 ))}
               </Box>
             </Box>
-
-            {/* Extra Services */}
-            <Box sx={{ pb: 3 }}>
-              <Typography sx={{ fontSize: '22px', fontWeight: 600, color: '#222222', mb: 2 }}>
-                Add extra services
-              </Typography>
-              <FormGroup>
-                {ANCILLARY_SERVICES.map((service) => {
-                  const Icon = service.icon;
-                  return (
-                    <FormControlLabel
-                      key={service.id}
-                      control={
-                        <Checkbox
-                          checked={selectedServices.includes(service.id)}
-                          onChange={() => handleServiceToggle(service.id)}
-                        />
-                      }
-                      label={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
-                          <Icon sx={{ fontSize: 24, color: '#222222' }} />
-                          <Box>
-                            <Typography sx={{ fontSize: '16px', color: '#222222' }}>{service.label}</Typography>
-                            <Typography sx={{ fontSize: '14px', color: '#717171' }}>
-                              £{service.price}{service.perPerson ? ' per person per day' : ''}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      }
-                      sx={{ m: 0, borderBottom: '1px solid #EBEBEB', '&:last-child': { borderBottom: 'none' } }}
-                    />
-                  );
-                })}
-              </FormGroup>
-            </Box>
           </Box>
 
-          {/* Right - Booking Card */}
-          <Box sx={{ width: { xs: '100%', md: 400 }, flexShrink: 0 }}>
+          {/* Right Column - Booking Card + Extra Services */}
+          <Box sx={{ width: { xs: '100%', lg: 320 }, flexShrink: 0 }}>
+            {/* Booking Card */}
             <Box
               sx={{
-                position: 'sticky',
-                top: 100,
                 border: '1px solid #DDDDDD',
                 borderRadius: '12px',
                 p: 3,
                 boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+                bgcolor: '#FFFFFF',
+                mb: 3,
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 3 }}>
@@ -430,7 +442,7 @@ const RoomDetails = () => {
               {/* Date & Guest Inputs */}
               <Box sx={{ border: '1px solid #B0B0B0', borderRadius: '8px', mb: 2 }}>
                 <Box sx={{ display: 'flex', borderBottom: '1px solid #B0B0B0' }}>
-                  <Box sx={{ flex: 1, p: 1.5, borderRight: '1px solid #B0B0B0' }}>
+                  <Box sx={{ flex: 1, p: 1.5, borderRight: '1px solid #B0B0B0', overflow: 'hidden' }}>
                     <Typography sx={{ fontSize: '10px', fontWeight: 600, color: '#222222', textTransform: 'uppercase' }}>
                       Check-in
                     </Typography>
@@ -439,12 +451,13 @@ const RoomDetails = () => {
                       value={formData.checkIn}
                       onChange={(e) => setFormData({ ...formData, checkIn: e.target.value })}
                       variant="standard"
+                      fullWidth
                       InputProps={{ disableUnderline: true }}
                       inputProps={{ min: new Date().toISOString().split('T')[0], style: { padding: 0 } }}
-                      sx={{ '& input': { fontSize: '14px', color: '#222222' } }}
+                      sx={{ '& input': { fontSize: '14px', color: '#222222', width: '100%' } }}
                     />
                   </Box>
-                  <Box sx={{ flex: 1, p: 1.5 }}>
+                  <Box sx={{ flex: 1, p: 1.5, overflow: 'hidden' }}>
                     <Typography sx={{ fontSize: '10px', fontWeight: 600, color: '#222222', textTransform: 'uppercase' }}>
                       Check-out
                     </Typography>
@@ -453,9 +466,10 @@ const RoomDetails = () => {
                       value={formData.checkOut}
                       onChange={(e) => setFormData({ ...formData, checkOut: e.target.value })}
                       variant="standard"
+                      fullWidth
                       InputProps={{ disableUnderline: true }}
                       inputProps={{ min: formData.checkIn || new Date().toISOString().split('T')[0], style: { padding: 0 } }}
-                      sx={{ '& input': { fontSize: '14px', color: '#222222' } }}
+                      sx={{ '& input': { fontSize: '14px', color: '#222222', width: '100%' } }}
                     />
                   </Box>
                 </Box>
@@ -516,26 +530,62 @@ const RoomDetails = () => {
               {priceBreakdown.nights > 0 && (
                 <Box sx={{ mt: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography sx={{ fontSize: '16px', color: '#222222', textDecoration: 'underline' }}>
+                    <Typography sx={{ fontSize: '14px', color: '#222222', textDecoration: 'underline' }}>
                       £{typeInfo.price} x {priceBreakdown.nights} night{priceBreakdown.nights !== 1 ? 's' : ''}
                     </Typography>
-                    <Typography sx={{ fontSize: '16px', color: '#222222' }}>£{priceBreakdown.roomTotal}</Typography>
+                    <Typography sx={{ fontSize: '14px', color: '#222222' }}>£{priceBreakdown.roomTotal}</Typography>
                   </Box>
                   {priceBreakdown.servicesTotal > 0 && (
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography sx={{ fontSize: '16px', color: '#222222', textDecoration: 'underline' }}>
+                      <Typography sx={{ fontSize: '14px', color: '#222222', textDecoration: 'underline' }}>
                         Extra services
                       </Typography>
-                      <Typography sx={{ fontSize: '16px', color: '#222222' }}>£{priceBreakdown.servicesTotal}</Typography>
+                      <Typography sx={{ fontSize: '14px', color: '#222222' }}>£{priceBreakdown.servicesTotal}</Typography>
                     </Box>
                   )}
                   <Divider sx={{ my: 2 }} />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography sx={{ fontSize: '16px', fontWeight: 600, color: '#222222' }}>Total</Typography>
-                    <Typography sx={{ fontSize: '16px', fontWeight: 600, color: '#222222' }}>£{priceBreakdown.total}</Typography>
+                    <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#222222' }}>Total</Typography>
+                    <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#222222' }}>£{priceBreakdown.total}</Typography>
                   </Box>
                 </Box>
               )}
+            </Box>
+
+            {/* Extra Services - Below Booking Card */}
+            <Box sx={{ mt: 3 }}>
+              <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#222222', mb: 2 }}>
+                Add extra services
+              </Typography>
+              <FormGroup>
+                {ANCILLARY_SERVICES.map((service) => {
+                  const Icon = service.icon;
+                  return (
+                    <FormControlLabel
+                      key={service.id}
+                      control={
+                        <Checkbox
+                          checked={selectedServices.includes(service.id)}
+                          onChange={() => handleServiceToggle(service.id)}
+                          sx={{ '&.Mui-checked': { color: '#FF385C' } }}
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
+                          <Icon sx={{ fontSize: 20, color: '#717171' }} />
+                          <Box>
+                            <Typography sx={{ fontSize: '14px', color: '#222222' }}>{service.label}</Typography>
+                            <Typography sx={{ fontSize: '12px', color: '#717171' }}>
+                              £{service.price}{service.perPerson ? ' per person per day' : ''}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      }
+                      sx={{ m: 0, borderBottom: '1px solid #EBEBEB', '&:last-child': { borderBottom: 'none' } }}
+                    />
+                  );
+                })}
+              </FormGroup>
             </Box>
           </Box>
         </Box>
