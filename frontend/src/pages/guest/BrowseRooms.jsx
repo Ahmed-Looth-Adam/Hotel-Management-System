@@ -368,9 +368,21 @@ const BrowseRooms = () => {
   // Get current hotel if filtering by hotel
   const currentHotel = filters.hotel ? hotels.find((h) => h.id == filters.hotel) : null;
 
+  // Sync filters state with URL params when they change
+  useEffect(() => {
+    setFilters({
+      hotel: searchParams.get('hotel') || '',
+      city: searchParams.get('city') || '',
+      country: searchParams.get('country') || '',
+      checkIn: searchParams.get('checkIn') || '',
+      checkOut: searchParams.get('checkOut') || '',
+      guests: parseInt(searchParams.get('guests')) || 2,
+    });
+  }, [searchParams]);
+
   useEffect(() => {
     fetchInitialData();
-  }, []);
+  }, [searchParams]);
 
   const fetchInitialData = async () => {
     setLoading(true);

@@ -301,8 +301,8 @@ const RoomDetails = () => {
                 position: 'relative',
                 borderRadius: '12px',
                 overflow: 'hidden',
-                height: { xs: 280, md: 380 },
-                width: { xs: '100%', md: 580 },
+                height: { xs: 280, md: 380, xl: 450 },
+                width: { xs: '100%', md: 580, xl: 850 },
                 flexShrink: 0,
                 bgcolor: '#F7F7F7',
               }}
