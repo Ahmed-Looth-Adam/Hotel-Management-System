@@ -10,7 +10,6 @@ import {
   Container,
   Typography,
   Button,
-  Chip,
   Paper,
   IconButton,
   Skeleton,
@@ -25,9 +24,8 @@ import {
   Person,
   KingBed,
   LocationOn,
-  CalendarToday,
-  Group,
   Public,
+  ArrowBack,
 } from '@mui/icons-material';
 import { roomService, hotelService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
@@ -379,6 +377,7 @@ const BrowseRooms = () => {
     const params = {
       is_active: true,
       status: 'available',
+      page_size: 1000, // Request more rooms to overcome pagination limit
     };
 
     const hotelParam = searchParams.get('hotel');
@@ -410,9 +409,9 @@ const BrowseRooms = () => {
         const hotelsInCountry = hotelData.filter(h =>
           h.country?.toLowerCase() === countryLower
         );
-        const hotelIdsInCountry = hotelsInCountry.map(h => h.id);
+        const hotelIdsInCountry = hotelsInCountry.map(h => String(h.id));
         data = data.filter(room =>
-          hotelIdsInCountry.includes(room.hotel) ||
+          hotelIdsInCountry.includes(String(room.hotel)) ||
           room.hotel_country?.toLowerCase() === countryLower
         );
       }
@@ -423,9 +422,9 @@ const BrowseRooms = () => {
         const hotelsInCity = hotelData.filter(h =>
           h.city?.toLowerCase() === cityLower
         );
-        const hotelIdsInCity = hotelsInCity.map(h => h.id);
+        const hotelIdsInCity = hotelsInCity.map(h => String(h.id));
         data = data.filter(room =>
-          hotelIdsInCity.includes(room.hotel) ||
+          hotelIdsInCity.includes(String(room.hotel)) ||
           room.hotel_city?.toLowerCase() === cityLower
         );
       }
@@ -485,7 +484,7 @@ const BrowseRooms = () => {
   if (loading) {
     return (
       <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
-        <Hero initialCollapsed />
+        <Hero initialCollapsed hideBottomNav />
         <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
           <Skeleton variant="text" width={300} height={40} sx={{ mb: 1 }} />
           <Skeleton variant="text" width={200} height={24} sx={{ mb: 4 }} />
@@ -508,11 +507,25 @@ const BrowseRooms = () => {
   return (
     <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
       {/* Sticky Header with Search */}
-      <Hero initialCollapsed />
+      <Hero initialCollapsed hideBottomNav />
 
       <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
         {/* Page Header */}
         <Box sx={{ mb: 4 }}>
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={() => navigate('/')}
+            sx={{
+              textTransform: 'none',
+              color: '#222222',
+              fontWeight: 500,
+              mb: 2,
+              ml: -1,
+              '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+            }}
+          >
+            Back to home
+          </Button>
           <Typography
             sx={{
               fontSize: { xs: '26px', md: '32px' },
@@ -550,57 +563,6 @@ const BrowseRooms = () => {
             {roomTypes.length} room type{roomTypes.length !== 1 ? 's' : ''} available
           </Typography>
         </Box>
-
-        {/* Search Summary */}
-        {(filters.checkIn || filters.checkOut || filters.guests !== 2) && (
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              mb: 4,
-              borderRadius: '12px',
-              bgcolor: '#F7F7F7',
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 2,
-            }}
-          >
-            <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#222222' }}>
-              Your search:
-            </Typography>
-            {(filters.checkIn || filters.checkOut) && (
-              <Chip
-                icon={<CalendarToday sx={{ fontSize: 16 }} />}
-                label={
-                  filters.checkIn && filters.checkOut
-                    ? `${filters.checkIn} → ${filters.checkOut}`
-                    : filters.checkIn || filters.checkOut
-                }
-                size="small"
-                sx={{
-                  bgcolor: '#FFFFFF',
-                  border: '1px solid #DDDDDD',
-                  '& .MuiChip-label': { fontWeight: 500 },
-                }}
-                onDelete={() => setFilters({ ...filters, checkIn: '', checkOut: '' })}
-              />
-            )}
-            {filters.guests !== 2 && (
-              <Chip
-                icon={<Group sx={{ fontSize: 16 }} />}
-                label={`${filters.guests} guest${filters.guests !== 1 ? 's' : ''}`}
-                size="small"
-                sx={{
-                  bgcolor: '#FFFFFF',
-                  border: '1px solid #DDDDDD',
-                  '& .MuiChip-label': { fontWeight: 500 },
-                }}
-                onDelete={() => setFilters({ ...filters, guests: 2 })}
-              />
-            )}
-          </Paper>
-        )}
 
         {/* Room Types Grid */}
         {roomTypes.length === 0 ? (

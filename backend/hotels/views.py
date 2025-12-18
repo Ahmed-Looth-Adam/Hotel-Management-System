@@ -29,6 +29,7 @@ from .permissions import (
     IsStaffOrReadOnly, IsHotelManager, HotelObjectPermission
 )
 from .services import PricingCalculator, BookingService, LateCheckoutService
+from .pagination import FlexiblePageNumberPagination
 
 
 # ============== Hotel ViewSets ==============
@@ -67,6 +68,7 @@ class RoomViewSet(viewsets.ModelViewSet):
     """ViewSet for Room CRUD operations"""
     queryset = Room.objects.all()
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
+    pagination_class = FlexiblePageNumberPagination
 
     def get_serializer_class(self):
         if self.action == 'list':

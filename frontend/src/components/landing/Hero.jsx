@@ -57,7 +57,7 @@ const quickTransition = {
 const springTransition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
 const fastSpring = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
 
-const Hero = ({ initialCollapsed = false, initialParams = {} }) => {
+const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = false }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -125,6 +125,9 @@ const Hero = ({ initialCollapsed = false, initialParams = {} }) => {
   };
 
   useEffect(() => {
+    // Skip scroll-based expand/collapse on results pages (when initialCollapsed)
+    if (initialCollapsed) return;
+
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 10);
@@ -143,7 +146,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {} }) => {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isExpanded]);
+  }, [isExpanded, initialCollapsed]);
 
   // Handle manual expand (clicking collapsed bar)
   const handleExpandSearch = () => {
@@ -151,8 +154,10 @@ const Hero = ({ initialCollapsed = false, initialParams = {} }) => {
     setIsExpanded(true);
   };
 
-  // Click outside to collapse expanded search bar
+  // Click outside to collapse expanded search bar (only on home page)
   useEffect(() => {
+    if (initialCollapsed) return;
+
     const handleClickOutside = (event) => {
       if (searchBarRef.current && !searchBarRef.current.contains(event.target)) {
         const isPopover = event.target.closest('.MuiPopover-root');
@@ -164,7 +169,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {} }) => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isExpanded]);
+  }, [isExpanded, initialCollapsed]);
 
   // Fetch hotel locations
   useEffect(() => {
@@ -306,7 +311,11 @@ const Hero = ({ initialCollapsed = false, initialParams = {} }) => {
         }}
       >
         <Typography variant="body2" fontWeight={600} color="#222222" noWrap>
-          {checkIn ? checkIn.format('MMM D') : 'When'}
+          {checkIn && checkOut
+            ? `${checkIn.format('MMM D')} - ${checkOut.format('MMM D')}`
+            : checkIn
+              ? checkIn.format('MMM D')
+              : 'When'}
         </Typography>
       </Box>
       <Box
@@ -1458,7 +1467,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {} }) => {
       {renderMobileSearchOverlay()}
 
       {/* Mobile Bottom Navigation Bar */}
-      {isMobile && (
+      {isMobile && !hideBottomNav && (
         <Paper
           elevation={0}
           sx={{
