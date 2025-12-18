@@ -34,7 +34,6 @@ import PasswordResetConfirm from './pages/profile/PasswordResetConfirm';
 
 // Hotel management pages
 import { BookingsList, BookingDetail } from './pages/bookings';
-import { OperationsDashboard } from './pages/operations';
 
 // Admin pages
 import UserManagement from './pages/admin/UserManagement';
@@ -245,16 +244,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <BookingDetail />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Operations Dashboard */}
-              <Route
-                path="/operations"
-                element={
-                  <ProtectedRoute>
-                    <OperationsDashboard />
                   </ProtectedRoute>
                 }
               />

@@ -327,7 +327,7 @@ const CheckInModal = ({ open, onClose, booking, onSuccess }) => {
         </Box>
 
         {/* Guest Details Section */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <SectionHeader icon={PersonIcon} title={`Guest Details (${guests.length})`} />
           <Button
             startIcon={<AddIcon />}
@@ -337,6 +337,8 @@ const CheckInModal = ({ open, onClose, booking, onSuccess }) => {
               borderRadius: 2,
               textTransform: 'none',
               fontWeight: 500,
+              p: 0,
+              minWidth: 'auto',
             }}
           >
             Add Guest

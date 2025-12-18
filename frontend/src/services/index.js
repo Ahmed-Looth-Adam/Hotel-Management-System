@@ -6,5 +6,4 @@ export { default as pricingService } from './pricingService';
 export { default as bookingService } from './bookingService';
 export { default as policyService } from './policyService';
 export { default as galleryService } from './galleryService';
-export { default as operationsService } from './operationsService';
 export { api, bookingsApi, API_BASE_URL } from './api';

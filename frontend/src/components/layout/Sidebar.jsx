@@ -41,7 +41,6 @@ import {
   People as PeopleIcon,
   Assessment as ReportIcon,
   Settings as SettingsIcon,
-  Speed as OperationsIcon,
   ExpandLess,
   ExpandMore,
   ChevronLeft as ChevronLeftIcon,
@@ -114,12 +113,6 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
       roles: ['manager'],
     },
     // Staff/Manager/Admin
-    {
-      title: 'Operations',
-      icon: OperationsIcon,
-      path: '/operations',
-      roles: ['staff', 'manager', 'admin'],
-    },
     {
       title: 'Bookings',
       icon: BookingIcon,
