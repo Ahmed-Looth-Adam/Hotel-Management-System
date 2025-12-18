@@ -274,11 +274,13 @@ const MyBookings = () => {
               return (
                 <Box
                   key={booking.id}
+                  onClick={() => navigate(`/guest/rooms/${booking.room}`)}
                   sx={{
                     borderRadius: '16px',
                     border: '1px solid #EBEBEB',
                     overflow: 'hidden',
                     transition: 'all 0.2s',
+                    cursor: 'pointer',
                     '&:hover': {
                       boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
                     },
@@ -406,7 +408,10 @@ const MyBookings = () => {
                         {['pending', 'confirmed'].includes(booking.status) && (
                           <Button
                             size="small"
-                            onClick={() => setCancelDialog({ open: true, booking })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCancelDialog({ open: true, booking });
+                            }}
                             sx={{
                               color: '#EF4444',
                               textTransform: 'none',
