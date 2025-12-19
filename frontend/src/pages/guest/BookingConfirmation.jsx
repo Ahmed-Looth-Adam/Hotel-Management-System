@@ -643,7 +643,7 @@ const BookingConfirmation = () => {
                 variant="contained"
                 fullWidth
                 onClick={handleConfirmBooking}
-                disabled={submitting || !agreedToTerms || !checkIn || !checkOut || nights <= 0}
+                disabled={submitting || !agreedToTerms || !checkIn || !checkOut || nights <= 0 || !personalDetails.first_name || !personalDetails.last_name}
                 startIcon={!submitting && <Lock sx={{ fontSize: 18 }} />}
                 sx={{
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

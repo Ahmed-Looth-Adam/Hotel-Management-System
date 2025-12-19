@@ -53,9 +53,13 @@ const validationSchema = Yup.object({
   last_name: Yup.string()
     .max(150, 'Last name must not exceed 150 characters'),
   phone_number: Yup.string()
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, 'Invalid phone number')
+    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, {
+      message: 'Invalid phone number',
+      excludeEmptyString: true,
+    })
     .nullable(),
   date_of_birth: Yup.date()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
     .max(new Date(), 'Date of birth cannot be in the future')
     .nullable(),
   address: Yup.string()
@@ -96,9 +100,9 @@ const Register = () => {
       setError('');
       setSuccess('');
 
-      // Clean up empty optional fields
+      // Clean up empty optional fields (remove empty strings and null values)
       const cleanedValues = Object.fromEntries(
-        Object.entries(values).filter(([_, v]) => v !== '')
+        Object.entries(values).filter(([_, v]) => v !== '' && v !== null)
       );
 
       const result = await authService.register(cleanedValues);
