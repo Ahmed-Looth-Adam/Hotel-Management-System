@@ -5,6 +5,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from django.db.models import Q
 from datetime import datetime
 from decimal import Decimal
 from .models import Booking, CheckInRecord
@@ -44,11 +45,19 @@ class BookingViewSet(viewsets.ModelViewSet):
         # Apply filters from query parameters
         hotel = self.request.query_params.get('hotel')
         status_filter = self.request.query_params.get('status')
+        search = self.request.query_params.get('search')
 
         if hotel:
             queryset = queryset.filter(hotel_id=hotel)
         if status_filter:
             queryset = queryset.filter(status=status_filter)
+        if search:
+            queryset = queryset.filter(
+                Q(booking_reference__icontains=search) |
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search) |
+                Q(user__username__icontains=search)
+            )
 
         return queryset
 

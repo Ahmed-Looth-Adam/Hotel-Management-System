@@ -11,11 +11,14 @@ import {
   Select,
   MenuItem,
   Paper,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   Visibility,
   EventAvailable,
   Business as BusinessIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import { bookingService, hotelService } from '../../services';
@@ -53,6 +56,7 @@ const BookingsList = () => {
   const [filters, setFilters] = useState({
     hotel: hasAssignedHotel ? user.assigned_hotel : (searchParams.get('hotel') || ''),
     status: '',
+    search: '',
   });
 
   const fetchData = async () => {
@@ -65,6 +69,7 @@ const BookingsList = () => {
     const params = {};
     if (filters.hotel) params.hotel = filters.hotel;
     if (filters.status) params.status = filters.status;
+    if (filters.search) params.search = filters.search;
 
     const [bookingsResult, hotelsResult] = await Promise.all([
       bookingService.getAll(params),
@@ -178,7 +183,23 @@ const BookingsList = () => {
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Search Field */}
+        <TextField
+          size="small"
+          placeholder="Search by name or booking reference..."
+          value={filters.search}
+          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          sx={{ minWidth: 350 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+
         {/* Show hotel dropdown only for admin, show assigned hotel name for staff/manager */}
         {isStaffOrManager && hasAssignedHotel ? (
           <Chip
