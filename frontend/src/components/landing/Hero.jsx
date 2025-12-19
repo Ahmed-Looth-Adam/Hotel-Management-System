@@ -1224,15 +1224,19 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                 <MenuIcon sx={{ fontSize: 16, color: '#717171' }} />
                 <Avatar
                   sx={{
-                    width: 30,
-                    height: 30,
+                    width: 38,
+                    height: 38,
                     bgcolor: '#717171',
-                    fontSize: '14px',
+                    fontSize: '15px',
                     fontWeight: 600,
                   }}
-                  src={user?.avatar}
+                  src={user?.profile_picture ? (
+                    user.profile_picture.startsWith('http')
+                      ? user.profile_picture
+                      : `http://localhost:8000${user.profile_picture}`
+                  ) : undefined}
                 >
-                  {user ? user.username[0].toUpperCase() : null}
+                  {user ? (user.first_name?.[0] || user.username[0]).toUpperCase() : null}
                 </Avatar>
               </Box>
 

@@ -238,7 +238,7 @@ const HotelCard = ({ hotel, onClick }) => {
             mb: 0.5,
           }}
         >
-          {hotel.total_rooms || 0} rooms available
+          {hotel.available_rooms ?? hotel.total_rooms ?? 0} rooms available
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>

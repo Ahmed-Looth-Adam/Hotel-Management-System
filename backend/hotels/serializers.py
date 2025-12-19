@@ -15,13 +15,14 @@ class HotelListSerializer(serializers.ModelSerializer):
     manager = serializers.SerializerMethodField()
     galleries = serializers.SerializerMethodField()
     total_rooms = serializers.SerializerMethodField()
+    available_rooms = serializers.SerializerMethodField()
 
     class Meta:
         model = Hotel
         fields = [
             'id', 'name', 'location', 'address', 'city', 'country',
             'description', 'star_rating', 'room_capacity', 'is_active', 'room_count', 'manager',
-            'galleries', 'total_rooms'
+            'galleries', 'total_rooms', 'available_rooms'
         ]
 
     def get_room_count(self, obj):
@@ -29,6 +30,10 @@ class HotelListSerializer(serializers.ModelSerializer):
 
     def get_total_rooms(self, obj):
         return obj.rooms.count()
+
+    def get_available_rooms(self, obj):
+        """Get count of rooms that are available (not occupied)"""
+        return obj.rooms.filter(is_active=True, status='available').count()
 
     def get_manager(self, obj):
         if obj.manager:

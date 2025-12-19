@@ -232,7 +232,13 @@ const authService = {
    */
   updateProfile: async (userData) => {
     try {
-      const response = await authAPI.put('/profile/', userData);
+      // Check if userData is FormData (for file uploads)
+      const isFormData = userData instanceof FormData;
+      const config = isFormData ? {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      } : {};
+
+      const response = await authAPI.put('/profile/', userData, config);
 
       // Update stored user data
       localStorage.setItem('user', JSON.stringify(response.data));
