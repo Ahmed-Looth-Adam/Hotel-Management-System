@@ -17,6 +17,7 @@ import { SnackbarProvider } from 'notistack';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import GuestOnlyRoute from './components/GuestOnlyRoute';
 import { Layout } from './components/layout';
 import NotificationInitializer from './components/NotificationInitializer';
 
@@ -78,8 +79,12 @@ function App() {
           <Router>
           <Layout>
             <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
+              {/* Public Routes - Guest Only (Admin/Staff redirected to dashboard) */}
+              <Route path="/" element={
+                <GuestOnlyRoute>
+                  <Home />
+                </GuestOnlyRoute>
+              } />
               <Route path="/demo" element={<ComponentDemo />} />
               <Route path="/notification-demo" element={<NotificationExample />} />
               <Route path="/loading-demo" element={<LoadingExample />} />
@@ -175,8 +180,17 @@ function App() {
               />
 
               {/* Guest Portal Routes - Public (no login required to browse) */}
-              <Route path="/guest/rooms" element={<BrowseRooms />} />
-              <Route path="/guest/rooms/:id" element={<RoomDetails />} />
+              {/* Admin/Staff are redirected to dashboard */}
+              <Route path="/guest/rooms" element={
+                <GuestOnlyRoute>
+                  <BrowseRooms />
+                </GuestOnlyRoute>
+              } />
+              <Route path="/guest/rooms/:id" element={
+                <GuestOnlyRoute>
+                  <RoomDetails />
+                </GuestOnlyRoute>
+              } />
 
               {/* Guest Portal Routes - Protected (login required) */}
               <Route

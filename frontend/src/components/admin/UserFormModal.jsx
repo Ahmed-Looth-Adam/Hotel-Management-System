@@ -111,7 +111,7 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = 
 
   const isNewUser = !userToEdit;
   const isManager = currentUser?.role === 'manager';
-  const showHotelField = forceRole === 'staff' || (!forceRole && ['staff'].includes(userToEdit?.role));
+  const showHotelField = ['staff', 'manager'].includes(forceRole) || (!forceRole && ['staff', 'manager'].includes(userToEdit?.role));
 
   // Parse existing phone number into country code and number
   const parsePhoneNumber = (phone) => {
@@ -648,8 +648,8 @@ const UserFormModal = ({ open, handleClose, userToEdit, handleSave, forceRole = 
                 </Box>
               )}
 
-              {/* Hotel Assignment - Only show for staff role */}
-              {(forceRole === 'staff' || values.role === 'staff') && (
+              {/* Hotel Assignment - Show for staff and manager roles */}
+              {(['staff', 'manager'].includes(forceRole) || ['staff', 'manager'].includes(values.role)) && (
                 <>
                   <SectionHeader icon={HotelIcon} title="Hotel Assignment" />
                   <Box sx={{ mb: 2 }}>
