@@ -159,7 +159,9 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [allBookings, setAllBookings] = useState([]); // Store all bookings for trend calculations
   const [bookingTrends, setBookingTrends] = useState([]);
+  const [revenueTrends, setRevenueTrends] = useState([]);
   const [trendPeriod, setTrendPeriod] = useState('7d');
+  const [revenuePeriod, setRevenuePeriod] = useState('7d');
   const [statusDistribution, setStatusDistribution] = useState([]);
   const [servicePopularity, setServicePopularity] = useState([]);
   const [recentBookings, setRecentBookings] = useState([]);
@@ -439,6 +441,7 @@ const Dashboard = () => {
         // Store bookings for trend calculations and calculate initial trends
         setAllBookings(bookings);
         setBookingTrends(calculateTrends(trendPeriod, bookings));
+        setRevenueTrends(calculateTrends(revenuePeriod, bookings));
 
         // Calculate status distribution
         const statusCounts = {};
@@ -471,12 +474,19 @@ const Dashboard = () => {
     fetchDashboardData();
   }, [selectedHotel]);
 
-  // Recalculate trends locally when period changes (no API call needed)
+  // Recalculate booking trends locally when period changes (no API call needed)
   useEffect(() => {
     if (allBookings.length > 0) {
       setBookingTrends(calculateTrends(trendPeriod, allBookings));
     }
   }, [trendPeriod]);
+
+  // Recalculate revenue trends locally when period changes (no API call needed)
+  useEffect(() => {
+    if (allBookings.length > 0) {
+      setRevenueTrends(calculateTrends(revenuePeriod, allBookings));
+    }
+  }, [revenuePeriod]);
 
   const handleHotelChange = (event) => {
     setSelectedHotel(event.target.value);
@@ -485,6 +495,12 @@ const Dashboard = () => {
   const handleTrendPeriodChange = (event, newPeriod) => {
     if (newPeriod !== null) {
       setTrendPeriod(newPeriod);
+    }
+  };
+
+  const handleRevenuePeriodChange = (event, newPeriod) => {
+    if (newPeriod !== null) {
+      setRevenuePeriod(newPeriod);
     }
   };
 
@@ -865,15 +881,46 @@ const Dashboard = () => {
             mb: 4,
           }}
         >
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Revenue Trends ({trendPeriodLabels[trendPeriod]})
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+            <Typography variant="h6" fontWeight={600}>
+              Revenue Trends ({trendPeriodLabels[revenuePeriod]})
+            </Typography>
+            <ToggleButtonGroup
+              value={revenuePeriod}
+              exclusive
+              onChange={handleRevenuePeriodChange}
+              size="small"
+              sx={{
+                '& .MuiToggleButton-root': {
+                  px: 1.5,
+                  py: 0.5,
+                  fontSize: '0.75rem',
+                  textTransform: 'none',
+                  borderColor: 'divider',
+                  '&.Mui-selected': {
+                    bgcolor: '#2e7d32',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: '#1b5e20',
+                    },
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="7d">7D</ToggleButton>
+              <ToggleButton value="1m">1M</ToggleButton>
+              <ToggleButton value="3m">3M</ToggleButton>
+              <ToggleButton value="6m">6M</ToggleButton>
+              <ToggleButton value="1y">1Y</ToggleButton>
+              <ToggleButton value="all">All</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
           <Box sx={{ height: 250 }}>
             {loading ? (
               <Skeleton variant="rounded" height="100%" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={bookingTrends}>
+                <BarChart data={revenueTrends}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
                   <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v}`} />
