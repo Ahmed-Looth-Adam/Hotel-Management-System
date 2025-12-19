@@ -2,7 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Box, CircularProgress, Container } from '@mui/material';
 
-const ProtectedRoute = ({ children, requiredRole = null }) => {
+const ProtectedRoute = ({ children, requiredRole = null, allowedRoles = null }) => {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
 
@@ -29,9 +29,14 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check role-based access if requiredRole is specified
-  if (requiredRole && user?.role !== requiredRole) {
-    // Redirect to unauthorized page or dashboard
+  // Check role-based access if allowedRoles array is specified
+  if (allowedRoles && allowedRoles.length > 0) {
+    if (!allowedRoles.includes(user?.role)) {
+      return <Navigate to="/" replace />;
+    }
+  }
+  // Check role-based access if single requiredRole is specified
+  else if (requiredRole && user?.role !== requiredRole) {
     return <Navigate to="/" replace />;
   }
 

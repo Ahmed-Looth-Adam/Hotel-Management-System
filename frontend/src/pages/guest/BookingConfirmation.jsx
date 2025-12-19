@@ -241,15 +241,7 @@ const BookingConfirmation = () => {
         );
       }
     }
-    // Check hotel galleries as fallback
-    if (hotel?.galleries && hotel.galleries.length > 0) {
-      const gallery = hotel.galleries[0];
-      if (gallery.images && gallery.images.length > 0) {
-        return gallery.images.map(img =>
-          img.image?.startsWith('http') ? img.image : `http://localhost:8000${img.image}`
-        );
-      }
-    }
+    // No fallback to hotel gallery - rooms should use their own gallery
     return [];
   };
 
@@ -613,6 +605,15 @@ const BookingConfirmation = () => {
                 <Typography sx={{ fontSize: '18px', fontWeight: 700, color: '#222222' }}>£{totalPrice}</Typography>
               </Box>
 
+              {/* Invalid Dates Warning */}
+              {(!checkIn || !checkOut || nights <= 0) && (
+                <Box sx={{ mt: 2, p: 2, bgcolor: '#FEF3F2', borderRadius: '10px', border: '1px solid #FEE4E2' }}>
+                  <Typography sx={{ fontSize: '14px', color: '#B42318', fontWeight: 500 }}>
+                    Invalid booking dates. Please go back and select valid check-in and check-out dates.
+                  </Typography>
+                </Box>
+              )}
+
               {/* Terms Agreement */}
               <FormControlLabel
                 control={
@@ -642,7 +643,7 @@ const BookingConfirmation = () => {
                 variant="contained"
                 fullWidth
                 onClick={handleConfirmBooking}
-                disabled={submitting || !agreedToTerms}
+                disabled={submitting || !agreedToTerms || !checkIn || !checkOut || nights <= 0}
                 startIcon={!submitting && <Lock sx={{ fontSize: 18 }} />}
                 sx={{
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

@@ -218,7 +218,7 @@ class BookingSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
     # Accept room_type from frontend and map to room_type_requested
     room_type = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    # Ancillary services (stored but not processed here - for future implementation)
+    # Ancillary services - list of service IDs from frontend
     ancillary_services = serializers.ListField(
         child=serializers.CharField(),
         write_only=True,
@@ -235,14 +235,69 @@ class BookingSerializer(serializers.ModelSerializer):
             'room_number': {'required': False, 'allow_blank': True},
         }
 
+    # Map frontend service IDs to database service_types
+    # These match the service_type values in the AncillaryService seed data
+    SERVICE_ID_MAP = {
+        'airport_transfer': 'airport_transfer',
+        'breakfast': 'breakfast',
+        'spa': 'spa',
+        'late_checkout': 'late_checkout',
+    }
+
     def create(self, validated_data):
+        from payments.models import BookingServiceCharge
+        from hotels.models import AncillaryService
+
         # Map room_type to room_type_requested
         room_type = validated_data.pop('room_type', None)
         if room_type:
             validated_data['room_type_requested'] = room_type
-        # Remove ancillary_services for now (can be handled separately)
-        validated_data.pop('ancillary_services', None)
-        return super().create(validated_data)
+
+        # Extract ancillary_services before creating booking
+        ancillary_services = validated_data.pop('ancillary_services', [])
+
+        # Create the booking
+        booking = super().create(validated_data)
+
+        # Process ancillary services and create BookingServiceCharge records
+        if ancillary_services and booking.hotel:
+            # Calculate days for per-day services
+            days = (booking.check_out_date - booking.check_in_date).days
+            guests = booking.guests_count or 1
+
+            for service_id in ancillary_services:
+                service_type = self.SERVICE_ID_MAP.get(service_id)
+                if not service_type:
+                    continue
+
+                # Find the matching AncillaryService for this hotel
+                service = AncillaryService.objects.filter(
+                    hotel=booking.hotel,
+                    service_type=service_type,
+                    is_active=True
+                ).first()
+
+                if service:
+                    # Calculate charge based on service pricing type
+                    total_price = service.calculate_charge(
+                        quantity=1,
+                        days=days,
+                        persons=guests
+                    )
+
+                    # Create BookingServiceCharge record
+                    BookingServiceCharge.objects.create(
+                        booking=booking,
+                        service=service,
+                        service_name=service.name,
+                        quantity=1,
+                        persons=guests if service.pricing_type in ['per_person', 'per_person_per_day'] else 1,
+                        days=days if service.pricing_type in ['per_day', 'per_person_per_day'] else 1,
+                        unit_price=service.price,
+                        total_price=total_price
+                    )
+
+        return booking
 
 
 class BookingCreateSerializer(serializers.Serializer):

@@ -187,6 +187,7 @@ class RoomListSerializer(serializers.ModelSerializer):
     room_type_name = serializers.CharField(source='room_type.name', read_only=True)
     view_name = serializers.CharField(source='view.name', read_only=True, allow_null=True)
     amenities_count = serializers.SerializerMethodField()
+    gallery = serializers.SerializerMethodField()
 
     class Meta:
         model = Room
@@ -194,12 +195,25 @@ class RoomListSerializer(serializers.ModelSerializer):
             'id', 'hotel', 'hotel_name', 'room_number', 'floor',
             'room_type', 'room_type_name', 'room_type_category',
             'bed_size', 'bed_count', 'max_occupancy',
-            'view', 'view_name', 'status', 'is_available', 'is_active',
+            'view', 'view_name', 'gallery', 'status', 'is_available', 'is_active',
             'amenities_count'
         ]
 
     def get_amenities_count(self, obj):
         return obj.room_amenities.count()
+
+    def get_gallery(self, obj):
+        """Get room's gallery with images (lightweight version for list view)"""
+        if not obj.gallery:
+            return None
+        gallery = obj.gallery
+        images = [{'id': img.id, 'image': img.image.url if img.image else None}
+                  for img in gallery.images.all()[:5]]
+        return {
+            'id': gallery.id,
+            'name': gallery.name,
+            'images': images
+        }
 
 
 class RoomDetailSerializer(serializers.ModelSerializer):

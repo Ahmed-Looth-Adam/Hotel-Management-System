@@ -4,13 +4,13 @@
  * Created By: Ismail Wasiu Abdul Samad, UWE ID: 24050765
  */
 
-import api from './api';
+import { bookingsApi } from './api';
 
 const reportService = {
   // Get occupancy report
   getOccupancy: async (params = {}) => {
     try {
-      const response = await api.get('/reports/occupancy/', { params });
+      const response = await bookingsApi.get('/reports/occupancy/', { params });
       return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.response?.data || error.message };
@@ -20,7 +20,7 @@ const reportService = {
   // Get revenue report
   getRevenue: async (params = {}) => {
     try {
-      const response = await api.get('/reports/revenue/', { params });
+      const response = await bookingsApi.get('/reports/revenue/', { params });
       return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.response?.data || error.message };
@@ -30,7 +30,7 @@ const reportService = {
   // Get guest demographics
   getGuestDemographics: async (params = {}) => {
     try {
-      const response = await api.get('/reports/guest_demographics/', { params });
+      const response = await bookingsApi.get('/reports/guest_demographics/', { params });
       return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.response?.data || error.message };
@@ -40,7 +40,7 @@ const reportService = {
   // Get dashboard summary
   getDashboardSummary: async (params = {}) => {
     try {
-      const response = await api.get('/reports/dashboard_summary/', { params });
+      const response = await bookingsApi.get('/reports/dashboard_summary/', { params });
       return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.response?.data || error.message };
@@ -50,7 +50,7 @@ const reportService = {
   // Get service popularity
   getServicePopularity: async (params = {}) => {
     try {
-      const response = await api.get('/reports/service_popularity/', { params });
+      const response = await bookingsApi.get('/reports/service_popularity/', { params });
       return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.response?.data || error.message };

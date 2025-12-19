@@ -867,19 +867,25 @@ const Dashboard = () => {
                     <Pie
                       data={statusDistribution}
                       cx="50%"
-                      cy="50%"
+                      cy="45%"
                       innerRadius={60}
-                      outerRadius={100}
+                      outerRadius={95}
                       paddingAngle={5}
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
                       {statusDistribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip formatter={(value, name) => [value, name]} />
+                    <Legend
+                      layout="horizontal"
+                      align="center"
+                      verticalAlign="bottom"
+                      formatter={(value) => <span style={{ color: '#333', fontSize: 12 }}>{value}</span>}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -887,137 +893,151 @@ const Dashboard = () => {
           </Paper>
         </Box>
 
-        {/* Revenue Chart */}
-        <Paper
-          elevation={0}
+        {/* Revenue & Services Row */}
+        <Box
           sx={{
-            p: 3,
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' },
+            gap: 3,
             mb: 4,
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-            <Typography variant="h6" fontWeight={600}>
-              Revenue Trends ({trendPeriodLabels[revenuePeriod]})
-            </Typography>
-            <ToggleButtonGroup
-              value={revenuePeriod}
-              exclusive
-              onChange={handleRevenuePeriodChange}
-              size="small"
-              sx={{
-                '& .MuiToggleButton-root': {
-                  px: 1.5,
-                  py: 0.5,
-                  fontSize: '0.75rem',
-                  textTransform: 'none',
-                  borderColor: 'divider',
-                  '&.Mui-selected': {
-                    bgcolor: '#2e7d32',
-                    color: 'white',
-                    '&:hover': {
-                      bgcolor: '#1b5e20',
+          {/* Revenue Chart */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+              <Typography variant="h6" fontWeight={600}>
+                Revenue Trends ({trendPeriodLabels[revenuePeriod]})
+              </Typography>
+              <ToggleButtonGroup
+                value={revenuePeriod}
+                exclusive
+                onChange={handleRevenuePeriodChange}
+                size="small"
+                sx={{
+                  '& .MuiToggleButton-root': {
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: '0.75rem',
+                    textTransform: 'none',
+                    borderColor: 'divider',
+                    '&.Mui-selected': {
+                      bgcolor: '#2e7d32',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: '#1b5e20',
+                      },
                     },
                   },
-                },
-              }}
-            >
-              <ToggleButton value="7d">7D</ToggleButton>
-              <ToggleButton value="1m">1M</ToggleButton>
-              <ToggleButton value="3m">3M</ToggleButton>
-              <ToggleButton value="6m">6M</ToggleButton>
-              <ToggleButton value="1y">1Y</ToggleButton>
-              <ToggleButton value="all">All</ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
-          <Box sx={{ height: 250 }}>
-            {loading ? (
-              <Skeleton variant="rounded" height="100%" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueTrends}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v}`} />
-                  <Tooltip
-                    formatter={(value) => [`£${value.toFixed(2)}`, 'Revenue']}
-                    contentStyle={{
-                      borderRadius: 8,
-                      border: 'none',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    }}
-                  />
-                  <Bar dataKey="revenue" fill="#2e7d32" radius={[4, 4, 0, 0]} name="Revenue" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </Box>
-        </Paper>
-
-        {/* Service Popularity Chart */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            mb: 4,
-          }}
-        >
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Most Popular Services
-          </Typography>
-          <Box sx={{ height: 250 }}>
-            {loading ? (
-              <Skeleton variant="rounded" height="100%" />
-            ) : servicePopularity.length === 0 ? (
-              <Box
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                 }}
               >
-                <Typography color="text.secondary">
-                  No service data available yet
-                </Typography>
-              </Box>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={servicePopularity} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e0e0e0" />
-                  <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={120}
-                  />
-                  <Tooltip
-                    formatter={(value, name) => {
-                      if (name === 'bookings') return [value, 'Bookings'];
-                      if (name === 'revenue') return [`£${value.toFixed(2)}`, 'Revenue'];
-                      return [value, name];
-                    }}
-                    contentStyle={{
-                      borderRadius: 8,
-                      border: 'none',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="bookings" fill="#1976d2" radius={[0, 4, 4, 0]} name="Bookings" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </Box>
-        </Paper>
+                <ToggleButton value="7d">7D</ToggleButton>
+                <ToggleButton value="1m">1M</ToggleButton>
+                <ToggleButton value="3m">3M</ToggleButton>
+                <ToggleButton value="6m">6M</ToggleButton>
+                <ToggleButton value="1y">1Y</ToggleButton>
+                <ToggleButton value="all">All</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+            <Box sx={{ height: 300 }}>
+              {loading ? (
+                <Skeleton variant="rounded" height="100%" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={revenueTrends}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v}`} />
+                    <Tooltip
+                      formatter={(value) => [`£${value.toFixed(2)}`, 'Revenue']}
+                      contentStyle={{
+                        borderRadius: 8,
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      }}
+                    />
+                    <Bar dataKey="revenue" fill="#2e7d32" radius={[4, 4, 0, 0]} name="Revenue" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </Box>
+          </Paper>
+
+          {/* Service Popularity Chart */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Most Popular Services
+            </Typography>
+            <Box sx={{ height: 300 }}>
+              {loading ? (
+                <Skeleton variant="rounded" height="100%" />
+              ) : servicePopularity.length === 0 ? (
+                <Box
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Typography color="text.secondary">
+                    No service data available yet
+                  </Typography>
+                </Box>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={servicePopularity}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => {
+                        const labels = {
+                          'Full English Breakfast': 'Breakfast',
+                          'Airport Transfer (One-way)': 'Airport',
+                          'Spa Access': 'Spa',
+                          'Late Check-out (until 2 PM)': 'Late Checkout',
+                        };
+                        return labels[value] || value.split(' ')[0];
+                      }}
+                    />
+                    <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      formatter={(value, name, props) => [value, props.payload.name]}
+                      contentStyle={{
+                        borderRadius: 8,
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      }}
+                    />
+                    <Bar dataKey="bookings" radius={[4, 4, 0, 0]}>
+                      {servicePopularity.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </Box>
+          </Paper>
+        </Box>
 
         {/* Hotel Performance Charts - Admin Only */}
         {isAdmin && (!selectedHotel || selectedHotel === 'all') && hotelPerformance.length > 0 && (

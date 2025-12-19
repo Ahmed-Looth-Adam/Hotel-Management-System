@@ -42,7 +42,7 @@ const getRedirectPath = (user) => {
 
   switch (role) {
     case 'admin':
-      return '/admin/hotels';
+      return '/dashboard';
     case 'manager':
       return '/manager/hotel';
     case 'staff':
@@ -62,7 +62,11 @@ const Login = () => {
 
   // If user was trying to access a specific page, redirect there after login
   // Otherwise, use role-based redirect
-  const intendedPath = location.state?.from?.pathname;
+  // Preserve both pathname AND search query string (for booking details, etc.)
+  const fromLocation = location.state?.from;
+  const intendedPath = fromLocation
+    ? `${fromLocation.pathname}${fromLocation.search || ''}`
+    : null;
 
   const formik = useFormik({
     initialValues: {

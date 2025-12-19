@@ -115,7 +115,7 @@ const RoomDetails = () => {
   const roomTypeCategory = room?.room_type_category || 'standard';
   const typeInfo = ROOM_TYPE_INFO[roomTypeCategory] || ROOM_TYPE_INFO.standard;
 
-  // Get images
+  // Get images from room's gallery - do NOT fall back to hotel gallery
   const getImages = () => {
     // Check room's own gallery (singular - from RoomDetailSerializer)
     if (room?.gallery?.images && room.gallery.images.length > 0) {
@@ -132,15 +132,7 @@ const RoomDetails = () => {
         );
       }
     }
-    // Check hotel galleries as fallback
-    if (hotel?.galleries && hotel.galleries.length > 0) {
-      const gallery = hotel.galleries[0];
-      if (gallery.images && gallery.images.length > 0) {
-        return gallery.images.map(img =>
-          img.image?.startsWith('http') ? img.image : `http://localhost:8000${img.image}`
-        );
-      }
-    }
+    // No fallback to hotel gallery - rooms should use their own gallery
     return [];
   };
 

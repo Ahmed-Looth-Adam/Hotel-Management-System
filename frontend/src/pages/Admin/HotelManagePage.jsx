@@ -35,6 +35,7 @@ import {
   Tooltip,
   CircularProgress,
   InputAdornment,
+  Checkbox,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -871,6 +872,9 @@ const GalleryTab = ({ hotel }) => {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [selectedGalleryForImages, setSelectedGalleryForImages] = useState(null);
   const [uploading, setUploading] = useState(false);
+  // Filter states for assign rooms dialog
+  const [roomTypeFilter, setRoomTypeFilter] = useState('');
+  const [floorFilter, setFloorFilter] = useState('');
   const { showSuccess, showError } = useNotification();
 
   useEffect(() => {
@@ -969,7 +973,43 @@ const GalleryTab = ({ hotel }) => {
   const openAssignDialog = (gallery) => {
     setSelectedGallery(gallery);
     setSelectedRoomIds(gallery.assigned_rooms?.map(r => r.id) || []);
+    setRoomTypeFilter('');
+    setFloorFilter('');
     setAssignDialogOpen(true);
+  };
+
+  // Get unique room types and floors for filter dropdowns
+  const roomTypeOptions = [...new Set(rooms.map(r => r.room_type_category))].sort();
+  const floorOptions = [...new Set(rooms.map(r => r.floor))].sort((a, b) => a - b);
+
+  // Filter rooms based on selected filters
+  const filteredRooms = rooms.filter(room => {
+    if (roomTypeFilter && room.room_type_category !== roomTypeFilter) return false;
+    if (floorFilter && room.floor !== parseInt(floorFilter)) return false;
+    return true;
+  });
+
+  // Get selectable rooms (filtered rooms that are not assigned to other galleries)
+  const selectableFilteredRooms = filteredRooms.filter(room => {
+    const isAssignedToOther = room.gallery && room.gallery !== selectedGallery?.id;
+    return !isAssignedToOther;
+  });
+
+  // Check if all selectable filtered rooms are selected
+  const allSelectableSelected = selectableFilteredRooms.length > 0 &&
+    selectableFilteredRooms.every(room => selectedRoomIds.includes(room.id));
+
+  // Handle select all toggle
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      // Add all selectable filtered room IDs to selection
+      const newIds = [...new Set([...selectedRoomIds, ...selectableFilteredRooms.map(r => r.id)])];
+      setSelectedRoomIds(newIds);
+    } else {
+      // Remove all selectable filtered room IDs from selection
+      const filteredIds = selectableFilteredRooms.map(r => r.id);
+      setSelectedRoomIds(selectedRoomIds.filter(id => !filteredIds.includes(id)));
+    }
   };
 
   const handleAssignRooms = async () => {
@@ -1448,6 +1488,74 @@ const GalleryTab = ({ hotel }) => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Select rooms that should share this gallery's photos. Rooms can only be assigned to one gallery at a time.
           </Typography>
+
+          {/* Filters */}
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>Room Type</InputLabel>
+              <Select
+                value={roomTypeFilter}
+                label="Room Type"
+                onChange={(e) => setRoomTypeFilter(e.target.value)}
+              >
+                <MenuItem value="">All Types</MenuItem>
+                {roomTypeOptions.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <InputLabel>Floor</InputLabel>
+              <Select
+                value={floorFilter}
+                label="Floor"
+                onChange={(e) => setFloorFilter(e.target.value)}
+              >
+                <MenuItem value="">All Floors</MenuItem>
+                {floorOptions.map((floor) => (
+                  <MenuItem key={floor} value={floor}>
+                    Floor {floor}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* Select All */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1,
+              px: 1,
+            }}
+          >
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={allSelectableSelected}
+                  indeterminate={
+                    selectableFilteredRooms.some(room => selectedRoomIds.includes(room.id)) &&
+                    !allSelectableSelected
+                  }
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={
+                <Typography variant="body2" fontWeight={500}>
+                  Select All {filteredRooms.length !== rooms.length ? '(filtered)' : ''}
+                </Typography>
+              }
+            />
+            <Typography variant="caption" color="text.secondary">
+              {selectedRoomIds.length} selected • {filteredRooms.length} shown
+            </Typography>
+          </Box>
+
           <Box
             sx={{
               display: 'flex',
@@ -1460,7 +1568,7 @@ const GalleryTab = ({ hotel }) => {
               borderRadius: 2,
             }}
           >
-            {rooms.map((room) => {
+            {filteredRooms.map((room) => {
               const isAssignedToOther = room.gallery && room.gallery !== selectedGallery?.id;
               const otherGallery = isAssignedToOther
                 ? roomGalleries.find(g => g.id === room.gallery)
@@ -1486,7 +1594,7 @@ const GalleryTab = ({ hotel }) => {
                       Room {room.room_number}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {room.room_type_category}
+                      {room.room_type_category.charAt(0).toUpperCase() + room.room_type_category.slice(1)} • Floor {room.floor}
                       {isAssignedToOther && ` • Assigned to: ${otherGallery?.name || 'Another gallery'}`}
                     </Typography>
                   </Box>
