@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from bookings.models import Booking
 from hotels.models import Hotel, Room
-from payments.models import Payment, Invoice
+from payments.models import Payment, Invoice, BookingServiceCharge
 
 
 class ReportsViewSet(viewsets.ViewSet):
@@ -554,4 +554,58 @@ class ReportsViewSet(viewsets.ViewSet):
             'yearly_revenue': float(yearly_revenue),
             'pending_bookings': pending_bookings,
             'cancellations_this_month': cancellations
+        })
+
+    @action(detail=False, methods=['get'])
+    def service_popularity(self, request):
+        """
+        Get service popularity data - which ancillary services are most selected by guests
+        Query params:
+        - hotel_id: Optional (filter by hotel)
+        """
+        hotel_id = request.query_params.get('hotel_id')
+
+        # Build filter
+        filters = {}
+        if hotel_id:
+            try:
+                hotel = Hotel.objects.get(id=hotel_id)
+                filters['booking__hotel'] = hotel
+            except Hotel.DoesNotExist:
+                return Response(
+                    {'error': 'Hotel not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        # Aggregate service charges by service name
+        service_data = BookingServiceCharge.objects.filter(
+            **filters
+        ).values('service_name').annotate(
+            total_bookings=Count('booking', distinct=True),
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum('total_price')
+        ).order_by('-total_bookings')
+
+        data = [{
+            'name': item['service_name'],
+            'bookings': item['total_bookings'],
+            'quantity': item['total_quantity'],
+            'revenue': float(item['total_revenue'] or 0)
+        } for item in service_data]
+
+        # Calculate totals
+        total_bookings_with_services = BookingServiceCharge.objects.filter(
+            **filters
+        ).values('booking').distinct().count()
+
+        total_service_revenue = sum(d['revenue'] for d in data)
+
+        return Response({
+            'hotel_id': hotel_id,
+            'data': data,
+            'summary': {
+                'total_bookings_with_services': total_bookings_with_services,
+                'total_service_revenue': total_service_revenue,
+                'most_popular_service': data[0]['name'] if data else None
+            }
         })

@@ -69,6 +69,7 @@ class BookingListSerializer(serializers.ModelSerializer):
     room_type_label = serializers.SerializerMethodField()
     room_image = serializers.SerializerMethodField()
     number_of_nights = serializers.ReadOnlyField()
+    cancellation_fee_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -78,7 +79,7 @@ class BookingListSerializer(serializers.ModelSerializer):
             'room', 'room_number', 'room_type', 'room_type_label', 'room_image',
             'room_type_requested', 'check_in_date', 'check_out_date', 'number_of_nights',
             'guests_count', 'status', 'payment_status',
-            'total_price', 'created_at'
+            'total_price', 'cancellation_fee_amount', 'created_at'
         ]
 
     def get_user_name(self, obj):
@@ -122,6 +123,18 @@ class BookingListSerializer(serializers.ModelSerializer):
                         return request.build_absolute_uri(images.first().image.url)
                     return images.first().image.url
         return None
+
+    def get_cancellation_fee_amount(self, obj):
+        """Get cancellation fee amount if booking was cancelled"""
+        if obj.status == 'cancelled':
+            try:
+                from payments.models import CancellationFee
+                fee = CancellationFee.objects.filter(booking=obj, waived=False).first()
+                if fee:
+                    return float(fee.fee_amount)
+            except Exception:
+                pass
+        return 0
 
 
 class ServiceChargeSerializer(serializers.Serializer):

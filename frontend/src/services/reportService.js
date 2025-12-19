@@ -46,6 +46,16 @@ const reportService = {
       return { success: false, error: error.response?.data || error.message };
     }
   },
+
+  // Get service popularity
+  getServicePopularity: async (params = {}) => {
+    try {
+      const response = await api.get('/reports/service_popularity/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data || error.message };
+    }
+  },
 };
 
 export default reportService;

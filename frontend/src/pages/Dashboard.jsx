@@ -17,6 +17,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -48,7 +50,7 @@ import {
   Bar,
   Legend,
 } from 'recharts';
-import { reportService, bookingService, hotelService } from '../services';
+import { reportService, bookingService, hotelService, roomService } from '../services';
 
 const COLORS = ['#1976d2', '#2e7d32', '#ed6c02', '#d32f2f', '#9c27b0'];
 
@@ -155,8 +157,11 @@ const Dashboard = () => {
   const [hotels, setHotels] = useState([]);
   const [selectedHotel, setSelectedHotel] = useState('all');
   const [dashboardData, setDashboardData] = useState(null);
+  const [allBookings, setAllBookings] = useState([]); // Store all bookings for trend calculations
   const [bookingTrends, setBookingTrends] = useState([]);
+  const [trendPeriod, setTrendPeriod] = useState('7d');
   const [statusDistribution, setStatusDistribution] = useState([]);
+  const [servicePopularity, setServicePopularity] = useState([]);
   const [recentBookings, setRecentBookings] = useState([]);
 
   // Check user role for hotel access
@@ -192,49 +197,227 @@ const Dashboard = () => {
     fetchHotels();
   }, [user]);
 
+  // Helper function to calculate booking revenue (including cancellation fees)
+  const getBookingRevenue = (booking) => {
+    if (['confirmed', 'checked_in', 'checked_out'].includes(booking.status)) {
+      return parseFloat(booking.total_price || 0);
+    }
+    if (booking.status === 'cancelled') {
+      return parseFloat(booking.cancellation_fee_amount || 0);
+    }
+    return 0;
+  };
+
+  // Calculate booking trends based on selected time period
+  const calculateTrends = (period, bookings) => {
+    if (!bookings || bookings.length === 0) return [];
+
+    const trends = [];
+    const now = new Date();
+    let daysBack, groupBy, dateFormat;
+
+    switch (period) {
+      case '7d':
+        daysBack = 7;
+        groupBy = 'day';
+        dateFormat = { weekday: 'short', day: 'numeric' };
+        break;
+      case '1m':
+        daysBack = 30;
+        groupBy = 'day';
+        dateFormat = { day: 'numeric', month: 'short' };
+        break;
+      case '3m':
+        daysBack = 90;
+        groupBy = 'week';
+        dateFormat = { day: 'numeric', month: 'short' };
+        break;
+      case '6m':
+        daysBack = 180;
+        groupBy = 'week';
+        dateFormat = { day: 'numeric', month: 'short' };
+        break;
+      case '1y':
+        daysBack = 365;
+        groupBy = 'month';
+        dateFormat = { month: 'short', year: '2-digit' };
+        break;
+      case 'all':
+        daysBack = null;
+        groupBy = 'month';
+        dateFormat = { month: 'short', year: '2-digit' };
+        break;
+      default:
+        daysBack = 7;
+        groupBy = 'day';
+        dateFormat = { weekday: 'short', day: 'numeric' };
+    }
+
+    const startDate = daysBack ? new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000) : null;
+    const filteredBookings = startDate
+      ? bookings.filter(b => b.created_at && new Date(b.created_at) >= startDate)
+      : bookings;
+
+    if (groupBy === 'day') {
+      for (let i = daysBack - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayBookings = filteredBookings.filter(b => b.created_at?.startsWith(dateStr));
+        trends.push({
+          date: date.toLocaleDateString('en-GB', dateFormat),
+          bookings: dayBookings.length,
+          revenue: dayBookings.reduce((sum, b) => sum + getBookingRevenue(b), 0),
+        });
+      }
+    } else if (groupBy === 'week') {
+      const weeks = Math.ceil(daysBack / 7);
+      for (let i = weeks - 1; i >= 0; i--) {
+        const weekEnd = new Date();
+        weekEnd.setDate(weekEnd.getDate() - i * 7);
+        const weekStart = new Date(weekEnd);
+        weekStart.setDate(weekStart.getDate() - 6);
+        const weekBookings = filteredBookings.filter(b => {
+          const bookingDate = new Date(b.created_at);
+          return bookingDate >= weekStart && bookingDate <= weekEnd;
+        });
+        trends.push({
+          date: weekStart.toLocaleDateString('en-GB', dateFormat),
+          bookings: weekBookings.length,
+          revenue: weekBookings.reduce((sum, b) => sum + getBookingRevenue(b), 0),
+        });
+      }
+    } else if (groupBy === 'month') {
+      const monthsData = {};
+      filteredBookings.forEach(b => {
+        if (b.created_at) {
+          const date = new Date(b.created_at);
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          if (!monthsData[monthKey]) {
+            monthsData[monthKey] = { bookings: 0, revenue: 0, date: date };
+          }
+          monthsData[monthKey].bookings += 1;
+          monthsData[monthKey].revenue += getBookingRevenue(b);
+        }
+      });
+      Object.keys(monthsData)
+        .sort()
+        .forEach(key => {
+          trends.push({
+            date: monthsData[key].date.toLocaleDateString('en-GB', dateFormat),
+            bookings: monthsData[key].bookings,
+            revenue: monthsData[key].revenue,
+          });
+        });
+    }
+
+    return trends;
+  };
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // Build query params
-      const params = {};
+      // Build query params for rooms - use high page_size to get all rooms
+      const roomParams = { is_active: true, page_size: 1000 };
       if (selectedHotel && selectedHotel !== 'all') {
-        params.hotel_id = selectedHotel;
+        roomParams.hotel = selectedHotel;
       }
 
-      // Fetch dashboard summary
-      const summaryResult = await reportService.getDashboardSummary(params);
-      if (summaryResult.success) {
-        setDashboardData(summaryResult.data);
-      }
+      // Fetch rooms to get accurate count
+      const roomsResult = await roomService.getAll(roomParams);
+      const rooms = roomsResult.success
+        ? (roomsResult.data.results || roomsResult.data || [])
+        : [];
+      const totalRooms = rooms.length;
 
-      // Build booking query params
-      const bookingParams = { limit: 100 };
+      // Build booking query params - use high page_size to get all bookings
+      const bookingParams = { page_size: 1000 };
       if (selectedHotel && selectedHotel !== 'all') {
         bookingParams.hotel = selectedHotel;
       }
 
-      // Fetch recent bookings for trends
+      // Fetch all bookings for comprehensive stats
       const bookingsResult = await bookingService.getAll(bookingParams);
       if (bookingsResult.success) {
         const bookings = bookingsResult.data.results || bookingsResult.data || [];
         setRecentBookings(bookings.slice(0, 5));
 
-        // Calculate booking trends (last 7 days) based on check-in date
-        const last7Days = [];
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          const dateStr = date.toISOString().split('T')[0];
-          const dayBookings = bookings.filter(b =>
-            b.check_in_date === dateStr || b.created_at?.startsWith(dateStr)
-          );
-          last7Days.push({
-            date: date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' }),
-            bookings: dayBookings.length,
-            revenue: dayBookings.reduce((sum, b) => sum + parseFloat(b.total_price || 0), 0),
-          });
-        }
-        setBookingTrends(last7Days);
+        // Calculate stats from actual booking data
+        const today = new Date().toISOString().split('T')[0];
+
+        // Today's check-ins (bookings with check_in_date = today and status confirmed)
+        const todaysCheckins = bookings.filter(b =>
+          b.check_in_date === today && b.status === 'confirmed'
+        ).length;
+
+        // Today's check-outs (bookings with check_out_date = today and status checked_in)
+        const todaysCheckouts = bookings.filter(b =>
+          b.check_out_date === today && b.status === 'checked_in'
+        ).length;
+
+        // Currently checked in (occupied rooms)
+        const checkedInBookings = bookings.filter(b => b.status === 'checked_in');
+        const occupiedRooms = checkedInBookings.length;
+
+        // Total confirmed bookings (active bookings)
+        const confirmedBookings = bookings.filter(b =>
+          ['confirmed', 'checked_in'].includes(b.status)
+        ).length;
+
+        // Pending bookings
+        const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+
+        // All cancelled bookings
+        const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
+
+        // For monthly calculations
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        // Monthly revenue (bookings created this month)
+        const monthlyRevenue = bookings
+          .filter(b => b.created_at && new Date(b.created_at) >= startOfMonth)
+          .reduce((sum, b) => sum + getBookingRevenue(b), 0);
+
+        // Yearly revenue
+        const startOfYear = new Date();
+        startOfYear.setMonth(0, 1);
+        startOfYear.setHours(0, 0, 0, 0);
+        const yearlyRevenue = bookings
+          .filter(b => b.created_at && new Date(b.created_at) >= startOfYear)
+          .reduce((sum, b) => sum + getBookingRevenue(b), 0);
+
+        // Total revenue (all time)
+        const totalRevenue = bookings
+          .reduce((sum, b) => sum + getBookingRevenue(b), 0);
+
+        // Calculate occupancy rate
+        const occupancyRate = totalRooms > 0
+          ? Math.round((occupiedRooms / totalRooms) * 100)
+          : 0;
+
+        // Set dashboard data with calculated values
+        setDashboardData({
+          todays_checkins: todaysCheckins,
+          todays_checkouts: todaysCheckouts,
+          current_occupancy: {
+            occupied_rooms: occupiedRooms,
+            total_rooms: totalRooms,
+            occupancy_rate: occupancyRate,
+          },
+          monthly_revenue: monthlyRevenue,
+          yearly_revenue: yearlyRevenue,
+          total_revenue: totalRevenue,
+          pending_bookings: pendingBookings,
+          confirmed_bookings: confirmedBookings,
+          cancelled_bookings: cancelledBookings,
+          total_bookings: bookings.length,
+        });
+
+        // Store bookings for trend calculations and calculate initial trends
+        setAllBookings(bookings);
+        setBookingTrends(calculateTrends(trendPeriod, bookings));
 
         // Calculate status distribution
         const statusCounts = {};
@@ -247,6 +430,16 @@ const Dashboard = () => {
         }));
         setStatusDistribution(distribution);
       }
+
+      // Fetch service popularity data
+      const serviceParams = {};
+      if (selectedHotel && selectedHotel !== 'all') {
+        serviceParams.hotel_id = selectedHotel;
+      }
+      const serviceResult = await reportService.getServicePopularity(serviceParams);
+      if (serviceResult.success && serviceResult.data.data) {
+        setServicePopularity(serviceResult.data.data);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
@@ -257,8 +450,30 @@ const Dashboard = () => {
     fetchDashboardData();
   }, [selectedHotel]);
 
+  // Recalculate trends locally when period changes (no API call needed)
+  useEffect(() => {
+    if (allBookings.length > 0) {
+      setBookingTrends(calculateTrends(trendPeriod, allBookings));
+    }
+  }, [trendPeriod]);
+
   const handleHotelChange = (event) => {
     setSelectedHotel(event.target.value);
+  };
+
+  const handleTrendPeriodChange = (event, newPeriod) => {
+    if (newPeriod !== null) {
+      setTrendPeriod(newPeriod);
+    }
+  };
+
+  const trendPeriodLabels = {
+    '7d': 'Last 7 Days',
+    '1m': 'Last Month',
+    '3m': 'Last 3 Months',
+    '6m': 'Last 6 Months',
+    '1y': 'Last Year',
+    'all': 'All Time',
   };
 
   const selectedHotelName = selectedHotel === 'all'
@@ -384,19 +599,19 @@ const Dashboard = () => {
           ) : (
             <>
               <StatCard
-                title="Today's Check-ins"
-                value={dashboardData?.todays_checkins || 0}
-                subtitle="Guests arriving today"
-                icon={CheckInIcon}
-                color="#2e7d32"
-                onClick={() => navigate('/bookings?status=confirmed')}
+                title="Total Bookings"
+                value={dashboardData?.total_bookings || 0}
+                subtitle={`${dashboardData?.confirmed_bookings || 0} active bookings`}
+                icon={BookingIcon}
+                color="#1976d2"
+                onClick={() => navigate('/bookings')}
               />
               <StatCard
-                title="Today's Check-outs"
-                value={dashboardData?.todays_checkouts || 0}
-                subtitle="Guests leaving today"
-                icon={CheckOutIcon}
-                color="#1976d2"
+                title="Checked In"
+                value={occupancy.occupied_rooms || 0}
+                subtitle={`${dashboardData?.todays_checkins || 0} arriving today`}
+                icon={CheckInIcon}
+                color="#2e7d32"
                 onClick={() => navigate('/bookings?status=checked_in')}
               />
               <StatCard
@@ -407,9 +622,9 @@ const Dashboard = () => {
                 color="#9c27b0"
               />
               <StatCard
-                title="Monthly Revenue"
-                value={`£${(dashboardData?.monthly_revenue || 0).toLocaleString()}`}
-                subtitle={`YTD: £${(dashboardData?.yearly_revenue || 0).toLocaleString()}`}
+                title="Total Revenue"
+                value={`£${(dashboardData?.total_revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                subtitle={`This month: £${(dashboardData?.monthly_revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 icon={RevenueIcon}
                 color="#ed6c02"
                 onClick={() => navigate('/reports/revenue')}
@@ -422,25 +637,36 @@ const Dashboard = () => {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' },
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' },
             gap: 3,
             mb: 4,
           }}
         >
           {loading ? (
-            [...Array(3)].map((_, i) => (
+            [...Array(4)].map((_, i) => (
               <Skeleton key={i} variant="rounded" height={100} sx={{ borderRadius: 3 }} />
             ))
           ) : (
             <>
               <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
                 <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2.5 }}>
-                  <Avatar sx={{ bgcolor: alpha('#ed6c02', 0.1), color: '#ed6c02' }}>
-                    <PendingIcon />
+                  <Avatar sx={{ bgcolor: alpha('#1976d2', 0.1), color: '#1976d2' }}>
+                    <BookingIcon />
                   </Avatar>
                   <Box>
-                    <Typography variant="h5" fontWeight={700}>{dashboardData?.pending_bookings || 0}</Typography>
-                    <Typography variant="body2" color="text.secondary">Pending Bookings</Typography>
+                    <Typography variant="h5" fontWeight={700}>{dashboardData?.confirmed_bookings || 0}</Typography>
+                    <Typography variant="body2" color="text.secondary">Confirmed Bookings</Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+              <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+                <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2.5 }}>
+                  <Avatar sx={{ bgcolor: alpha('#9c27b0', 0.1), color: '#9c27b0' }}>
+                    <CheckOutIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" fontWeight={700}>{dashboardData?.todays_checkouts || 0}</Typography>
+                    <Typography variant="body2" color="text.secondary">Checking Out Today</Typography>
                   </Box>
                 </CardContent>
               </Card>
@@ -450,8 +676,8 @@ const Dashboard = () => {
                     <CancelIcon />
                   </Avatar>
                   <Box>
-                    <Typography variant="h5" fontWeight={700}>{dashboardData?.cancellations_this_month || 0}</Typography>
-                    <Typography variant="body2" color="text.secondary">Cancellations (This Month)</Typography>
+                    <Typography variant="h5" fontWeight={700}>{dashboardData?.cancelled_bookings || 0}</Typography>
+                    <Typography variant="body2" color="text.secondary">Cancellations</Typography>
                   </Box>
                 </CardContent>
               </Card>
@@ -489,9 +715,40 @@ const Dashboard = () => {
               borderColor: 'divider',
             }}
           >
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              Booking Trends (Last 7 Days)
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+              <Typography variant="h6" fontWeight={600}>
+                Booking Trends ({trendPeriodLabels[trendPeriod]})
+              </Typography>
+              <ToggleButtonGroup
+                value={trendPeriod}
+                exclusive
+                onChange={handleTrendPeriodChange}
+                size="small"
+                sx={{
+                  '& .MuiToggleButton-root': {
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: '0.75rem',
+                    textTransform: 'none',
+                    borderColor: 'divider',
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                      },
+                    },
+                  },
+                }}
+              >
+                <ToggleButton value="7d">7D</ToggleButton>
+                <ToggleButton value="1m">1M</ToggleButton>
+                <ToggleButton value="3m">3M</ToggleButton>
+                <ToggleButton value="6m">6M</ToggleButton>
+                <ToggleButton value="1y">1Y</ToggleButton>
+                <ToggleButton value="all">All</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
             <Box sx={{ height: 300 }}>
               {loading ? (
                 <Skeleton variant="rounded" height="100%" />
@@ -588,7 +845,7 @@ const Dashboard = () => {
           }}
         >
           <Typography variant="h6" fontWeight={600} gutterBottom>
-            Revenue Trends (Last 7 Days)
+            Revenue Trends ({trendPeriodLabels[trendPeriod]})
           </Typography>
           <Box sx={{ height: 250 }}>
             {loading ? (
@@ -608,6 +865,69 @@ const Dashboard = () => {
                     }}
                   />
                   <Bar dataKey="revenue" fill="#2e7d32" radius={[4, 4, 0, 0]} name="Revenue" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </Box>
+        </Paper>
+
+        {/* Service Popularity Chart */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            mb: 4,
+          }}
+        >
+          <Typography variant="h6" fontWeight={600} gutterBottom>
+            Most Popular Services
+          </Typography>
+          <Box sx={{ height: 250 }}>
+            {loading ? (
+              <Skeleton variant="rounded" height="100%" />
+            ) : servicePopularity.length === 0 ? (
+              <Box
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Typography color="text.secondary">
+                  No service data available yet
+                </Typography>
+              </Box>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={servicePopularity} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e0e0e0" />
+                  <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={120}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => {
+                      if (name === 'bookings') return [value, 'Bookings'];
+                      if (name === 'revenue') return [`£${value.toFixed(2)}`, 'Revenue'];
+                      return [value, name];
+                    }}
+                    contentStyle={{
+                      borderRadius: 8,
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="bookings" fill="#1976d2" radius={[0, 4, 4, 0]} name="Bookings" />
                 </BarChart>
               </ResponsiveContainer>
             )}
