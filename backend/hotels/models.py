@@ -251,27 +251,6 @@ class RoomAmenity(models.Model):
         return f"{self.room} - {self.amenity.name}"
 
 
-class RoomRate(models.Model):
-    """Pricing for room types (legacy - keeping for compatibility)"""
-    SEASON_CHOICES = [
-        ('off_peak', 'Off-Peak'),
-        ('peak', 'Peak Season'),
-    ]
-
-    room_type = models.ForeignKey(RoomType, on_delete=models.CASCADE, related_name='rates')
-    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='rates')
-    season_type = models.CharField(max_length=20, choices=SEASON_CHOICES)
-    price_per_night = models.DecimalField(max_digits=10, decimal_places=2)
-    valid_from = models.DateField()
-    valid_to = models.DateField()
-
-    class Meta:
-        ordering = ['hotel', 'room_type', 'valid_from']
-
-    def __str__(self):
-        return f"{self.room_type.name} - {self.hotel.name} - £{self.price_per_night} ({self.season_type})"
-
-
 class RoomTypePricing(models.Model):
     """Base pricing per room type category with off-peak and peak prices"""
     ROOM_TYPE_CHOICES = [
@@ -329,37 +308,6 @@ class RoomTypePricing(models.Model):
             )
 
 
-class ViewPricing(models.Model):
-    """Price modifiers based on room view"""
-    MODIFIER_TYPE_CHOICES = [
-        ('fixed', 'Fixed Amount'),
-        ('percentage', 'Percentage'),
-    ]
-
-    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='view_pricing')
-    view = models.ForeignKey(RoomView, on_delete=models.CASCADE, related_name='pricing')
-    modifier_type = models.CharField(max_length=20, choices=MODIFIER_TYPE_CHOICES)
-    modifier_value = models.DecimalField(max_digits=10, decimal_places=2)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ['hotel', 'view']
-        verbose_name_plural = 'view pricing'
-
-    def __str__(self):
-        modifier = f"+{self.modifier_value}%" if self.modifier_type == 'percentage' else f"+{self.modifier_value}"
-        return f"{self.view.name} ({modifier})"
-
-    def apply_modifier(self, base_price):
-        """Apply the modifier to a base price"""
-        if self.modifier_type == 'fixed':
-            return base_price + float(self.modifier_value)
-        # Percentage
-        return base_price * (1 + float(self.modifier_value) / 100)
-
-
 class SeasonalPricing(models.Model):
     """Date-range based season definitions (Peak/Off-Peak)"""
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='seasonal_pricing')
@@ -382,132 +330,6 @@ class SeasonalPricing(models.Model):
     def is_date_in_range(self, date):
         """Check if a date falls within this seasonal period"""
         return self.start_date <= date <= self.end_date
-
-
-class DayTypePricing(models.Model):
-    """Day-of-week pricing adjustments (weekday/weekend rates)"""
-    MODIFIER_TYPE_CHOICES = [
-        ('fixed', 'Fixed Amount'),
-        ('percentage', 'Percentage'),
-    ]
-
-    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='day_type_pricing')
-    day_type_name = models.CharField(max_length=100)  # Weekend, Weekday
-    applicable_days = models.JSONField()  # List of day numbers: 0=Mon, 6=Sun
-    modifier_type = models.CharField(max_length=20, choices=MODIFIER_TYPE_CHOICES)
-    modifier_value = models.DecimalField(max_digits=10, decimal_places=2)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['day_type_name']
-        verbose_name_plural = 'day type pricing'
-
-    def __str__(self):
-        return f"{self.day_type_name} - {self.hotel.name}"
-
-    def applies_to_date(self, date):
-        """Check if this day type applies to the given date"""
-        return date.weekday() in self.applicable_days
-
-    def apply_modifier(self, base_price):
-        """Apply the modifier to a base price"""
-        if self.modifier_type == 'fixed':
-            return base_price + float(self.modifier_value)
-        # Percentage
-        return base_price * (1 + float(self.modifier_value) / 100)
-
-
-class PromotionalDiscount(models.Model):
-    """Flexible promotional campaigns with multiple conditions"""
-    DISCOUNT_TYPE_CHOICES = [
-        ('fixed', 'Fixed Amount'),
-        ('percentage', 'Percentage'),
-    ]
-
-    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='promotional_discounts')
-    promotion_name = models.CharField(max_length=200)
-    promotion_description = models.TextField(blank=True)
-    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES)
-    discount_value = models.DecimalField(max_digits=10, decimal_places=2)
-
-    # Validity period
-    start_date = models.DateField(null=True, blank=True)
-    end_date = models.DateField(null=True, blank=True)
-
-    # Conditions
-    minimum_rooms = models.PositiveIntegerField(null=True, blank=True)
-    maximum_rooms = models.PositiveIntegerField(null=True, blank=True)
-    minimum_nights = models.PositiveIntegerField(null=True, blank=True)
-    maximum_nights = models.PositiveIntegerField(null=True, blank=True)
-    booking_advance_days = models.PositiveIntegerField(null=True, blank=True)  # Early bird
-    applicable_room_types = models.JSONField(null=True, blank=True)  # List of room types
-    promo_code = models.CharField(max_length=50, null=True, blank=True)
-
-    priority = models.PositiveIntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-priority', 'promotion_name']
-
-    def __str__(self):
-        return f"{self.promotion_name} - {self.hotel.name}"
-
-    def is_currently_valid(self):
-        """Check if this promotion is currently valid (date-wise)"""
-        from datetime import date
-        today = date.today()
-
-        if self.start_date and today < self.start_date:
-            return False
-        if self.end_date and today > self.end_date:
-            return False
-        return True
-
-    def applies_to(self, number_of_rooms, number_of_nights, room_type, check_in_date, booking_advance_days=None):
-        """Check if this promotion applies to a specific booking"""
-        if not self.is_active or not self.is_currently_valid():
-            return False
-
-        # Check room conditions
-        if self.minimum_rooms is not None and number_of_rooms < self.minimum_rooms:
-            return False
-        if self.maximum_rooms is not None and number_of_rooms > self.maximum_rooms:
-            return False
-
-        # Check night conditions
-        if self.minimum_nights is not None and number_of_nights < self.minimum_nights:
-            return False
-        if self.maximum_nights is not None and number_of_nights > self.maximum_nights:
-            return False
-
-        # Check room type restrictions
-        if self.applicable_room_types and room_type not in self.applicable_room_types:
-            return False
-
-        # Check booking advance days (early bird)
-        if self.booking_advance_days is not None and booking_advance_days is not None:
-            if booking_advance_days < self.booking_advance_days:
-                return False
-
-        return True
-
-    def apply_discount(self, total_price):
-        """Apply the discount to a total price"""
-        if self.discount_type == 'fixed':
-            return max(0, float(total_price) - float(self.discount_value))
-        # Percentage
-        return float(total_price) * (1 - float(self.discount_value) / 100)
-
-    def calculate_discount_amount(self, total_price):
-        """Calculate the discount amount"""
-        if self.discount_type == 'fixed':
-            return min(float(self.discount_value), float(total_price))
-        # Percentage
-        return float(total_price) * float(self.discount_value) / 100
 
 
 class HotelPolicy(models.Model):
@@ -593,35 +415,3 @@ class AncillaryService(models.Model):
             return base_price * quantity
 
 
-class LateCheckoutRequest(models.Model):
-    """Late checkout management"""
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('cancelled', 'Cancelled'),
-    ]
-
-    booking = models.ForeignKey('bookings.Booking', on_delete=models.CASCADE, related_name='late_checkout_requests')
-    requested_checkout_time = models.TimeField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    guest_notes = models.TextField(blank=True)
-    reviewed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='reviewed_late_checkouts'
-    )
-    reviewed_at = models.DateTimeField(null=True, blank=True)
-    manager_notes = models.TextField(blank=True)
-    has_next_booking = models.BooleanField(default=False)
-    next_booking_info = models.JSONField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f"Late checkout request - {self.booking} - {self.status}"

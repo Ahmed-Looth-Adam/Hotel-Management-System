@@ -6,29 +6,25 @@ from django.shortcuts import get_object_or_404
 from datetime import date
 
 from .models import (
-    Hotel, Room, RoomType, RoomView, RoomRate,
+    Hotel, Room, RoomType, RoomView,
     AmenityCategory, Amenity, RoomAmenity,
-    RoomTypePricing, ViewPricing, SeasonalPricing, DayTypePricing,
-    PromotionalDiscount, HotelPolicy, Gallery, GalleryImage,
-    LateCheckoutRequest, AncillaryService
+    RoomTypePricing, SeasonalPricing, HotelPolicy, Gallery, GalleryImage,
+    AncillaryService
 )
 from .serializers import (
     HotelSerializer, HotelListSerializer, HotelDetailSerializer,
     RoomSerializer, RoomListSerializer, RoomDetailSerializer,
-    RoomTypeSerializer, RoomViewSerializer, RoomRateSerializer,
+    RoomTypeSerializer, RoomViewSerializer,
     AmenityCategorySerializer, AmenitySerializer, RoomAmenitySerializer,
-    RoomTypePricingSerializer, ViewPricingSerializer,
-    SeasonalPricingSerializer, DayTypePricingSerializer,
-    PromotionalDiscountSerializer, HotelPolicySerializer,
+    RoomTypePricingSerializer, SeasonalPricingSerializer, HotelPolicySerializer,
     GallerySerializer, GalleryImageSerializer,
-    LateCheckoutRequestSerializer, LateCheckoutRequestCreateSerializer,
     PricingCalculationRequestSerializer, RoomAvailabilityRequestSerializer,
     AncillaryServiceSerializer
 )
 from .permissions import (
     IsStaffOrReadOnly, IsHotelManager, HotelObjectPermission
 )
-from .services import PricingCalculator, BookingService, LateCheckoutService
+from .services import PricingCalculator, BookingService
 from .pagination import FlexiblePageNumberPagination
 
 
@@ -187,20 +183,6 @@ class RoomTypePricingViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class ViewPricingViewSet(viewsets.ModelViewSet):
-    """ViewSet for View Pricing"""
-    queryset = ViewPricing.objects.all()
-    serializer_class = ViewPricingSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
-
-    def get_queryset(self):
-        queryset = ViewPricing.objects.select_related('view')
-        hotel_id = self.request.query_params.get('hotel')
-        if hotel_id:
-            queryset = queryset.filter(hotel_id=hotel_id)
-        return queryset
-
-
 class SeasonalPricingViewSet(viewsets.ModelViewSet):
     """ViewSet for Seasonal Pricing"""
     queryset = SeasonalPricing.objects.all()
@@ -213,44 +195,6 @@ class SeasonalPricingViewSet(viewsets.ModelViewSet):
         if hotel_id:
             queryset = queryset.filter(hotel_id=hotel_id)
         return queryset
-
-
-class DayTypePricingViewSet(viewsets.ModelViewSet):
-    """ViewSet for Day Type Pricing"""
-    queryset = DayTypePricing.objects.all()
-    serializer_class = DayTypePricingSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
-
-    def get_queryset(self):
-        queryset = DayTypePricing.objects.all()
-        hotel_id = self.request.query_params.get('hotel')
-        if hotel_id:
-            queryset = queryset.filter(hotel_id=hotel_id)
-        return queryset
-
-
-class PromotionalDiscountViewSet(viewsets.ModelViewSet):
-    """ViewSet for Promotional Discounts"""
-    queryset = PromotionalDiscount.objects.all()
-    serializer_class = PromotionalDiscountSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
-
-    def get_queryset(self):
-        queryset = PromotionalDiscount.objects.all()
-        hotel_id = self.request.query_params.get('hotel')
-        if hotel_id:
-            queryset = queryset.filter(hotel_id=hotel_id)
-        is_active = self.request.query_params.get('is_active')
-        if is_active is not None:
-            queryset = queryset.filter(is_active=is_active.lower() == 'true')
-        return queryset
-
-
-class RoomRateViewSet(viewsets.ModelViewSet):
-    """ViewSet for Room Rates (legacy)"""
-    queryset = RoomRate.objects.all()
-    serializer_class = RoomRateSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsStaffOrReadOnly]
 
 
 # ============== Policy ViewSets ==============
@@ -363,85 +307,6 @@ class GalleryImageViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-# ============== Late Checkout ViewSets ==============
-
-class LateCheckoutRequestViewSet(viewsets.ModelViewSet):
-    """ViewSet for Late Checkout Requests"""
-    queryset = LateCheckoutRequest.objects.all()
-    serializer_class = LateCheckoutRequestSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        queryset = LateCheckoutRequest.objects.select_related(
-            'booking', 'booking__user', 'booking__room', 'reviewed_by'
-        )
-
-        # Filter by hotel
-        hotel_id = self.request.query_params.get('hotel')
-        if hotel_id:
-            queryset = queryset.filter(booking__hotel_id=hotel_id)
-
-        # Filter by status
-        status_filter = self.request.query_params.get('status')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-
-        return queryset
-
-    def create(self, request, *args, **kwargs):
-        serializer = LateCheckoutRequestCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        from bookings.models import Booking
-        booking = get_object_or_404(Booking, id=serializer.validated_data['booking_id'])
-
-        service = LateCheckoutService()
-        try:
-            result = service.create_request(
-                booking=booking,
-                requested_time=serializer.validated_data['requested_checkout_time'],
-                guest_notes=serializer.validated_data.get('guest_notes', '')
-            )
-            return Response(
-                LateCheckoutRequestSerializer(result['request']).data,
-                status=status.HTTP_201_CREATED
-            )
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=['post'])
-    def approve(self, request, pk=None):
-        """Approve a late checkout request"""
-        late_checkout = self.get_object()
-        service = LateCheckoutService()
-
-        try:
-            service.approve(
-                request=late_checkout,
-                staff_user=request.user,
-                manager_notes=request.data.get('notes', '')
-            )
-            return Response({'message': 'Late checkout approved'})
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=['post'])
-    def reject(self, request, pk=None):
-        """Reject a late checkout request"""
-        late_checkout = self.get_object()
-        service = LateCheckoutService()
-
-        try:
-            service.reject(
-                request=late_checkout,
-                staff_user=request.user,
-                reason=request.data.get('reason', '')
-            )
-            return Response({'message': 'Late checkout rejected'})
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
 # ============== Custom API Views ==============
 
 class PricingCalculationView(APIView):
@@ -459,8 +324,7 @@ class PricingCalculationView(APIView):
             pricing = calculator.calculate_room_price(
                 room=room,
                 check_in=serializer.validated_data['check_in'],
-                check_out=serializer.validated_data['check_out'],
-                promo_code=serializer.validated_data.get('promo_code')
+                check_out=serializer.validated_data['check_out']
             )
             return Response(pricing)
         except ValueError as e:
@@ -513,10 +377,6 @@ class OperationsDashboardView(APIView):
         checkouts = service.get_today_checkouts(hotel)
         occupancy = service.get_current_occupancy(hotel)
 
-        # Get pending late checkout requests
-        late_checkout_service = LateCheckoutService()
-        pending_late_checkouts = late_checkout_service.get_pending_requests(hotel)
-
         from bookings.serializers import BookingListSerializer
 
         return Response({
@@ -530,10 +390,6 @@ class OperationsDashboardView(APIView):
             'today_checkouts': {
                 'count': len(checkouts),
                 'bookings': BookingListSerializer(checkouts, many=True).data
-            },
-            'pending_late_checkouts': {
-                'count': pending_late_checkouts.count(),
-                'requests': LateCheckoutRequestSerializer(pending_late_checkouts, many=True).data
             }
         })
 

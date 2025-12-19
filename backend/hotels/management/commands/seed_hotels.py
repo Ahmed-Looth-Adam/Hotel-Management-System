@@ -13,10 +13,9 @@ from datetime import date, timedelta
 import random
 
 from hotels.models import (
-    Hotel, Room, RoomType, RoomTypePricing, RoomView, ViewPricing,
-    SeasonalPricing, DayTypePricing, AncillaryService, HotelPolicy,
-    AmenityCategory, Amenity, RoomAmenity, Gallery, GalleryImage,
-    RoomRate, PromotionalDiscount, LateCheckoutRequest
+    Hotel, Room, RoomType, RoomTypePricing, RoomView,
+    SeasonalPricing, AncillaryService, HotelPolicy,
+    AmenityCategory, Amenity, RoomAmenity, Gallery, GalleryImage
 )
 
 
@@ -53,9 +52,8 @@ class Command(BaseCommand):
             for hotel in hotels:
                 self.create_rooms(hotel, room_types)
                 self.create_room_type_pricing(hotel)
-                self.create_room_views_and_pricing(hotel)
+                self.create_room_views(hotel)
                 self.create_seasonal_pricing(hotel)
-                self.create_day_type_pricing(hotel)
                 self.create_ancillary_services(hotel)
                 self.create_hotel_policies(hotel)
                 self.create_amenities(hotel)
@@ -68,18 +66,13 @@ class Command(BaseCommand):
         self.stdout.write('Clearing existing hotel data...')
 
         # Clear in order to respect foreign key constraints
-        LateCheckoutRequest.objects.all().delete()
         RoomAmenity.objects.all().delete()
         GalleryImage.objects.all().delete()
         Gallery.objects.all().delete()
         Amenity.objects.all().delete()
         AmenityCategory.objects.all().delete()
-        PromotionalDiscount.objects.all().delete()
-        DayTypePricing.objects.all().delete()
         SeasonalPricing.objects.all().delete()
-        ViewPricing.objects.all().delete()
         RoomView.objects.all().delete()
-        RoomRate.objects.all().delete()
         RoomTypePricing.objects.all().delete()
         AncillaryService.objects.all().delete()
         HotelPolicy.objects.all().delete()
@@ -259,34 +252,25 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f'  ✓ Created room type pricing for {hotel.name}'))
 
-    def create_room_views_and_pricing(self, hotel):
-        """Create room views with price modifiers"""
+    def create_room_views(self, hotel):
+        """Create room views"""
         views_data = [
-            ('City View', 'Standard city view from the room', 'percentage', 0),
-            ('Garden View', 'Peaceful garden view', 'percentage', 5),
-            ('Pool View', 'Overlooks the swimming pool area', 'percentage', 10),
-            ('Sea View', 'Beautiful ocean/sea view', 'percentage', 15),
-            ('Panoramic View', 'Premium panoramic view of the surroundings', 'percentage', 20),
+            ('City View', 'Standard city view from the room'),
+            ('Garden View', 'Peaceful garden view'),
+            ('Pool View', 'Overlooks the swimming pool area'),
+            ('Sea View', 'Beautiful ocean/sea view'),
+            ('Panoramic View', 'Premium panoramic view of the surroundings'),
         ]
 
-        for name, description, modifier_type, modifier_value in views_data:
-            view = RoomView.objects.create(
+        for name, description in views_data:
+            RoomView.objects.create(
                 hotel=hotel,
                 name=name,
                 description=description,
                 is_active=True,
             )
 
-            if modifier_value > 0:
-                ViewPricing.objects.create(
-                    hotel=hotel,
-                    view=view,
-                    modifier_type=modifier_type,
-                    modifier_value=modifier_value,
-                    is_active=True,
-                )
-
-        self.stdout.write(self.style.SUCCESS(f'  ✓ Created room views and pricing for {hotel.name}'))
+        self.stdout.write(self.style.SUCCESS(f'  ✓ Created room views for {hotel.name}'))
 
     def create_seasonal_pricing(self, hotel):
         """Create seasonal pricing periods"""
@@ -315,20 +299,6 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(self.style.SUCCESS(f'  ✓ Created seasonal pricing for {hotel.name}'))
-
-    def create_day_type_pricing(self, hotel):
-        """Create day-of-week pricing (weekend surcharge)"""
-        # Weekend surcharge (Friday, Saturday, Sunday)
-        DayTypePricing.objects.create(
-            hotel=hotel,
-            day_type_name='Weekend',
-            applicable_days=[4, 5, 6],  # Friday=4, Saturday=5, Sunday=6
-            modifier_type='percentage',
-            modifier_value=10,  # 10% weekend surcharge
-            is_active=True,
-        )
-
-        self.stdout.write(self.style.SUCCESS(f'  ✓ Created day type pricing for {hotel.name}'))
 
     def create_ancillary_services(self, hotel):
         """Create ancillary services based on documentation"""
@@ -585,9 +555,9 @@ Contact our concierge team for any special arrangements.''',
         self.stdout.write(f'\nRoom Types: {RoomType.objects.count()}')
         self.stdout.write(f'Total Rooms: {Room.objects.count()}')
         self.stdout.write(f'Room Type Pricing Entries: {RoomTypePricing.objects.count()}')
+        self.stdout.write(f'Seasonal Pricing Entries: {SeasonalPricing.objects.count()}')
         self.stdout.write(f'Ancillary Services: {AncillaryService.objects.count()}')
         self.stdout.write(f'Hotel Policies: {HotelPolicy.objects.count()}')
-        self.stdout.write(f'Seasonal Pricing Entries: {SeasonalPricing.objects.count()}')
         self.stdout.write(f'Amenity Categories: {AmenityCategory.objects.count()}')
         self.stdout.write(f'Amenities: {Amenity.objects.count()}')
 

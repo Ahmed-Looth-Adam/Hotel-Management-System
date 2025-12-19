@@ -15,9 +15,9 @@ import random
 
 from authentication.models import User
 from hotels.models import (
-    Hotel, Room, RoomType, RoomView, RoomRate,
+    Hotel, Room, RoomType, RoomView,
     AmenityCategory, Amenity, RoomAmenity,
-    RoomTypePricing, ViewPricing, SeasonalPricing,
+    RoomTypePricing, SeasonalPricing,
     HotelPolicy, AncillaryService
 )
 from bookings.models import Booking
@@ -70,7 +70,6 @@ class Command(BaseCommand):
         RoomType.objects.all().delete()
         AncillaryService.objects.all().delete()
         RoomTypePricing.objects.all().delete()
-        ViewPricing.objects.all().delete()
         SeasonalPricing.objects.all().delete()
         HotelPolicy.objects.all().delete()
         Hotel.objects.all().delete()
@@ -425,38 +424,30 @@ class Command(BaseCommand):
         """Create pricing configurations"""
         self.stdout.write('Creating pricing configurations...')
 
-        # Room type pricing
+        # Room type pricing (from documentation)
         room_type_prices = {
-            'standard': Decimal('100.00'),
-            'deluxe': Decimal('180.00'),
-            'suite': Decimal('320.00'),
+            'standard': {'off_peak': Decimal('120.00'), 'peak': Decimal('180.00')},
+            'deluxe': {'off_peak': Decimal('180.00'), 'peak': Decimal('250.00')},
+            'suite': {'off_peak': Decimal('240.00'), 'peak': Decimal('320.00')},
         }
 
         for hotel in self.hotels:
-            for room_type, price in room_type_prices.items():
+            for room_type, prices in room_type_prices.items():
                 RoomTypePricing.objects.get_or_create(
                     hotel=hotel,
                     room_type=room_type,
-                    defaults={'base_price': price, 'is_active': True}
-                )
-
-            # View pricing modifiers
-            for view in RoomView.objects.filter(hotel=hotel):
-                ViewPricing.objects.get_or_create(
-                    hotel=hotel,
-                    view=view,
                     defaults={
-                        'modifier_type': 'percentage',
-                        'modifier_value': Decimal(str(random.randint(5, 25))),
-                        'is_active': True,
+                        'off_peak_price': prices['off_peak'],
+                        'peak_price': prices['peak'],
+                        'is_active': True
                     }
                 )
 
-            # Seasonal pricing
+            # Seasonal pricing (peak periods)
             seasons = [
-                {'season_name': 'Peak Summer', 'start_date': date(2025, 6, 1), 'end_date': date(2025, 8, 31), 'modifier_value': Decimal('30.00')},
-                {'season_name': 'Christmas', 'start_date': date(2025, 12, 20), 'end_date': date(2026, 1, 5), 'modifier_value': Decimal('50.00')},
-                {'season_name': 'Easter', 'start_date': date(2025, 4, 10), 'end_date': date(2025, 4, 25), 'modifier_value': Decimal('20.00')},
+                {'season_name': 'Peak Summer', 'start_date': date(2025, 6, 1), 'end_date': date(2025, 8, 31), 'is_peak': True},
+                {'season_name': 'Christmas', 'start_date': date(2025, 12, 20), 'end_date': date(2026, 1, 5), 'is_peak': True},
+                {'season_name': 'Easter', 'start_date': date(2025, 4, 10), 'end_date': date(2025, 4, 25), 'is_peak': True},
             ]
 
             for season in seasons:
@@ -466,8 +457,7 @@ class Command(BaseCommand):
                     defaults={
                         'start_date': season['start_date'],
                         'end_date': season['end_date'],
-                        'modifier_type': 'percentage',
-                        'modifier_value': season['modifier_value'],
+                        'is_peak_season': season['is_peak'],
                         'is_active': True,
                     }
                 )
