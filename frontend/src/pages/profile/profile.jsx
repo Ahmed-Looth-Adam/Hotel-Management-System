@@ -34,6 +34,7 @@ import {
   ExpandMore,
   ExpandLess,
   Shield as ShieldIcon,
+  ArrowBack,
 } from '@mui/icons-material';
 import { ProfileSchema, PasswordChangeSchema } from './validationSchema';
 import authService from '../../services/authService';
@@ -495,13 +496,31 @@ const Profile = () => {
     <Box sx={{ minHeight: '100vh', bgcolor: '#FAFAFA' }}>
       <Hero initialCollapsed hideBottomNav />
 
-      <Container maxWidth="lg" sx={{ py: 5 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 5 }, px: { xs: 2, sm: 3 } }}>
         {/* Page Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography sx={{ fontSize: '32px', fontWeight: 700, color: '#222222', mb: 1 }}>
-            Account Settings
-          </Typography>
-          <Typography sx={{ fontSize: '16px', color: '#717171' }}>
+        <Box sx={{ mb: { xs: 2, sm: 4 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, mb: 0.5 }}>
+            <Box
+              onClick={() => navigate(-1)}
+              sx={{
+                width: { xs: 32, sm: 40 },
+                height: { xs: 32, sm: 40 },
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+              }}
+            >
+              <ArrowBack sx={{ fontSize: { xs: 20, sm: 24 }, color: '#222222' }} />
+            </Box>
+            <Typography sx={{ fontSize: { xs: '22px', sm: '32px' }, fontWeight: 700, color: '#222222' }}>
+              Account Settings
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: { xs: '13px', sm: '16px' }, color: '#717171', ml: { xs: '40px', sm: '56px' } }}>
             Manage your personal information and security settings
           </Typography>
         </Box>
@@ -517,28 +536,28 @@ const Profile = () => {
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', lg: 'row' } }}>
+        <Box sx={{ display: 'flex', gap: { xs: 2, sm: 4 }, flexDirection: { xs: 'column', lg: 'row' } }}>
           {/* Left Column - Profile Card */}
           <Box sx={{ width: { xs: '100%', lg: 320 }, flexShrink: 0 }}>
             {/* Profile Picture Card */}
             <Box
               sx={{
                 bgcolor: '#FFFFFF',
-                borderRadius: '16px',
+                borderRadius: { xs: '12px', sm: '16px' },
                 border: '1px solid #EBEBEB',
-                p: 4,
-                mb: 3,
+                p: { xs: 2.5, sm: 4 },
+                mb: { xs: 2, sm: 3 },
                 textAlign: 'center',
               }}
             >
               {/* Avatar */}
-              <Box sx={{ position: 'relative', display: 'inline-block', mb: 3 }}>
+              <Box sx={{ position: 'relative', display: 'inline-block', mb: { xs: 2, sm: 3 } }}>
                 <Avatar
                   src={previewUrl}
                   sx={{
-                    width: 120,
-                    height: 120,
-                    fontSize: '2.5rem',
+                    width: { xs: 90, sm: 120 },
+                    height: { xs: 90, sm: 120 },
+                    fontSize: { xs: '2rem', sm: '2.5rem' },
                     fontWeight: 600,
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     border: '4px solid #FFFFFF',
@@ -556,15 +575,15 @@ const Profile = () => {
                     right: 0,
                     bgcolor: '#FFFFFF',
                     border: '2px solid #EBEBEB',
-                    width: 36,
-                    height: 36,
+                    width: { xs: 30, sm: 36 },
+                    height: { xs: 30, sm: 36 },
                     '&:hover': { bgcolor: '#F7F7F7' },
                   }}
                 >
                   {uploadingPicture ? (
-                    <CircularProgress size={18} sx={{ color: '#667eea' }} />
+                    <CircularProgress size={16} sx={{ color: '#667eea' }} />
                   ) : (
-                    <PhotoCamera sx={{ fontSize: 18, color: '#667eea' }} />
+                    <PhotoCamera sx={{ fontSize: { xs: 16, sm: 18 }, color: '#667eea' }} />
                   )}
                 </IconButton>
                 <input
@@ -577,7 +596,7 @@ const Profile = () => {
               </Box>
 
               {/* Name */}
-              <Typography sx={{ fontSize: '22px', fontWeight: 600, color: '#222222', mb: 0.5 }}>
+              <Typography sx={{ fontSize: { xs: '18px', sm: '22px' }, fontWeight: 600, color: '#222222', mb: 0.5 }}>
                 {user?.first_name || ''} {user?.last_name || ''}
               </Typography>
 
@@ -592,8 +611,8 @@ const Profile = () => {
                       error={!!usernameError}
                       helperText={usernameError}
                       sx={{
-                        width: 150,
-                        '& .MuiOutlinedInput-root': { borderRadius: '8px' }
+                        width: { xs: 120, sm: 150 },
+                        '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: { xs: '13px', sm: '14px' } }
                       }}
                       autoFocus
                     />
@@ -603,19 +622,19 @@ const Profile = () => {
                       disabled={savingUsername}
                       sx={{ color: '#008A05' }}
                     >
-                      {savingUsername ? <CircularProgress size={18} /> : <CheckIcon fontSize="small" />}
+                      {savingUsername ? <CircularProgress size={16} /> : <CheckIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
                     </IconButton>
                     <IconButton
                       size="small"
                       onClick={() => { setEditingUsername(false); setNewUsername(user?.username || ''); setUsernameError(''); }}
                       sx={{ color: '#717171' }}
                     >
-                      <CloseIcon fontSize="small" />
+                      <CloseIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                     </IconButton>
                   </Box>
                 ) : (
                   <>
-                    <Typography sx={{ fontSize: '15px', color: '#717171' }}>
+                    <Typography sx={{ fontSize: { xs: '13px', sm: '15px' }, color: '#717171' }}>
                       @{user?.username}
                     </Typography>
                     <IconButton
@@ -623,13 +642,13 @@ const Profile = () => {
                       onClick={() => setEditingUsername(true)}
                       sx={{ color: '#717171', '&:hover': { color: '#667eea' } }}
                     >
-                      <EditIcon sx={{ fontSize: 16 }} />
+                      <EditIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
                     </IconButton>
                   </>
                 )}
               </Box>
               {usernameSuccess && (
-                <Typography sx={{ fontSize: '13px', color: '#008A05', mb: 1 }}>
+                <Typography sx={{ fontSize: { xs: '12px', sm: '13px' }, color: '#008A05', mb: 1 }}>
                   {usernameSuccess}
                 </Typography>
               )}
@@ -638,45 +657,45 @@ const Profile = () => {
               <Box
                 sx={{
                   display: 'inline-block',
-                  px: 2,
+                  px: { xs: 1.5, sm: 2 },
                   py: 0.5,
                   borderRadius: '20px',
                   background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
                   border: '1px solid rgba(102, 126, 234, 0.2)',
                 }}
               >
-                <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#667eea', textTransform: 'capitalize' }}>
+                <Typography sx={{ fontSize: { xs: '12px', sm: '13px' }, fontWeight: 600, color: '#667eea', textTransform: 'capitalize' }}>
                   {user?.role || 'Guest'}
                 </Typography>
               </Box>
 
-              <Divider sx={{ my: 3 }} />
+              <Divider sx={{ my: { xs: 2, sm: 3 } }} />
 
               {/* Quick Info */}
               <Box sx={{ textAlign: 'left' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                  <EmailIcon sx={{ fontSize: 20, color: '#717171' }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, mb: { xs: 1.5, sm: 2 } }}>
+                  <EmailIcon sx={{ fontSize: { xs: 18, sm: 20 }, color: '#717171' }} />
                   <Box>
-                    <Typography sx={{ fontSize: '12px', color: '#717171' }}>Email</Typography>
-                    <Typography sx={{ fontSize: '14px', color: '#222222', fontWeight: 500 }}>
+                    <Typography sx={{ fontSize: { xs: '11px', sm: '12px' }, color: '#717171' }}>Email</Typography>
+                    <Typography sx={{ fontSize: { xs: '13px', sm: '14px' }, color: '#222222', fontWeight: 500 }}>
                       {user?.email || 'Not set'}
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                  <PhoneIcon sx={{ fontSize: 20, color: '#717171' }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, mb: { xs: 1.5, sm: 2 } }}>
+                  <PhoneIcon sx={{ fontSize: { xs: 18, sm: 20 }, color: '#717171' }} />
                   <Box>
-                    <Typography sx={{ fontSize: '12px', color: '#717171' }}>Phone</Typography>
-                    <Typography sx={{ fontSize: '14px', color: '#222222', fontWeight: 500 }}>
+                    <Typography sx={{ fontSize: { xs: '11px', sm: '12px' }, color: '#717171' }}>Phone</Typography>
+                    <Typography sx={{ fontSize: { xs: '13px', sm: '14px' }, color: '#222222', fontWeight: 500 }}>
                       {user?.phone_number || 'Not set'}
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <CalendarIcon sx={{ fontSize: 20, color: '#717171' }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
+                  <CalendarIcon sx={{ fontSize: { xs: 18, sm: 20 }, color: '#717171' }} />
                   <Box>
-                    <Typography sx={{ fontSize: '12px', color: '#717171' }}>Member since</Typography>
-                    <Typography sx={{ fontSize: '14px', color: '#222222', fontWeight: 500 }}>
+                    <Typography sx={{ fontSize: { xs: '11px', sm: '12px' }, color: '#717171' }}>Member since</Typography>
+                    <Typography sx={{ fontSize: { xs: '13px', sm: '14px' }, color: '#222222', fontWeight: 500 }}>
                       {formatDate(user?.created_at)}
                     </Typography>
                   </Box>
@@ -691,100 +710,105 @@ const Profile = () => {
             <Box
               sx={{
                 bgcolor: '#FFFFFF',
-                borderRadius: '16px',
+                borderRadius: { xs: '12px', sm: '16px' },
                 border: '1px solid #EBEBEB',
-                p: 4,
-                mb: 3,
+                p: { xs: 2, sm: 4 },
+                mb: { xs: 2, sm: 3 },
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, mb: { xs: 2, sm: 3 } }}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '12px',
+                    width: { xs: 36, sm: 44 },
+                    height: { xs: 36, sm: 44 },
+                    borderRadius: { xs: '10px', sm: '12px' },
                     background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <PersonIcon sx={{ color: '#667eea', fontSize: 24 }} />
+                  <PersonIcon sx={{ color: '#667eea', fontSize: { xs: 20, sm: 24 } }} />
                 </Box>
                 <Box>
-                  <Typography sx={{ fontSize: '20px', fontWeight: 600, color: '#222222' }}>
+                  <Typography sx={{ fontSize: { xs: '16px', sm: '20px' }, fontWeight: 600, color: '#222222' }}>
                     Personal Information
                   </Typography>
-                  <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+                  <Typography sx={{ fontSize: { xs: '12px', sm: '14px' }, color: '#717171' }}>
                     Update your personal details
                   </Typography>
                 </Box>
               </Box>
 
               <Box component="form" onSubmit={profileFormik.handleSubmit}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: { xs: 2, sm: 2.5 } }}>
                   <TextField
                     fullWidth
                     label="First Name"
                     name="name"
+                    size="small"
                     value={profileFormik.values.name}
                     onChange={profileFormik.handleChange}
                     onBlur={profileFormik.handleBlur}
                     error={profileFormik.touched.name && Boolean(profileFormik.errors.name)}
                     helperText={profileFormik.touched.name && profileFormik.errors.name}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start"><PersonIcon sx={{ color: '#717171', fontSize: 20 }} /></InputAdornment>,
+                      startAdornment: <InputAdornment position="start"><PersonIcon sx={{ color: '#717171', fontSize: { xs: 18, sm: 20 } }} /></InputAdornment>,
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                   />
                   <TextField
                     fullWidth
                     label="Last Name"
                     name="lastName"
+                    size="small"
                     value={profileFormik.values.lastName}
                     onChange={profileFormik.handleChange}
                     onBlur={profileFormik.handleBlur}
                     error={profileFormik.touched.lastName && Boolean(profileFormik.errors.lastName)}
                     helperText={profileFormik.touched.lastName && profileFormik.errors.lastName}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start"><PersonIcon sx={{ color: '#717171', fontSize: 20 }} /></InputAdornment>,
+                      startAdornment: <InputAdornment position="start"><PersonIcon sx={{ color: '#717171', fontSize: { xs: 18, sm: 20 } }} /></InputAdornment>,
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                   />
                   <TextField
                     fullWidth
                     label="Email"
                     name="email"
                     type="email"
+                    size="small"
                     value={profileFormik.values.email}
                     onChange={profileFormik.handleChange}
                     onBlur={profileFormik.handleBlur}
                     error={profileFormik.touched.email && Boolean(profileFormik.errors.email)}
                     helperText={profileFormik.touched.email && profileFormik.errors.email}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: '#717171', fontSize: 20 }} /></InputAdornment>,
+                      startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: '#717171', fontSize: { xs: 18, sm: 20 } }} /></InputAdornment>,
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                   />
                   <TextField
                     fullWidth
                     label="Phone Number"
                     name="phone_number"
+                    size="small"
                     value={profileFormik.values.phone_number}
                     onChange={profileFormik.handleChange}
                     onBlur={profileFormik.handleBlur}
                     error={profileFormik.touched.phone_number && Boolean(profileFormik.errors.phone_number)}
                     helperText={profileFormik.touched.phone_number && profileFormik.errors.phone_number}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start"><PhoneIcon sx={{ color: '#717171', fontSize: 20 }} /></InputAdornment>,
+                      startAdornment: <InputAdornment position="start"><PhoneIcon sx={{ color: '#717171', fontSize: { xs: 18, sm: 20 } }} /></InputAdornment>,
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                   />
                   <TextField
                     fullWidth
                     label="Date of Birth"
                     name="date_of_birth"
                     type="date"
+                    size="small"
                     value={profileFormik.values.date_of_birth}
                     onChange={profileFormik.handleChange}
                     onBlur={profileFormik.handleBlur}
@@ -792,13 +816,14 @@ const Profile = () => {
                     helperText={profileFormik.touched.date_of_birth && profileFormik.errors.date_of_birth}
                     InputLabelProps={{ shrink: true }}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start"><CalendarIcon sx={{ color: '#717171', fontSize: 20 }} /></InputAdornment>,
+                      startAdornment: <InputAdornment position="start"><CalendarIcon sx={{ color: '#717171', fontSize: { xs: 18, sm: 20 } }} /></InputAdornment>,
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                   />
                   <Autocomplete
                     freeSolo
                     options={COUNTRIES}
+                    size="small"
                     getOptionLabel={(option) => {
                       if (typeof option === 'string') return option;
                       return option.name;
@@ -816,8 +841,8 @@ const Profile = () => {
                       }
                     }}
                     renderOption={(props, option) => (
-                      <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <span style={{ fontSize: '20px' }}>{option.flag}</span>
+                      <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontSize: { xs: '13px', sm: '14px' } }}>
+                        <span style={{ fontSize: '18px' }}>{option.flag}</span>
                         <span>{option.name}</span>
                       </Box>
                     )}
@@ -836,16 +861,16 @@ const Profile = () => {
                             <>
                               <InputAdornment position="start">
                                 {COUNTRIES.find(c => c.name === profileFormik.values.country)?.flag ? (
-                                  <span style={{ fontSize: '20px' }}>{COUNTRIES.find(c => c.name === profileFormik.values.country)?.flag}</span>
+                                  <span style={{ fontSize: '18px' }}>{COUNTRIES.find(c => c.name === profileFormik.values.country)?.flag}</span>
                                 ) : (
-                                  <LocationIcon sx={{ color: '#717171', fontSize: 20 }} />
+                                  <LocationIcon sx={{ color: '#717171', fontSize: { xs: 18, sm: 20 } }} />
                                 )}
                               </InputAdornment>
                               {params.InputProps.startAdornment}
                             </>
                           ),
                         }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                       />
                     )}
                   />
@@ -855,6 +880,7 @@ const Profile = () => {
                   fullWidth
                   label="Address"
                   name="address"
+                  size="small"
                   value={profileFormik.values.address}
                   onChange={profileFormik.handleChange}
                   onBlur={profileFormik.handleBlur}
@@ -862,47 +888,49 @@ const Profile = () => {
                   helperText={profileFormik.touched.address && profileFormik.errors.address}
                   multiline
                   rows={2}
-                  sx={{ mt: 2.5, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                  sx={{ mt: { xs: 2, sm: 2.5 }, '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                 />
 
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, mt: 2.5 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: { xs: 2, sm: 2.5 }, mt: { xs: 2, sm: 2.5 } }}>
                   <TextField
                     fullWidth
                     label="City"
                     name="city"
+                    size="small"
                     value={profileFormik.values.city}
                     onChange={profileFormik.handleChange}
                     onBlur={profileFormik.handleBlur}
                     error={profileFormik.touched.city && Boolean(profileFormik.errors.city)}
                     helperText={profileFormik.touched.city && profileFormik.errors.city}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                   />
                   <TextField
                     fullWidth
                     label="Postal Code"
                     name="postal_code"
+                    size="small"
                     value={profileFormik.values.postal_code}
                     onChange={profileFormik.handleChange}
                     onBlur={profileFormik.handleBlur}
                     error={profileFormik.touched.postal_code && Boolean(profileFormik.errors.postal_code)}
                     helperText={profileFormik.touched.postal_code && profileFormik.errors.postal_code}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                   />
                 </Box>
 
-                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                <Box sx={{ mt: { xs: 2, sm: 3 }, display: 'flex', justifyContent: 'flex-end' }}>
                   <Button
                     type="submit"
                     variant="contained"
                     disabled={profileFormik.isSubmitting || !profileFormik.dirty}
                     sx={{
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      borderRadius: '12px',
-                      px: 4,
-                      py: 1.5,
+                      borderRadius: { xs: '10px', sm: '12px' },
+                      px: { xs: 3, sm: 4 },
+                      py: { xs: 1, sm: 1.5 },
                       textTransform: 'none',
                       fontWeight: 600,
-                      fontSize: '15px',
+                      fontSize: { xs: '13px', sm: '15px' },
                       boxShadow: '0 4px 14px rgba(102, 126, 234, 0.35)',
                       '&:hover': {
                         background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)',
@@ -914,7 +942,7 @@ const Profile = () => {
                     }}
                   >
                     {profileFormik.isSubmitting ? (
-                      <CircularProgress size={22} sx={{ color: '#FFFFFF' }} />
+                      <CircularProgress size={20} sx={{ color: '#FFFFFF' }} />
                     ) : (
                       'Save Changes'
                     )}
@@ -927,7 +955,7 @@ const Profile = () => {
             <Box
               sx={{
                 bgcolor: '#FFFFFF',
-                borderRadius: '16px',
+                borderRadius: { xs: '12px', sm: '16px' },
                 border: '1px solid #EBEBEB',
                 overflow: 'hidden',
               }}
@@ -936,7 +964,7 @@ const Profile = () => {
               <Box
                 onClick={() => setShowPasswordSection(!showPasswordSection)}
                 sx={{
-                  p: 4,
+                  p: { xs: 2, sm: 4 },
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -945,45 +973,45 @@ const Profile = () => {
                   '&:hover': { bgcolor: '#F7F7F7' },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
                   <Box
                     sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: '12px',
+                      width: { xs: 36, sm: 44 },
+                      height: { xs: 36, sm: 44 },
+                      borderRadius: { xs: '10px', sm: '12px' },
                       background: 'linear-gradient(135deg, rgba(0, 138, 5, 0.1) 0%, rgba(0, 138, 5, 0.05) 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <ShieldIcon sx={{ color: '#008A05', fontSize: 24 }} />
+                    <ShieldIcon sx={{ color: '#008A05', fontSize: { xs: 20, sm: 24 } }} />
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '20px', fontWeight: 600, color: '#222222' }}>
+                    <Typography sx={{ fontSize: { xs: '16px', sm: '20px' }, fontWeight: 600, color: '#222222' }}>
                       Password & Security
                     </Typography>
-                    <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+                    <Typography sx={{ fontSize: { xs: '12px', sm: '14px' }, color: '#717171' }}>
                       Keep your account secure by updating your password
                     </Typography>
                   </Box>
                 </Box>
                 {showPasswordSection ? (
-                  <ExpandLess sx={{ color: '#717171' }} />
+                  <ExpandLess sx={{ color: '#717171', fontSize: { xs: 22, sm: 24 } }} />
                 ) : (
-                  <ExpandMore sx={{ color: '#717171' }} />
+                  <ExpandMore sx={{ color: '#717171', fontSize: { xs: 22, sm: 24 } }} />
                 )}
               </Box>
 
               {/* Collapsible Content */}
               <Collapse in={showPasswordSection}>
-                <Box sx={{ px: 4, pb: 4 }}>
-                  <Divider sx={{ mb: 3 }} />
+                <Box sx={{ px: { xs: 2, sm: 4 }, pb: { xs: 2, sm: 4 } }}>
+                  <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
 
                   {(passwordError || passwordSuccess) && (
                     <Alert
                       severity={passwordError ? "error" : "success"}
-                      sx={{ mb: 3, borderRadius: '12px' }}
+                      sx={{ mb: { xs: 2, sm: 3 }, borderRadius: { xs: '10px', sm: '12px' } }}
                       onClose={() => { setPasswordError(''); setPasswordSuccess(''); }}
                     >
                       {passwordError || passwordSuccess}
@@ -991,11 +1019,12 @@ const Profile = () => {
                   )}
 
                   <Box component="form" onSubmit={passwordFormik.handleSubmit}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, sm: 2.5 } }}>
                       <TextField
                         fullWidth
                         label="Current Password"
                         name="current_password"
+                        size="small"
                         type={showCurrentPassword ? 'text' : 'password'}
                         value={passwordFormik.values.current_password}
                         onChange={passwordFormik.handleChange}
@@ -1003,21 +1032,22 @@ const Profile = () => {
                         error={passwordFormik.touched.current_password && Boolean(passwordFormik.errors.current_password)}
                         helperText={passwordFormik.touched.current_password && passwordFormik.errors.current_password}
                         InputProps={{
-                          startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#717171', fontSize: 20 }} /></InputAdornment>,
+                          startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#717171', fontSize: { xs: 18, sm: 20 } }} /></InputAdornment>,
                           endAdornment: (
                             <InputAdornment position="end">
                               <IconButton onClick={() => setShowCurrentPassword(!showCurrentPassword)} edge="end" size="small">
-                                {showCurrentPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                                {showCurrentPassword ? <VisibilityOff sx={{ fontSize: { xs: 18, sm: 20 } }} /> : <Visibility sx={{ fontSize: { xs: 18, sm: 20 } }} />}
                               </IconButton>
                             </InputAdornment>
                           ),
                         }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                       />
                       <TextField
                         fullWidth
                         label="New Password"
                         name="new_password"
+                        size="small"
                         type={showNewPassword ? 'text' : 'password'}
                         value={passwordFormik.values.new_password}
                         onChange={passwordFormik.handleChange}
@@ -1025,21 +1055,22 @@ const Profile = () => {
                         error={passwordFormik.touched.new_password && Boolean(passwordFormik.errors.new_password)}
                         helperText={passwordFormik.touched.new_password && passwordFormik.errors.new_password}
                         InputProps={{
-                          startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#717171', fontSize: 20 }} /></InputAdornment>,
+                          startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#717171', fontSize: { xs: 18, sm: 20 } }} /></InputAdornment>,
                           endAdornment: (
                             <InputAdornment position="end">
                               <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge="end" size="small">
-                                {showNewPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                                {showNewPassword ? <VisibilityOff sx={{ fontSize: { xs: 18, sm: 20 } }} /> : <Visibility sx={{ fontSize: { xs: 18, sm: 20 } }} />}
                               </IconButton>
                             </InputAdornment>
                           ),
                         }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                       />
                       <TextField
                         fullWidth
                         label="Confirm New Password"
                         name="confirm_new_password"
+                        size="small"
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={passwordFormik.values.confirm_new_password}
                         onChange={passwordFormik.handleChange}
@@ -1047,32 +1078,32 @@ const Profile = () => {
                         error={passwordFormik.touched.confirm_new_password && Boolean(passwordFormik.errors.confirm_new_password)}
                         helperText={passwordFormik.touched.confirm_new_password && passwordFormik.errors.confirm_new_password}
                         InputProps={{
-                          startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#717171', fontSize: 20 }} /></InputAdornment>,
+                          startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#717171', fontSize: { xs: 18, sm: 20 } }} /></InputAdornment>,
                           endAdornment: (
                             <InputAdornment position="end">
                               <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end" size="small">
-                                {showConfirmPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                                {showConfirmPassword ? <VisibilityOff sx={{ fontSize: { xs: 18, sm: 20 } }} /> : <Visibility sx={{ fontSize: { xs: 18, sm: 20 } }} />}
                               </IconButton>
                             </InputAdornment>
                           ),
                         }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: { xs: '10px', sm: '12px' } } }}
                       />
                     </Box>
 
-                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Box sx={{ mt: { xs: 2, sm: 3 }, display: 'flex', justifyContent: 'flex-end' }}>
                       <Button
                         type="submit"
                         variant="contained"
                         disabled={passwordFormik.isSubmitting || !passwordFormik.dirty}
                         sx={{
                           bgcolor: '#222222',
-                          borderRadius: '12px',
-                          px: 4,
-                          py: 1.5,
+                          borderRadius: { xs: '10px', sm: '12px' },
+                          px: { xs: 3, sm: 4 },
+                          py: { xs: 1, sm: 1.5 },
                           textTransform: 'none',
                           fontWeight: 600,
-                          fontSize: '15px',
+                          fontSize: { xs: '13px', sm: '15px' },
                           '&:hover': { bgcolor: '#000000' },
                           '&.Mui-disabled': {
                             background: '#DDDDDD',
@@ -1081,7 +1112,7 @@ const Profile = () => {
                         }}
                       >
                         {passwordFormik.isSubmitting ? (
-                          <CircularProgress size={22} sx={{ color: '#FFFFFF' }} />
+                          <CircularProgress size={20} sx={{ color: '#FFFFFF' }} />
                         ) : (
                           'Update Password'
                         )}

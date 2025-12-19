@@ -176,14 +176,14 @@ const MyBookings = () => {
     <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
       <Hero initialCollapsed hideBottomNav />
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 4 }, px: { xs: 2, sm: 3 } }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, mb: { xs: 2, sm: 4 } }}>
           <Box
             onClick={() => navigate('/')}
             sx={{
-              width: 36,
-              height: 36,
+              width: { xs: 32, sm: 36 },
+              height: { xs: 32, sm: 36 },
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -193,27 +193,28 @@ const MyBookings = () => {
               '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
             }}
           >
-            <ArrowBack sx={{ fontSize: 22, color: '#222222' }} />
+            <ArrowBack sx={{ fontSize: { xs: 18, sm: 22 }, color: '#222222' }} />
           </Box>
-          <Typography sx={{ fontSize: { xs: '24px', md: '32px' }, fontWeight: 700, color: '#222222' }}>
+          <Typography sx={{ fontSize: { xs: '18px', sm: '24px', md: '32px' }, fontWeight: 700, color: '#222222' }}>
             My Bookings
           </Typography>
         </Box>
 
         {/* Tabs */}
-        <Box sx={{ display: 'flex', gap: 1, mb: 4 }}>
+        <Box sx={{ display: 'flex', gap: { xs: 0.5, sm: 1 }, mb: { xs: 2, sm: 4 }, overflowX: 'auto' }}>
           {tabs.map((tab) => (
             <Box
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               sx={{
-                px: 3,
-                py: 1.5,
+                px: { xs: 2, sm: 3 },
+                py: { xs: 1, sm: 1.5 },
                 borderRadius: '100px',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 bgcolor: activeTab === tab.id ? '#667eea' : 'transparent',
                 border: activeTab === tab.id ? 'none' : '1px solid #DDDDDD',
+                flexShrink: 0,
                 '&:hover': {
                   bgcolor: activeTab === tab.id ? '#667eea' : '#F7F7F7',
                 },
@@ -221,7 +222,7 @@ const MyBookings = () => {
             >
               <Typography
                 sx={{
-                  fontSize: '14px',
+                  fontSize: { xs: '12px', sm: '14px' },
                   fontWeight: 600,
                   color: activeTab === tab.id ? '#FFFFFF' : '#222222',
                 }}
@@ -236,17 +237,17 @@ const MyBookings = () => {
         {filteredBookings.length === 0 ? (
           <Box
             sx={{
-              py: 8,
+              py: { xs: 4, sm: 8 },
               textAlign: 'center',
               bgcolor: '#F7F7F7',
-              borderRadius: '16px',
+              borderRadius: { xs: '12px', sm: '16px' },
             }}
           >
-            <LuggageOutlined sx={{ fontSize: 64, color: '#DDDDDD', mb: 2 }} />
-            <Typography sx={{ fontSize: '20px', fontWeight: 600, color: '#222222', mb: 1 }}>
+            <LuggageOutlined sx={{ fontSize: { xs: 48, sm: 64 }, color: '#DDDDDD', mb: 2 }} />
+            <Typography sx={{ fontSize: { xs: '16px', sm: '20px' }, fontWeight: 600, color: '#222222', mb: 1 }}>
               No {activeTab} bookings
             </Typography>
-            <Typography sx={{ fontSize: '15px', color: '#717171', mb: 3 }}>
+            <Typography sx={{ fontSize: { xs: '13px', sm: '15px' }, color: '#717171', mb: 3 }}>
               {activeTab === 'upcoming' ? "You don't have any upcoming trips" :
                activeTab === 'current' ? "You're not currently checked in anywhere" :
                "You haven't completed any trips yet"}
@@ -260,8 +261,9 @@ const MyBookings = () => {
                   borderRadius: '10px',
                   textTransform: 'none',
                   fontWeight: 600,
-                  px: 4,
-                  py: 1.2,
+                  px: { xs: 3, sm: 4 },
+                  py: { xs: 1, sm: 1.2 },
+                  fontSize: { xs: '13px', sm: '14px' },
                 }}
               >
                 Start exploring
@@ -269,7 +271,7 @@ const MyBookings = () => {
             )}
           </Box>
         ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, sm: 3 } }}>
             {filteredBookings.map((booking) => {
               const status = statusConfig[booking.status] || statusConfig.pending;
               const nights = calculateNights(booking.check_in_date, booking.check_out_date);
@@ -279,7 +281,7 @@ const MyBookings = () => {
                   key={booking.id}
                   onClick={() => navigate(`/guest/rooms/${booking.room}`)}
                   sx={{
-                    borderRadius: '16px',
+                    borderRadius: { xs: '12px', sm: '16px' },
                     border: '1px solid #EBEBEB',
                     overflow: 'hidden',
                     transition: 'all 0.2s',
@@ -295,35 +297,35 @@ const MyBookings = () => {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      px: 3,
-                      py: 1.5,
+                      px: { xs: 2, sm: 3 },
+                      py: { xs: 1, sm: 1.5 },
                       bgcolor: status.bgColor,
                       borderBottom: '1px solid #EBEBEB',
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      {booking.status === 'confirmed' && <CheckCircle sx={{ fontSize: 18, color: status.color }} />}
-                      {booking.status === 'pending' && <Schedule sx={{ fontSize: 18, color: status.color }} />}
-                      {booking.status === 'checked_in' && <HotelIcon sx={{ fontSize: 18, color: status.color }} />}
-                      {['cancelled', 'no_show'].includes(booking.status) && <Cancel sx={{ fontSize: 18, color: status.color }} />}
-                      <Typography sx={{ fontSize: '14px', fontWeight: 600, color: status.color }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
+                      {booking.status === 'confirmed' && <CheckCircle sx={{ fontSize: { xs: 14, sm: 18 }, color: status.color }} />}
+                      {booking.status === 'pending' && <Schedule sx={{ fontSize: { xs: 14, sm: 18 }, color: status.color }} />}
+                      {booking.status === 'checked_in' && <HotelIcon sx={{ fontSize: { xs: 14, sm: 18 }, color: status.color }} />}
+                      {['cancelled', 'no_show'].includes(booking.status) && <Cancel sx={{ fontSize: { xs: 14, sm: 18 }, color: status.color }} />}
+                      <Typography sx={{ fontSize: { xs: '12px', sm: '14px' }, fontWeight: 600, color: status.color }}>
                         {status.label}
                       </Typography>
                     </Box>
-                    <Typography sx={{ fontSize: '13px', color: '#717171' }}>
+                    <Typography sx={{ fontSize: { xs: '11px', sm: '13px' }, color: '#717171' }}>
                       Ref: {booking.booking_reference}
                     </Typography>
                   </Box>
 
                   {/* Card Body */}
-                  <Box sx={{ p: 2 }}>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
+                    <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 2 }, flexDirection: { xs: 'column', sm: 'row' } }}>
                       {/* Room/Hotel Image */}
                       <Box
                         sx={{
-                          width: 140,
-                          height: 140,
-                          borderRadius: '12px',
+                          width: { xs: '100%', sm: 140 },
+                          height: { xs: 120, sm: 140 },
+                          borderRadius: { xs: '10px', sm: '12px' },
                           flexShrink: 0,
                           overflow: 'hidden',
                           bgcolor: '#F7F7F7',
@@ -351,7 +353,7 @@ const MyBookings = () => {
                               justifyContent: 'center',
                             }}
                           >
-                            <HotelIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.8)' }} />
+                            <HotelIcon sx={{ fontSize: { xs: 36, sm: 48 }, color: 'rgba(255,255,255,0.8)' }} />
                           </Box>
                         )}
                       </Box>
@@ -360,47 +362,81 @@ const MyBookings = () => {
                       <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         {/* Top: Hotel name, location, room type */}
                         <Box>
-                          <Typography sx={{ fontSize: '20px', fontWeight: 700, color: '#222222', mb: 0.5 }}>
-                            {booking.hotel_name || 'Hotel'}
-                          </Typography>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: { xs: 0.5, sm: 0.5 } }}>
+                            <Typography sx={{ fontSize: { xs: '15px', sm: '20px' }, fontWeight: 700, color: '#222222' }}>
+                              {booking.hotel_name || 'Hotel'}
+                            </Typography>
+                            {/* Price - shown inline on mobile */}
+                            <Box sx={{ display: { xs: 'block', sm: 'none' }, textAlign: 'right' }}>
+                              <Typography sx={{ fontSize: '11px', color: '#717171' }}>Total</Typography>
+                              <Typography sx={{ fontSize: '16px', fontWeight: 700, color: '#222222' }}>
+                                £{parseFloat(booking.total_price || 0).toFixed(0)}
+                              </Typography>
+                            </Box>
+                          </Box>
 
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                            <LocationOn sx={{ fontSize: 16, color: '#717171' }} />
-                            <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: { xs: 0.5, sm: 1 } }}>
+                            <LocationOn sx={{ fontSize: { xs: 14, sm: 16 }, color: '#717171' }} />
+                            <Typography sx={{ fontSize: { xs: '12px', sm: '14px' }, color: '#717171' }}>
                               {booking.hotel_city}{booking.hotel_country && `, ${booking.hotel_country}`}
                             </Typography>
                           </Box>
 
-                          <Typography sx={{ fontSize: '15px', fontWeight: 600, color: '#222222' }}>
+                          <Typography sx={{ fontSize: { xs: '13px', sm: '15px' }, fontWeight: 600, color: '#222222' }}>
                             {booking.room_type_label || booking.room_type_requested || 'Standard'}
                           </Typography>
                         </Box>
 
                         {/* Bottom: Check-in/out details */}
-                        <Box sx={{ display: 'flex', gap: 4, mt: 2 }}>
+                        <Box sx={{ display: 'flex', gap: { xs: 2, sm: 4 }, mt: { xs: 1, sm: 2 }, flexWrap: 'wrap' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <CalendarMonth sx={{ fontSize: 18, color: '#717171' }} />
+                            <CalendarMonth sx={{ fontSize: { xs: 16, sm: 18 }, color: '#717171' }} />
                             <Box>
-                              <Typography sx={{ fontSize: '13px', color: '#717171' }}>
-                                {formatDate(booking.check_in_date)} → {formatDate(booking.check_out_date)}
+                              <Typography sx={{ fontSize: { xs: '11px', sm: '13px' }, color: '#717171' }}>
+                                {formatDateShort(booking.check_in_date)} → {formatDateShort(booking.check_out_date)}
                               </Typography>
-                              <Typography sx={{ fontSize: '12px', color: '#222222', fontWeight: 500 }}>
+                              <Typography sx={{ fontSize: { xs: '11px', sm: '12px' }, color: '#222222', fontWeight: 500 }}>
                                 {nights} night{nights !== 1 ? 's' : ''}
                               </Typography>
                             </Box>
                           </Box>
 
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <People sx={{ fontSize: 18, color: '#717171' }} />
-                            <Typography sx={{ fontSize: '13px', color: '#222222', fontWeight: 500 }}>
+                            <People sx={{ fontSize: { xs: 16, sm: 18 }, color: '#717171' }} />
+                            <Typography sx={{ fontSize: { xs: '11px', sm: '13px' }, color: '#222222', fontWeight: 500 }}>
                               {booking.guests_count} guest{booking.guests_count !== 1 ? 's' : ''}
                             </Typography>
                           </Box>
+
+                          {/* Cancel button - shown inline on mobile, pushed to right */}
+                          {['pending', 'confirmed'].includes(booking.status) && (
+                            <Button
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCancelDialog({ open: true, booking });
+                              }}
+                              sx={{
+                                display: { xs: 'inline-flex', sm: 'none' },
+                                ml: 'auto',
+                                color: '#EF4444',
+                                textTransform: 'none',
+                                fontSize: '11px',
+                                fontWeight: 500,
+                                px: 0,
+                                py: 0,
+                                minWidth: 'auto',
+                                '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          )}
                         </Box>
                       </Box>
 
-                      {/* Price & Actions */}
-                      <Box sx={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                      {/* Price & Actions - Desktop only */}
+                      <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                         <Box>
                           <Typography sx={{ fontSize: '12px', color: '#717171', mb: 0.5 }}>Total</Typography>
                           <Typography sx={{ fontSize: '24px', fontWeight: 700, color: '#222222' }}>
@@ -444,68 +480,69 @@ const MyBookings = () => {
           onClose={() => setCancelDialog({ open: false, booking: null })}
           maxWidth="sm"
           fullWidth
-          PaperProps={{ sx: { borderRadius: '16px', overflow: 'hidden' } }}
+          PaperProps={{ sx: { borderRadius: { xs: '12px', sm: '16px' }, overflow: 'hidden', mx: { xs: 2, sm: 3 } } }}
         >
           <Box
             sx={{
               bgcolor: '#222222',
-              px: 3,
-              py: 2.5,
+              px: { xs: 2, sm: 3 },
+              py: { xs: 2, sm: 2.5 },
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
-            <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#FFFFFF' }}>
+            <Typography sx={{ fontSize: { xs: '16px', sm: '18px' }, fontWeight: 600, color: '#FFFFFF' }}>
               Cancel booking
             </Typography>
             <IconButton
               onClick={() => setCancelDialog({ open: false, booking: null })}
               sx={{ color: '#FFFFFF', p: 0.5 }}
+              size="small"
             >
-              <CloseIcon />
+              <CloseIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
             </IconButton>
           </Box>
 
-          <DialogContent sx={{ p: 3 }}>
+          <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
             {cancellationInfo && (
               <Alert
                 severity={cancellationInfo.type === 'free' ? 'success' : cancellationInfo.type === 'partial' ? 'warning' : 'error'}
-                sx={{ mb: 3, borderRadius: '10px' }}
+                sx={{ mb: { xs: 2, sm: 3 }, borderRadius: '10px' }}
               >
-                <Typography sx={{ fontSize: '14px', fontWeight: 600 }}>
+                <Typography sx={{ fontSize: { xs: '12px', sm: '14px' }, fontWeight: 600 }}>
                   Cancellation fee: {cancellationInfo.type === 'free' ? 'None' : `£${cancellationInfo.fee.toFixed(2)}`}
                 </Typography>
-                <Typography sx={{ fontSize: '13px' }}>
+                <Typography sx={{ fontSize: { xs: '11px', sm: '13px' } }}>
                   {cancellationInfo.description}
                 </Typography>
               </Alert>
             )}
 
             {cancelDialog.booking && (
-              <Box sx={{ mb: 3, p: 2.5, bgcolor: '#F7F7F7', borderRadius: '12px' }}>
-                <Typography sx={{ fontSize: '16px', fontWeight: 600, color: '#222222', mb: 0.5 }}>
+              <Box sx={{ mb: { xs: 2, sm: 3 }, p: { xs: 2, sm: 2.5 }, bgcolor: '#F7F7F7', borderRadius: { xs: '10px', sm: '12px' } }}>
+                <Typography sx={{ fontSize: { xs: '14px', sm: '16px' }, fontWeight: 600, color: '#222222', mb: 0.5 }}>
                   {cancelDialog.booking.hotel_name}
                 </Typography>
-                <Typography sx={{ fontSize: '13px', color: '#717171', mb: 1 }}>
+                <Typography sx={{ fontSize: { xs: '12px', sm: '13px' }, color: '#717171', mb: 1 }}>
                   {cancelDialog.booking.hotel_city}{cancelDialog.booking.hotel_country && `, ${cancelDialog.booking.hotel_country}`}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: { xs: 2, sm: 3 }, flexWrap: 'wrap' }}>
                   <Box>
-                    <Typography sx={{ fontSize: '11px', color: '#717171', textTransform: 'uppercase' }}>Room</Typography>
-                    <Typography sx={{ fontSize: '13px', fontWeight: 500, color: '#222222' }}>
+                    <Typography sx={{ fontSize: { xs: '10px', sm: '11px' }, color: '#717171', textTransform: 'uppercase' }}>Room</Typography>
+                    <Typography sx={{ fontSize: { xs: '12px', sm: '13px' }, fontWeight: 500, color: '#222222' }}>
                       {cancelDialog.booking.room_type_label || cancelDialog.booking.room_type_requested || 'Standard'}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '11px', color: '#717171', textTransform: 'uppercase' }}>Dates</Typography>
-                    <Typography sx={{ fontSize: '13px', fontWeight: 500, color: '#222222' }}>
-                      {formatDate(cancelDialog.booking.check_in_date)} - {formatDate(cancelDialog.booking.check_out_date)}
+                    <Typography sx={{ fontSize: { xs: '10px', sm: '11px' }, color: '#717171', textTransform: 'uppercase' }}>Dates</Typography>
+                    <Typography sx={{ fontSize: { xs: '12px', sm: '13px' }, fontWeight: 500, color: '#222222' }}>
+                      {formatDateShort(cancelDialog.booking.check_in_date)} - {formatDateShort(cancelDialog.booking.check_out_date)}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '11px', color: '#717171', textTransform: 'uppercase' }}>Total</Typography>
-                    <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#222222' }}>
+                    <Typography sx={{ fontSize: { xs: '10px', sm: '11px' }, color: '#717171', textTransform: 'uppercase' }}>Total</Typography>
+                    <Typography sx={{ fontSize: { xs: '12px', sm: '13px' }, fontWeight: 600, color: '#222222' }}>
                       £{parseFloat(cancelDialog.booking.total_price || 0).toFixed(2)}
                     </Typography>
                   </Box>
@@ -513,7 +550,7 @@ const MyBookings = () => {
               </Box>
             )}
 
-            <Typography sx={{ fontSize: '15px', color: '#222222', mb: 2 }}>
+            <Typography sx={{ fontSize: { xs: '13px', sm: '15px' }, color: '#222222', mb: 2 }}>
               Are you sure you want to cancel this booking?
             </Typography>
 
@@ -524,18 +561,20 @@ const MyBookings = () => {
               rows={3}
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+              size="small"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', fontSize: { xs: '13px', sm: '14px' } } }}
             />
           </DialogContent>
 
-          <DialogActions sx={{ px: 3, py: 2.5, borderTop: '1px solid #EBEBEB' }}>
+          <DialogActions sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 2.5 }, borderTop: '1px solid #EBEBEB', gap: 1 }}>
             <Button
               onClick={() => setCancelDialog({ open: false, booking: null })}
               sx={{
                 borderRadius: '10px',
                 textTransform: 'none',
-                px: 3,
-                py: 1,
+                px: { xs: 2, sm: 3 },
+                py: { xs: 0.75, sm: 1 },
+                fontSize: { xs: '13px', sm: '14px' },
                 color: '#222222',
                 border: '1px solid #222222',
                 '&:hover': { bgcolor: '#F7F7F7' },
@@ -550,8 +589,9 @@ const MyBookings = () => {
               sx={{
                 borderRadius: '10px',
                 textTransform: 'none',
-                px: 3,
-                py: 1,
+                px: { xs: 2, sm: 3 },
+                py: { xs: 0.75, sm: 1 },
+                fontSize: { xs: '13px', sm: '14px' },
                 fontWeight: 600,
                 bgcolor: '#EF4444',
                 '&:hover': { bgcolor: '#DC2626' },

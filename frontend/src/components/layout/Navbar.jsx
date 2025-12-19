@@ -88,21 +88,23 @@ const Navbar = () => {
                 </IconButton>
               )}
 
-              <Typography
-                variant="h5"
-                noWrap
+              <Box
                 component={Link}
                 to="/"
                 sx={{
-                  fontWeight: 800,
-                  color: '#ff385c', // Keep slight brand color or use black
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
                   textDecoration: 'none',
-                  letterSpacing: '-0.5px'
                 }}
               >
-                <Box component="span" sx={{ color: 'primary.main' }}>hotel</Box>
-                <Box component="span" sx={{ color: 'primary.main', fontWeight: 400 }}>mgmt</Box>
-              </Typography>
+                <Box
+                  component="img"
+                  src="/logo.png"
+                  alt="LuxeStayHotels"
+                  sx={{ width: 100, height: 60, borderRadius: '10px' }}
+                />
+              </Box>
             </Box>
 
             {/* Center: Links (Desktop) */}

@@ -114,11 +114,11 @@ const RoomTypeCard = ({ roomType, hotel, availableCount, onClick }) => {
       <Box
         sx={{
           position: 'relative',
-          borderRadius: '12px',
+          borderRadius: { xs: '10px', sm: '12px' },
           overflow: 'hidden',
           aspectRatio: '20/19',
           bgcolor: '#F7F7F7',
-          mb: 1.5,
+          mb: { xs: 1, sm: 1.5 },
         }}
       >
         {images.length > 0 ? (
@@ -236,7 +236,7 @@ const RoomTypeCard = ({ roomType, hotel, availableCount, onClick }) => {
           <Typography
             sx={{
               fontWeight: 600,
-              fontSize: '15px',
+              fontSize: { xs: '13px', sm: '15px' },
               color: '#222222',
               lineHeight: 1.3,
               overflow: 'hidden',
@@ -249,8 +249,8 @@ const RoomTypeCard = ({ roomType, hotel, availableCount, onClick }) => {
             {typeInfo.label}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <StarIcon sx={{ fontSize: 14, color: '#222222' }} />
-            <Typography sx={{ fontSize: '14px', color: '#222222', fontWeight: 500 }}>
+            <StarIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: '#222222' }} />
+            <Typography sx={{ fontSize: { xs: '12px', sm: '14px' }, color: '#222222', fontWeight: 500 }}>
               {hotel?.star_rating || 4}.0
             </Typography>
           </Box>
@@ -258,7 +258,7 @@ const RoomTypeCard = ({ roomType, hotel, availableCount, onClick }) => {
 
         <Typography
           sx={{
-            fontSize: '14px',
+            fontSize: { xs: '12px', sm: '14px' },
             color: '#717171',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -269,23 +269,23 @@ const RoomTypeCard = ({ roomType, hotel, availableCount, onClick }) => {
           {hotel?.name || 'Hotel'}
         </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, mb: 0.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Person sx={{ fontSize: 14, color: '#717171' }} />
-            <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+            <Person sx={{ fontSize: { xs: 12, sm: 14 }, color: '#717171' }} />
+            <Typography sx={{ fontSize: { xs: '11px', sm: '14px' }, color: '#717171' }}>
               {typeInfo.capacity} guests
             </Typography>
           </Box>
-          <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+          <Typography sx={{ fontSize: { xs: '11px', sm: '14px' }, color: '#717171' }}>
             {availableCount} available
           </Typography>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-          <Typography sx={{ fontWeight: 600, fontSize: '15px', color: '#222222' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: { xs: '13px', sm: '15px' }, color: '#222222' }}>
             £{typeInfo.price}
           </Typography>
-          <Typography sx={{ fontSize: '15px', color: '#222222' }}>
+          <Typography sx={{ fontSize: { xs: '13px', sm: '15px' }, color: '#222222' }}>
             night
           </Typography>
         </Box>
@@ -299,15 +299,15 @@ const LoadingSkeleton = () => (
     <Skeleton
       variant="rounded"
       sx={{
-        borderRadius: '12px',
+        borderRadius: { xs: '10px', sm: '12px' },
         aspectRatio: '20/19',
-        mb: 1.5,
+        mb: { xs: 1, sm: 1.5 },
       }}
     />
-    <Skeleton variant="text" width="70%" height={20} />
-    <Skeleton variant="text" width="50%" height={18} />
-    <Skeleton variant="text" width="40%" height={18} />
-    <Skeleton variant="text" width="30%" height={20} />
+    <Skeleton variant="text" width="70%" sx={{ height: { xs: 16, sm: 20 } }} />
+    <Skeleton variant="text" width="50%" sx={{ height: { xs: 14, sm: 18 } }} />
+    <Skeleton variant="text" width="40%" sx={{ height: { xs: 14, sm: 18 } }} />
+    <Skeleton variant="text" width="30%" sx={{ height: { xs: 16, sm: 20 } }} />
   </Box>
 );
 
@@ -678,9 +678,9 @@ const BrowseRooms = () => {
   // Responsive padding
   const containerSx = { px: { xs: 2, sm: 3, md: 5, lg: 10, xl: 12 } };
 
-  // Responsive grid columns
+  // Responsive grid columns - 2 cards on mobile
   const gridColumns = {
-    xs: 'repeat(1, 1fr)',
+    xs: 'repeat(2, 1fr)',
     sm: 'repeat(2, 1fr)',
     md: 'repeat(3, 1fr)',
     lg: 'repeat(4, 1fr)',
@@ -691,14 +691,14 @@ const BrowseRooms = () => {
     return (
       <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
         <Hero initialCollapsed hideBottomNav />
-        <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
+        <Container maxWidth={false} sx={{ py: { xs: 2, sm: 4 }, ...containerSx }}>
           <Skeleton variant="text" width={300} height={40} sx={{ mb: 1 }} />
           <Skeleton variant="text" width={200} height={24} sx={{ mb: 4 }} />
           <Box
             sx={{
               display: 'grid',
               gridTemplateColumns: gridColumns,
-              gap: 3,
+              gap: { xs: 1.5, sm: 3 },
             }}
           >
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -715,7 +715,7 @@ const BrowseRooms = () => {
       {/* Sticky Header with Search */}
       <Hero initialCollapsed hideBottomNav />
 
-      <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
+      <Container maxWidth={false} sx={{ py: { xs: 2, sm: 4 }, ...containerSx }}>
         {/* Hotel Gallery Carousel with info overlay - Only show when viewing a specific hotel */}
         {currentHotel && (
           <HotelGalleryCarousel
@@ -727,13 +727,13 @@ const BrowseRooms = () => {
 
         {/* Page Header - Only show when NOT viewing a specific hotel */}
         {!currentHotel && (
-          <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+          <Box sx={{ mb: { xs: 2, sm: 4 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, mb: 1 }}>
               <Box
                 onClick={() => navigate('/')}
                 sx={{
-                  width: 36,
-                  height: 36,
+                  width: { xs: 32, sm: 36 },
+                  height: { xs: 32, sm: 36 },
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -743,11 +743,11 @@ const BrowseRooms = () => {
                   '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
                 }}
               >
-                <ArrowBack sx={{ fontSize: 22, color: '#222222' }} />
+                <ArrowBack sx={{ fontSize: { xs: 18, sm: 22 }, color: '#222222' }} />
               </Box>
               <Typography
                 sx={{
-                  fontSize: { xs: '26px', md: '32px' },
+                  fontSize: { xs: '18px', sm: '26px', md: '32px' },
                   fontWeight: 600,
                   color: '#222222',
                 }}
@@ -759,7 +759,7 @@ const BrowseRooms = () => {
                     : 'Browse Rooms'}
               </Typography>
             </Box>
-            <Typography sx={{ fontSize: '16px', color: '#717171' }}>
+            <Typography sx={{ fontSize: { xs: '13px', sm: '16px' }, color: '#717171' }}>
               {roomTypes.length} room type{roomTypes.length !== 1 ? 's' : ''} available
             </Typography>
           </Box>
@@ -800,7 +800,7 @@ const BrowseRooms = () => {
             sx={{
               display: 'grid',
               gridTemplateColumns: gridColumns,
-              gap: 3,
+              gap: { xs: 1.5, sm: 3 },
             }}
           >
             {roomTypes.map((roomType, index) => (

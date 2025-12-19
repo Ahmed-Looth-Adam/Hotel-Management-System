@@ -9,7 +9,6 @@ import {
   Container,
   Typography,
 } from '@mui/material';
-import { Hotel as HotelIcon } from '@mui/icons-material';
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -56,20 +55,13 @@ const Footer = () => {
         >
           {/* Left - Branding & Copyright */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <HotelIcon sx={{ color: '#667eea', fontSize: 22 }} />
-              <Typography
-                sx={{
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                LuxeStay Hotels
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => navigate('/')}>
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="LuxeStayHotels"
+                sx={{ width: 100, height: 60, borderRadius: '10px' }}
+              />
             </Box>
             <Typography sx={{ fontSize: '14px', color: '#717171' }}>
               © {new Date().getFullYear()}

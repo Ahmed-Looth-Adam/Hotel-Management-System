@@ -57,8 +57,8 @@ const HotelCard = ({ hotel, onClick }) => {
       sx={{
         cursor: 'pointer',
         width: '100%',
-        minWidth: { xs: '280px', sm: '260px' },
-        maxWidth: { xs: '320px', sm: '300px' },
+        minWidth: { xs: '155px', sm: '260px' },
+        maxWidth: { xs: '170px', sm: '300px' },
         flexShrink: 0,
       }}
     >
@@ -66,11 +66,11 @@ const HotelCard = ({ hotel, onClick }) => {
       <Box
         sx={{
           position: 'relative',
-          borderRadius: '12px',
+          borderRadius: { xs: '10px', sm: '12px' },
           overflow: 'hidden',
           aspectRatio: '20/19',
           bgcolor: '#F7F7F7',
-          mb: 1.5,
+          mb: { xs: 1, sm: 1.5 },
         }}
       >
         {images.length > 0 ? (
@@ -196,7 +196,7 @@ const HotelCard = ({ hotel, onClick }) => {
           <Typography
             sx={{
               fontWeight: 600,
-              fontSize: '15px',
+              fontSize: { xs: '13px', sm: '15px' },
               color: '#222222',
               lineHeight: 1.3,
               overflow: 'hidden',
@@ -210,8 +210,8 @@ const HotelCard = ({ hotel, onClick }) => {
           </Typography>
           {hotel.star_rating && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <StarIcon sx={{ fontSize: 14, color: '#222222' }} />
-              <Typography sx={{ fontSize: '14px', color: '#222222', fontWeight: 500 }}>
+              <StarIcon sx={{ fontSize: { xs: 12, sm: 14 }, color: '#222222' }} />
+              <Typography sx={{ fontSize: { xs: '12px', sm: '14px' }, color: '#222222', fontWeight: 500 }}>
                 {hotel.star_rating}.0
               </Typography>
             </Box>
@@ -220,7 +220,7 @@ const HotelCard = ({ hotel, onClick }) => {
 
         <Typography
           sx={{
-            fontSize: '14px',
+            fontSize: { xs: '12px', sm: '14px' },
             color: '#717171',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -233,7 +233,7 @@ const HotelCard = ({ hotel, onClick }) => {
 
         <Typography
           sx={{
-            fontSize: '14px',
+            fontSize: { xs: '12px', sm: '14px' },
             color: '#717171',
             mb: 0.5,
           }}
@@ -242,10 +242,10 @@ const HotelCard = ({ hotel, onClick }) => {
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-          <Typography sx={{ fontWeight: 600, fontSize: '15px', color: '#222222' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: { xs: '13px', sm: '15px' }, color: '#222222' }}>
             £{hotel.min_price || hotel.cheapest_price || 120}
           </Typography>
-          <Typography sx={{ fontSize: '15px', color: '#222222' }}>
+          <Typography sx={{ fontSize: { xs: '13px', sm: '15px' }, color: '#222222' }}>
             night
           </Typography>
         </Box>
@@ -255,19 +255,19 @@ const HotelCard = ({ hotel, onClick }) => {
 };
 
 const LoadingSkeleton = () => (
-  <Box sx={{ width: '100%', minWidth: '260px', maxWidth: '300px', flexShrink: 0 }}>
+  <Box sx={{ width: '100%', minWidth: { xs: '155px', sm: '260px' }, maxWidth: { xs: '170px', sm: '300px' }, flexShrink: 0 }}>
     <Skeleton
       variant="rounded"
       sx={{
-        borderRadius: '12px',
+        borderRadius: { xs: '10px', sm: '12px' },
         aspectRatio: '20/19',
-        mb: 1.5,
+        mb: { xs: 1, sm: 1.5 },
       }}
     />
-    <Skeleton variant="text" width="70%" height={20} />
-    <Skeleton variant="text" width="50%" height={18} />
-    <Skeleton variant="text" width="40%" height={18} />
-    <Skeleton variant="text" width="30%" height={20} />
+    <Skeleton variant="text" width="70%" sx={{ height: { xs: 16, sm: 20 } }} />
+    <Skeleton variant="text" width="50%" sx={{ height: { xs: 14, sm: 18 } }} />
+    <Skeleton variant="text" width="40%" sx={{ height: { xs: 14, sm: 18 } }} />
+    <Skeleton variant="text" width="30%" sx={{ height: { xs: 16, sm: 20 } }} />
   </Box>
 );
 
@@ -305,19 +305,19 @@ const CountrySection = ({ country, hotels, onHotelClick, onShowAll }) => {
   };
 
   return (
-    <Box sx={{ mb: 5 }}>
+    <Box sx={{ mb: { xs: 3, sm: 5 } }}>
       {/* Section Header */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          mb: 2.5,
+          mb: { xs: 1.5, sm: 2.5 },
         }}
       >
         <Typography
           sx={{
-            fontSize: { xs: '22px', md: '24px' },
+            fontSize: { xs: '18px', sm: '22px', md: '24px' },
             fontWeight: 600,
             color: '#222222',
           }}
@@ -331,13 +331,15 @@ const CountrySection = ({ country, hotels, onHotelClick, onShowAll }) => {
               color: '#222222',
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: '14px',
+              fontSize: { xs: '12px', sm: '14px' },
+              minWidth: 'auto',
+              px: { xs: 1, sm: 2 },
               '&:hover': {
                 bgcolor: 'transparent',
                 textDecoration: 'underline',
               },
             }}
-            endIcon={<ArrowForward sx={{ fontSize: 18 }} />}
+            endIcon={<ArrowForward sx={{ fontSize: { xs: 14, sm: 18 } }} />}
           >
             Show all
           </Button>
@@ -384,7 +386,7 @@ const CountrySection = ({ country, hotels, onHotelClick, onShowAll }) => {
         ref={scrollRef}
         sx={{
           display: 'flex',
-          gap: 2.5,
+          gap: { xs: 1, sm: 2.5 },
           overflowX: 'auto',
           scrollSnapType: 'x mandatory',
           scrollbarWidth: 'none',
@@ -517,7 +519,7 @@ const FeaturedListings = () => {
   }
 
   return (
-    <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
+    <Container maxWidth={false} sx={{ py: { xs: 2, sm: 4 }, ...containerSx }}>
       {sortedCountries.map((country) => (
         <CountrySection
           key={country}

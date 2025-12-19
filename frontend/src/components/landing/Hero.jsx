@@ -17,6 +17,7 @@ import {
   Menu,
   MenuItem,
   CircularProgress,
+  Collapse,
 } from '@mui/material';
 import {
   Search,
@@ -929,7 +930,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
           </Box>
 
           {/* Expanded Where Content (Suggested Destinations) */}
-          {activeField === 'where' && (
+          <Collapse in={activeField === 'where'} timeout={200}>
             <Box sx={{ mt: 3 }}>
               <Typography variant="caption" fontWeight={700} color="#717171" sx={{ mb: 1, display: 'block' }}>
                 SUGGESTED DESTINATIONS
@@ -954,7 +955,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                 ))}
               </Box>
             </Box>
-          )}
+          </Collapse>
         </Paper>
 
         {/* When Section */}
@@ -978,7 +979,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
             </Typography>
           </Box>
 
-          {activeField === 'dates' && (
+          <Collapse in={activeField === 'dates'} timeout={200}>
             <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* Check-in Date Picker */}
               <Box>
@@ -1054,7 +1055,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                 />
               </Box>
             </Box>
-          )}
+          </Collapse>
         </Paper>
 
         {/* Who Section */}
@@ -1078,7 +1079,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
             </Typography>
           </Box>
 
-          {activeField === 'guests' && (
+          <Collapse in={activeField === 'guests'} timeout={200}>
             <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
                 <Typography fontWeight={600}>Adults</Typography>
@@ -1101,7 +1102,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                 </IconButton>
               </Box>
             </Box>
-          )}
+          </Collapse>
         </Paper>
       </Box>
 
@@ -1189,21 +1190,11 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
               onClick={() => navigate('/')}
             >
               <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '18px' }}>H</Typography>
-              </Box>
-              <Typography sx={{ color: '#667eea', fontWeight: 700, fontSize: '20px', letterSpacing: '-0.02em' }}>
-                Hotels
-              </Typography>
+                component="img"
+                src="/logo.png"
+                alt="LuxeStayHotels"
+                sx={{ width: 100, height: 60, borderRadius: '10px' }}
+              />
             </Box>
 
             {/* Center - Collapsed search bar when scrolled */}
