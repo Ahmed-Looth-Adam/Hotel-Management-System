@@ -214,43 +214,36 @@ const Dashboard = () => {
 
     const trends = [];
     const now = new Date();
-    let daysBack, groupBy, dateFormat;
+    let daysBack, groupBy;
 
     switch (period) {
       case '7d':
         daysBack = 7;
         groupBy = 'day';
-        dateFormat = { weekday: 'short', day: 'numeric' };
         break;
       case '1m':
         daysBack = 30;
         groupBy = 'day';
-        dateFormat = { day: 'numeric', month: 'short' };
         break;
       case '3m':
         daysBack = 90;
         groupBy = 'week';
-        dateFormat = { day: 'numeric', month: 'short' };
         break;
       case '6m':
         daysBack = 180;
         groupBy = 'week';
-        dateFormat = { day: 'numeric', month: 'short' };
         break;
       case '1y':
         daysBack = 365;
         groupBy = 'month';
-        dateFormat = { month: 'short', year: '2-digit' };
         break;
       case 'all':
         daysBack = null;
-        groupBy = 'month';
-        dateFormat = { month: 'short', year: '2-digit' };
+        groupBy = 'year';
         break;
       default:
         daysBack = 7;
         groupBy = 'day';
-        dateFormat = { weekday: 'short', day: 'numeric' };
     }
 
     const startDate = daysBack ? new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000) : null;
@@ -264,6 +257,10 @@ const Dashboard = () => {
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
         const dayBookings = filteredBookings.filter(b => b.created_at?.startsWith(dateStr));
+        // Format: "Mon 19" for 7d, "19 Dec" for 1m
+        const dateFormat = period === '7d'
+          ? { weekday: 'short', day: 'numeric' }
+          : { day: 'numeric', month: 'short' };
         trends.push({
           date: date.toLocaleDateString('en-GB', dateFormat),
           bookings: dayBookings.length,
@@ -281,34 +278,58 @@ const Dashboard = () => {
           const bookingDate = new Date(b.created_at);
           return bookingDate >= weekStart && bookingDate <= weekEnd;
         });
+        // Format: "19 Dec" for weeks
         trends.push({
-          date: weekStart.toLocaleDateString('en-GB', dateFormat),
+          date: weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
           bookings: weekBookings.length,
           revenue: weekBookings.reduce((sum, b) => sum + getBookingRevenue(b), 0),
         });
       }
     } else if (groupBy === 'month') {
-      const monthsData = {};
-      filteredBookings.forEach(b => {
-        if (b.created_at) {
-          const date = new Date(b.created_at);
-          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          if (!monthsData[monthKey]) {
-            monthsData[monthKey] = { bookings: 0, revenue: 0, date: date };
-          }
-          monthsData[monthKey].bookings += 1;
-          monthsData[monthKey].revenue += getBookingRevenue(b);
-        }
-      });
-      Object.keys(monthsData)
-        .sort()
-        .forEach(key => {
-          trends.push({
-            date: monthsData[key].date.toLocaleDateString('en-GB', dateFormat),
-            bookings: monthsData[key].bookings,
-            revenue: monthsData[key].revenue,
-          });
+      // Group by month - show all 12 months for the past year
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      // Create entries for the last 12 months
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+        const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+
+        const monthBookings = filteredBookings.filter(b => {
+          if (!b.created_at) return false;
+          const bookingDate = new Date(b.created_at);
+          return bookingDate >= monthStart && bookingDate <= monthEnd;
         });
+
+        trends.push({
+          date: monthNames[date.getMonth()],
+          bookings: monthBookings.length,
+          revenue: monthBookings.reduce((sum, b) => sum + getBookingRevenue(b), 0),
+        });
+      }
+    } else if (groupBy === 'year') {
+      // Group by year - show all years from 2020 to current year
+      const currentYear = new Date().getFullYear();
+      const startYear = 2020;
+
+      for (let year = startYear; year <= currentYear; year++) {
+        const yearStart = new Date(year, 0, 1);
+        const yearEnd = new Date(year, 11, 31, 23, 59, 59);
+
+        const yearBookings = filteredBookings.filter(b => {
+          if (!b.created_at) return false;
+          const bookingDate = new Date(b.created_at);
+          return bookingDate >= yearStart && bookingDate <= yearEnd;
+        });
+
+        trends.push({
+          date: year.toString(),
+          bookings: yearBookings.length,
+          revenue: yearBookings.reduce((sum, b) => sum + getBookingRevenue(b), 0),
+        });
+      }
     }
 
     return trends;
