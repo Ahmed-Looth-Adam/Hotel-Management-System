@@ -35,6 +35,7 @@ import {
 import { Dialog, Slide } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { MobileDatePicker } from '@mui/x-date-pickers/MobileDatePicker';
 import dayjs from 'dayjs';
 import { DateRange } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
@@ -56,6 +57,11 @@ const quickTransition = {
 // CSS transitions for hover effects
 const springTransition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
 const fastSpring = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+
+// Transition component for mobile search dialog - defined outside to prevent re-creation
+const MobileSearchTransition = React.forwardRef(function MobileSearchTransition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = false }) => {
   const theme = useTheme();
@@ -96,11 +102,6 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
   // Menu states
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-
-  // Transition for full screen dialog
-  const Transition = React.forwardRef(function Transition(props, ref) {
-    return <Slide direction="up" ref={ref} {...props} />;
-  });
 
   // Refs for search bar fields
   const searchBarRef = useRef(null);
@@ -868,7 +869,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
       fullScreen
       open={mobileSearchOpen}
       onClose={() => setMobileSearchOpen(false)}
-      TransitionComponent={Transition}
+      TransitionComponent={MobileSearchTransition}
     >
       {/* Header */}
       <Box
@@ -970,7 +971,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="caption" fontWeight={800} color="#222222" sx={{ fontSize: '14px' }}>
-              When's your trip?
+              {activeField === 'dates' ? 'Select dates' : "When's your trip?"}
             </Typography>
             <Typography variant="body2" fontWeight={600} color="#222222">
               {checkIn ? (checkOut ? `${checkIn.format('MMM D')} - ${checkOut.format('MMM D')}` : checkIn.format('MMM D')) : 'Add dates'}
@@ -978,96 +979,80 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
           </Box>
 
           {activeField === 'dates' && (
-            <Box
-              sx={{
-                mt: 2,
-                '& .rdrCalendarWrapper': {
-                  fontSize: '12px',
-                  width: '100%',
-                },
-                '& .rdrDateDisplayWrapper': {
-                  display: 'none',
-                },
-                '& .rdrMonth': {
-                  width: '100%',
-                  padding: '0',
-                },
-                '& .rdrMonthAndYearWrapper': {
-                  paddingTop: 0,
-                },
-                '& .rdrDay': {
-                  height: '40px',
-                  lineHeight: '40px',
-                },
-                '& .rdrDayNumber': {
-                  position: 'absolute',
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                },
-                '& .rdrDayNumber span': {
-                  color: '#222222',
-                },
-                // Circular start/end selection markers
-                '& .rdrStartEdge, & .rdrEndEdge': {
-                  background: '#222222 !important',
-                  borderRadius: '50% !important',
-                  top: '50% !important',
-                  left: '50% !important',
-                  right: 'auto !important',
-                  bottom: 'auto !important',
-                  width: '36px !important',
-                  height: '36px !important',
-                  transform: 'translate(-50%, -50%) !important',
-                },
-                // Hide passive/overflow dates from adjacent months
-                '& .rdrDayPassive': {
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                },
-                // White text for selected start/end dates
-                '& .rdrDay:has(.rdrStartEdge) .rdrDayNumber span, & .rdrDay:has(.rdrEndEdge) .rdrDayNumber span': {
-                  color: '#FFFFFF !important',
-                  fontWeight: 600,
-                },
-                // In-range background
-                '& .rdrInRange': {
-                  background: '#F7F7F7 !important',
-                },
-                // Black text for in-range dates
-                '& .rdrDay:has(.rdrInRange) .rdrDayNumber span': {
-                  color: '#222222 !important',
-                },
-                // Hide duplicate selection previews
-                '& .rdrSelected': {
-                  display: 'none !important',
-                },
-              }}
-            >
-              <DateRange
-                ranges={[{
-                  startDate: checkIn ? checkIn.toDate() : new Date(),
-                  endDate: checkOut ? checkOut.toDate() : checkIn ? checkIn.toDate() : new Date(),
-                  key: 'selection',
-                }]}
-                onChange={(item) => {
-                  setCheckIn(dayjs(item.selection.startDate));
-                  setCheckOut(dayjs(item.selection.endDate));
-                  // Auto-advance to guests when both dates selected
-                  if (item.selection.startDate !== item.selection.endDate) {
-                    setActiveField('guests');
-                  }
-                }}
-                months={1}
-                direction="vertical"
-                minDate={new Date()}
-                rangeColors={['#F7F7F7']}
-                showDateDisplay={false}
-              />
+            <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Check-in Date Picker */}
+              <Box>
+                <Typography variant="caption" fontWeight={600} color="#717171" sx={{ mb: 1, display: 'block' }}>
+                  CHECK-IN
+                </Typography>
+                <MobileDatePicker
+                  value={checkIn}
+                  onChange={(newValue) => {
+                    setCheckIn(newValue);
+                    // If check-out is before new check-in, clear it
+                    if (checkOut && newValue && checkOut.isBefore(newValue)) {
+                      setCheckOut(null);
+                    }
+                  }}
+                  minDate={dayjs()}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      placeholder: 'Select date',
+                      sx: {
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '12px',
+                          bgcolor: '#FFFFFF',
+                          '& fieldset': { borderColor: '#DDDDDD' },
+                          '&:hover fieldset': { borderColor: '#222222' },
+                          '&.Mui-focused fieldset': { borderColor: '#222222' },
+                        },
+                        '& .MuiInputBase-input': {
+                          py: 1.5,
+                          fontWeight: 500,
+                        },
+                      },
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* Check-out Date Picker */}
+              <Box>
+                <Typography variant="caption" fontWeight={600} color="#717171" sx={{ mb: 1, display: 'block' }}>
+                  CHECK-OUT
+                </Typography>
+                <MobileDatePicker
+                  value={checkOut}
+                  onChange={(newValue) => {
+                    setCheckOut(newValue);
+                    // Auto-advance to guests when check-out is selected
+                    if (newValue && checkIn) {
+                      setActiveField('guests');
+                    }
+                  }}
+                  minDate={checkIn ? checkIn.add(1, 'day') : dayjs().add(1, 'day')}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      placeholder: 'Select date',
+                      sx: {
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '12px',
+                          bgcolor: '#FFFFFF',
+                          '& fieldset': { borderColor: '#DDDDDD' },
+                          '&:hover fieldset': { borderColor: '#222222' },
+                          '&.Mui-focused fieldset': { borderColor: '#222222' },
+                        },
+                        '& .MuiInputBase-input': {
+                          py: 1.5,
+                          fontWeight: 500,
+                        },
+                      },
+                    },
+                  }}
+                />
+              </Box>
             </Box>
           )}
         </Paper>
