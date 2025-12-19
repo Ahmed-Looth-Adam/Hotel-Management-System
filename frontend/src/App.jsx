@@ -244,11 +244,11 @@ function App() {
                 }
               />
 
-              {/* Bookings Management */}
+              {/* Bookings Management - Staff Only */}
               <Route
                 path="/bookings"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
                     <BookingsList />
                   </ProtectedRoute>
                 }
@@ -256,7 +256,7 @@ function App() {
               <Route
                 path="/bookings/:id"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
                     <BookingDetail />
                   </ProtectedRoute>
                 }
