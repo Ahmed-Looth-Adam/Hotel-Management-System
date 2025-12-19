@@ -164,6 +164,7 @@ const Dashboard = () => {
   const [revenuePeriod, setRevenuePeriod] = useState('7d');
   const [statusDistribution, setStatusDistribution] = useState([]);
   const [servicePopularity, setServicePopularity] = useState([]);
+  const [hotelPerformance, setHotelPerformance] = useState([]); // For admin hotel comparison charts
   const [recentBookings, setRecentBookings] = useState([]);
 
   // Check user role for hotel access
@@ -453,6 +454,22 @@ const Dashboard = () => {
           value,
         }));
         setStatusDistribution(distribution);
+
+        // Calculate hotel performance for admin (only when viewing all hotels)
+        if (isAdmin && (!selectedHotel || selectedHotel === 'all')) {
+          const hotelData = {};
+          bookings.forEach(b => {
+            const hotelName = b.hotel_name || 'Unknown Hotel';
+            if (!hotelData[hotelName]) {
+              hotelData[hotelName] = { name: hotelName, bookings: 0, revenue: 0 };
+            }
+            hotelData[hotelName].bookings += 1;
+            hotelData[hotelName].revenue += getBookingRevenue(b);
+          });
+          // Convert to array and sort by bookings (descending)
+          const performanceData = Object.values(hotelData).sort((a, b) => b.bookings - a.bookings);
+          setHotelPerformance(performanceData);
+        }
       }
 
       // Fetch service popularity data
@@ -1001,6 +1018,115 @@ const Dashboard = () => {
             )}
           </Box>
         </Paper>
+
+        {/* Hotel Performance Charts - Admin Only */}
+        {isAdmin && (!selectedHotel || selectedHotel === 'all') && hotelPerformance.length > 0 && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
+              gap: 3,
+              mb: 4,
+            }}
+          >
+            {/* Bookings by Hotel */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Typography variant="h6" fontWeight={600} gutterBottom>
+                Bookings by Hotel
+              </Typography>
+              <Box sx={{ height: Math.max(200, hotelPerformance.length * 40) }}>
+                {loading ? (
+                  <Skeleton variant="rounded" height="100%" />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={hotelPerformance} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e0e0e0" />
+                      <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        tick={{ fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={false}
+                        width={100}
+                      />
+                      <Tooltip
+                        formatter={(value) => [value, 'Bookings']}
+                        contentStyle={{
+                          borderRadius: 8,
+                          border: 'none',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        }}
+                      />
+                      <Bar dataKey="bookings" fill="#1976d2" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </Box>
+            </Paper>
+
+            {/* Revenue by Hotel */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Typography variant="h6" fontWeight={600} gutterBottom>
+                Revenue by Hotel
+              </Typography>
+              <Box sx={{ height: Math.max(200, hotelPerformance.length * 40) }}>
+                {loading ? (
+                  <Skeleton variant="rounded" height="100%" />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[...hotelPerformance].sort((a, b) => b.revenue - a.revenue)}
+                      layout="vertical"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e0e0e0" />
+                      <XAxis
+                        type="number"
+                        tick={{ fontSize: 12 }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v) => `£${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        tick={{ fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={false}
+                        width={100}
+                      />
+                      <Tooltip
+                        formatter={(value) => [`£${value.toFixed(2)}`, 'Revenue']}
+                        contentStyle={{
+                          borderRadius: 8,
+                          border: 'none',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        }}
+                      />
+                      <Bar dataKey="revenue" fill="#2e7d32" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </Box>
+            </Paper>
+          </Box>
+        )}
 
         {/* Quick Actions */}
         <Box sx={{ mb: 4 }}>
