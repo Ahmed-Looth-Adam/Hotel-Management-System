@@ -260,7 +260,7 @@ const BookingConfirmation = () => {
   if (loading) {
     return (
       <Box sx={{ minHeight: '100vh', bgcolor: '#FFFFFF' }}>
-        <Hero initialCollapsed hideBottomNav />
+        <Hero initialCollapsed hideBottomNav initialParams={{ city: hotel?.city, checkIn, checkOut, guests }} />
         <Container maxWidth="lg" sx={{ py: 6 }}>
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress sx={{ color: '#667eea' }} />
@@ -272,7 +272,7 @@ const BookingConfirmation = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#FFFFFF' }}>
-      <Hero initialCollapsed hideBottomNav />
+      <Hero initialCollapsed hideBottomNav initialParams={{ city: hotel?.city, checkIn, checkOut, guests }} />
 
       {/* Header Section */}
       <Box

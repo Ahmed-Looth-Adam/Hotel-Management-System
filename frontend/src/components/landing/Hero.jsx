@@ -212,6 +212,18 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
     fetchLocations();
   }, []);
 
+  // Update selected location when initialParams.city changes (e.g., after hotel data loads)
+  useEffect(() => {
+    if (initialParams.city && locations.length > 0 && !selectedLocation) {
+      const matchedLocation = locations.find(
+        loc => loc.city.toLowerCase() === initialParams.city.toLowerCase()
+      );
+      if (matchedLocation) {
+        setSelectedLocation(matchedLocation);
+      }
+    }
+  }, [initialParams.city, locations]);
+
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (selectedLocation) params.set('city', selectedLocation.city);
@@ -1186,26 +1198,8 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                 gap: 1,
               }}
             >
-              {/* Browse Rooms link */}
-              <Button
-                onClick={() => navigate('/guest/rooms')}
-                sx={{
-                  color: '#222222',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  borderRadius: '24px',
-                  px: 2,
-                  py: 1,
-                  transition: fastSpring,
-                  '&:hover': { bgcolor: '#F7F7F7' },
-                }}
-              >
-                Browse Rooms
-              </Button>
-
-              {/* Language Icon */}
-              <IconButton size="small">
+              {/* Home Icon */}
+              <IconButton size="small" onClick={() => navigate('/')}>
                 <LanguageIcon sx={{ fontSize: 20, color: '#222222' }} />
               </IconButton>
 

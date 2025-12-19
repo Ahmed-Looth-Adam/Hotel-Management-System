@@ -211,7 +211,7 @@ const RoomDetails = () => {
   if (loading) {
     return (
       <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
-        <Hero initialCollapsed hideBottomNav />
+        <Hero initialCollapsed hideBottomNav initialParams={{ city: hotel?.city, checkIn: formData.checkIn, checkOut: formData.checkOut, guests: formData.guests }} />
         <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
           <Skeleton variant="text" width={300} height={40} sx={{ mb: 2 }} />
           <Skeleton variant="rounded" height={400} sx={{ borderRadius: '12px', mb: 3 }} />
@@ -230,7 +230,7 @@ const RoomDetails = () => {
   if (!room) {
     return (
       <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
-        <Hero initialCollapsed hideBottomNav />
+        <Hero initialCollapsed hideBottomNav initialParams={{ city: hotel?.city, checkIn: formData.checkIn, checkOut: formData.checkOut, guests: formData.guests }} />
         <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
           <Alert severity="error" sx={{ borderRadius: '12px' }}>Room type not found</Alert>
         </Container>
@@ -240,7 +240,7 @@ const RoomDetails = () => {
 
   return (
     <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
-      <Hero initialCollapsed hideBottomNav />
+      <Hero initialCollapsed hideBottomNav initialParams={{ city: hotel?.city, checkIn: formData.checkIn, checkOut: formData.checkOut, guests: formData.guests }} />
 
       <Container maxWidth={false} sx={{ py: 4, ...containerSx }}>
         {/* Title */}
