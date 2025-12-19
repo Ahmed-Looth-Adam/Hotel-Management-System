@@ -635,11 +635,20 @@ const BrowseRooms = () => {
   };
 
   // Group rooms by type and get unique types with count
+  // Filters out room types that can't accommodate the number of guests
   const getRoomTypes = () => {
     const typeMap = new Map();
+    const guestCount = filters.guests || 1;
 
     rooms.forEach(room => {
       const category = room.room_type_category || 'standard';
+      const typeInfo = ROOM_TYPE_INFO[category] || ROOM_TYPE_INFO.standard;
+
+      // Skip rooms that can't accommodate the number of guests
+      if (typeInfo.capacity < guestCount) {
+        return;
+      }
+
       if (!typeMap.has(category)) {
         typeMap.set(category, {
           category,
@@ -761,10 +770,12 @@ const BrowseRooms = () => {
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <HotelIcon sx={{ fontSize: 64, color: '#DDDDDD', mb: 2 }} />
             <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#222222', mb: 1 }}>
-              No rooms available
+              No rooms available for {filters.guests} guest{filters.guests !== 1 ? 's' : ''}
             </Typography>
             <Typography sx={{ fontSize: '14px', color: '#717171', mb: 3 }}>
-              Try adjusting your search or check back later.
+              {filters.guests > 4
+                ? 'Our largest rooms accommodate up to 4 guests. Try searching for fewer guests.'
+                : 'Try adjusting your search or reducing the number of guests.'}
             </Typography>
             <Button
               variant="outlined"
