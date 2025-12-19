@@ -23,7 +23,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 
 // Hotel background image
-const HOTEL_BG_IMAGE = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80';
+const HOTEL_BG_IMAGE = '/images/login-bg.jpg';
 
 const validationSchema = Yup.object({
   username: Yup.string().required('Username is required'),

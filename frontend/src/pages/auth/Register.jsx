@@ -28,7 +28,7 @@ import {
 import authService from '../../services/authService';
 
 // Hotel background image (different from login for variety)
-const HOTEL_BG_IMAGE = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1920&q=80';
+const HOTEL_BG_IMAGE = '/images/register-bg.jpg';
 
 const validationSchema = Yup.object({
   username: Yup.string()
