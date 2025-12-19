@@ -157,23 +157,23 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
   };
 
   // Collapse the search bar (bypasses animation lock for intentional collapses)
-  const collapseSearchBar = () => {
-    if (window.scrollY > 20) {
+  // force: true will collapse regardless of scroll position (used on results page)
+  const collapseSearchBar = (force = false) => {
+    if (force || window.scrollY > 20) {
       setIsExpanded(false);
       setManuallyExpanded(false);
       setActiveField(null);
     }
   };
 
-  // Click outside to collapse expanded search bar (only on home page)
+  // Click outside to collapse expanded search bar
   useEffect(() => {
-    if (initialCollapsed) return;
-
     const handleClickOutside = (event) => {
       if (searchBarRef.current && !searchBarRef.current.contains(event.target)) {
         const isPopover = event.target.closest('.MuiPopover-root');
         if (!isPopover && isExpanded) {
-          collapseSearchBar();
+          // Force collapse on results page (initialCollapsed), normal collapse on home page
+          collapseSearchBar(initialCollapsed);
         }
       }
     };
@@ -244,7 +244,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
     if (checkIn) params.set('checkIn', checkIn.format('YYYY-MM-DD'));
     if (checkOut) params.set('checkOut', checkOut.format('YYYY-MM-DD'));
     if (guests) params.set('guests', guests.toString());
-    setManuallyExpanded(false); // Reset manual flag on search
+    collapseSearchBar(true); // Force collapse on search
     navigate(`/guest/rooms?${params.toString()}`);
   };
 
@@ -277,7 +277,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
       }, 150);
     } else {
       setActiveField(null);
-      collapseSearchBar();
+      collapseSearchBar(initialCollapsed); // Force collapse on results page
     }
   };
 
@@ -718,7 +718,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                   }, 150);
                 } else {
                   setActiveField(null);
-                  collapseSearchBar();
+                  collapseSearchBar(initialCollapsed); // Force collapse on results page
                 }
               }}
             >
@@ -815,7 +815,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
           onClick={() => {
             setGuestAnchor(null);
             setActiveField(null);
-            collapseSearchBar(); // Collapse after final selection
+            collapseSearchBar(initialCollapsed); // Force collapse on results page
           }}
         >
           Done
@@ -1443,7 +1443,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                     }, 150);
                   } else {
                     setActiveField(null);
-                    collapseSearchBar();
+                    collapseSearchBar(initialCollapsed); // Force collapse on results page
                   }
                 }}
                 sx={{
