@@ -62,6 +62,7 @@ class CheckInRecordSerializer(serializers.ModelSerializer):
 class BookingListSerializer(serializers.ModelSerializer):
     """Serializer for booking list view"""
     user_name = serializers.SerializerMethodField()
+    user_profile_picture = serializers.SerializerMethodField()
     hotel_name = serializers.CharField(source='hotel.name', read_only=True, allow_null=True)
     hotel_city = serializers.CharField(source='hotel.city', read_only=True, allow_null=True)
     hotel_country = serializers.CharField(source='hotel.country', read_only=True, allow_null=True)
@@ -74,7 +75,7 @@ class BookingListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = [
-            'id', 'booking_reference', 'user', 'user_name',
+            'id', 'booking_reference', 'user', 'user_name', 'user_profile_picture',
             'hotel', 'hotel_name', 'hotel_city', 'hotel_country',
             'room', 'room_number', 'room_type', 'room_type_label', 'room_image',
             'room_type_requested', 'check_in_date', 'check_out_date', 'number_of_nights',
@@ -84,6 +85,15 @@ class BookingListSerializer(serializers.ModelSerializer):
 
     def get_user_name(self, obj):
         return obj.user.get_full_name() or obj.user.username
+
+    def get_user_profile_picture(self, obj):
+        """Get user's profile picture URL"""
+        if obj.user and obj.user.profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.user.profile_picture.url)
+            return obj.user.profile_picture.url
+        return None
 
     def get_room_type(self, obj):
         # Return room's type if assigned, otherwise return requested type
@@ -159,6 +169,7 @@ class BookingDetailSerializer(serializers.ModelSerializer):
     check_in_records = serializers.SerializerMethodField()
     checked_in_by_name = serializers.SerializerMethodField()
     checked_out_by_name = serializers.SerializerMethodField()
+    no_show_by_name = serializers.SerializerMethodField()
     service_charges = serializers.SerializerMethodField()
 
     class Meta:
@@ -174,6 +185,7 @@ class BookingDetailSerializer(serializers.ModelSerializer):
             'cancelled_at', 'cancellation_reason',
             'checked_in_at', 'checked_in_by', 'checked_in_by_name', 'check_in_notes',
             'checked_out_at', 'checked_out_by', 'checked_out_by_name', 'check_out_notes', 'room_condition',
+            'no_show_at', 'no_show_by', 'no_show_by_name', 'no_show_notes',
             'booking_guests', 'room_reassignments', 'check_in_records', 'service_charges',
             'created_at', 'updated_at'
         ]
@@ -196,6 +208,11 @@ class BookingDetailSerializer(serializers.ModelSerializer):
     def get_checked_out_by_name(self, obj):
         if obj.checked_out_by:
             return obj.checked_out_by.get_full_name() or obj.checked_out_by.username
+        return None
+
+    def get_no_show_by_name(self, obj):
+        if obj.no_show_by:
+            return obj.no_show_by.get_full_name() or obj.no_show_by.username
         return None
 
     def get_check_in_records(self, obj):

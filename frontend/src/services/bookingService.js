@@ -249,6 +249,24 @@ const bookingService = {
       };
     }
   },
+
+  /**
+   * Mark a booking as no-show
+   * @param {number} id - Booking ID
+   * @param {Object} data - No-show data (notes)
+   * @returns {Promise} API response
+   */
+  markNoShow: async (id, data = {}) => {
+    try {
+      const response = await bookingsApi.post(`/bookings/${id}/no_show/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data || 'Failed to mark as no-show',
+      };
+    }
+  },
 };
 
 export default bookingService;

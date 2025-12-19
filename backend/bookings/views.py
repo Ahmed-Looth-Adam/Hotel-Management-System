@@ -46,6 +46,8 @@ class BookingViewSet(viewsets.ModelViewSet):
         hotel = self.request.query_params.get('hotel')
         status_filter = self.request.query_params.get('status')
         search = self.request.query_params.get('search')
+        date_from = self.request.query_params.get('date_from')
+        date_to = self.request.query_params.get('date_to')
 
         if hotel:
             queryset = queryset.filter(hotel_id=hotel)
@@ -58,6 +60,19 @@ class BookingViewSet(viewsets.ModelViewSet):
                 Q(user__last_name__icontains=search) |
                 Q(user__username__icontains=search)
             )
+        if date_from:
+            queryset = queryset.filter(check_in_date__gte=date_from)
+        if date_to:
+            queryset = queryset.filter(check_in_date__lte=date_to)
+
+        # Checkout date filters
+        checkout_from = self.request.query_params.get('checkout_from')
+        checkout_to = self.request.query_params.get('checkout_to')
+
+        if checkout_from:
+            queryset = queryset.filter(check_out_date__gte=checkout_from)
+        if checkout_to:
+            queryset = queryset.filter(check_out_date__lte=checkout_to)
 
         return queryset
 
@@ -324,4 +339,52 @@ class BookingViewSet(viewsets.ModelViewSet):
             'checked_out_at': booking.checked_out_at,
             'checked_out_by': request.user.get_full_name() or request.user.username,
             'additional_charges': float(additional_charges),
+        })
+
+    @action(detail=True, methods=['post'])
+    def no_show(self, request, pk=None):
+        """
+        Mark a booking as no-show.
+        Staff can mark a booking as no-show if:
+        - The current date is on or after the check-in date
+        - The booking status is 'confirmed'
+        """
+        booking = self.get_object()
+
+        # Check if booking can be marked as no-show
+        if booking.status != 'confirmed':
+            return Response(
+                {'detail': f'Cannot mark as no-show a booking with status: {booking.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if current date is on or after check-in date
+        today = timezone.now().date()
+        if today < booking.check_in_date:
+            return Response(
+                {'detail': 'Cannot mark as no-show before the check-in date'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get notes from request
+        notes = request.data.get('notes', '')
+
+        # Update booking status to no_show
+        booking.status = 'no_show'
+        booking.no_show_at = timezone.now()
+        booking.no_show_by = request.user
+        booking.no_show_notes = notes
+        booking.save()
+
+        # Release the room if one was pre-assigned
+        if booking.room:
+            booking.room.status = 'available'
+            booking.room.save()
+
+        return Response({
+            'success': True,
+            'message': 'Booking marked as no-show',
+            'booking_reference': booking.booking_reference,
+            'no_show_at': booking.no_show_at,
+            'marked_by': request.user.get_full_name() or request.user.username,
         })

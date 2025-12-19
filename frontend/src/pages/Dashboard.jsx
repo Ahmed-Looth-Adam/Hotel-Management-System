@@ -444,9 +444,11 @@ const Dashboard = () => {
         setBookingTrends(calculateTrends(trendPeriod, bookings));
         setRevenueTrends(calculateTrends(revenuePeriod, bookings));
 
-        // Calculate status distribution
+        // Calculate status distribution (exclude checked_out as those are completed bookings)
         const statusCounts = {};
         bookings.forEach(b => {
+          // Skip checked_out bookings - they are completed and shouldn't show in active distribution
+          if (b.status === 'checked_out') return;
           statusCounts[b.status] = (statusCounts[b.status] || 0) + 1;
         });
         const distribution = Object.entries(statusCounts).map(([name, value]) => ({

@@ -85,6 +85,17 @@ class Booking(models.Model):
     check_out_notes = models.TextField(blank=True)
     room_condition = models.CharField(max_length=50, blank=True)
 
+    # No-show operations
+    no_show_at = models.DateTimeField(null=True, blank=True)
+    no_show_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='no_show_bookings'
+    )
+    no_show_notes = models.TextField(blank=True)
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
