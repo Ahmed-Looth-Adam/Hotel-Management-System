@@ -106,19 +106,22 @@ const MyBookings = () => {
   };
 
   const getFilteredBookings = (tab) => {
-    const now = new Date();
+    // Compare dates only (without time) to avoid timezone/time issues
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     switch (tab) {
       case 'upcoming':
         return bookings.filter(b =>
           ['pending', 'confirmed'].includes(b.status) &&
-          new Date(b.check_in_date) >= now
+          new Date(b.check_in_date) >= today
         );
       case 'current':
         return bookings.filter(b => b.status === 'checked_in');
       case 'past':
         return bookings.filter(b =>
           ['checked_out', 'completed', 'cancelled', 'no_show'].includes(b.status) ||
-          new Date(b.check_out_date) < now
+          new Date(b.check_out_date) < today
         );
       default:
         return bookings;
