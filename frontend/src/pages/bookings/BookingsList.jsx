@@ -393,19 +393,24 @@ const BookingsList = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" component="h1" fontWeight={700} sx={{ color: '#1a1a2e', mb: 0.5 }}>
-          Bookings
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Manage guest reservations and check-ins
-        </Typography>
-      </Box>
+    <Box sx={{ width: '100%' }}>
+      <Container maxWidth="xl" disableGutters>
+        {/* Header */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Box>
+              <Typography variant="h4" fontWeight={700} color="text.primary">
+                Bookings
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Manage guest reservations and check-ins
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
 
-      {/* Date Filter Chips */}
-      <Paper
+        {/* Date Filter Chips */}
+        <Paper
         elevation={0}
         sx={{
           p: 1.5,
@@ -641,7 +646,8 @@ const BookingsList = () => {
           emptyMessage={loading ? 'Loading bookings...' : 'No bookings found'}
         />
       </Paper>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

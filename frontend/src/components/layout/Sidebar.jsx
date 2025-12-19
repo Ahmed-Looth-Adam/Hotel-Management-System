@@ -122,12 +122,8 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
     {
       title: 'Reports',
       icon: ReportIcon,
+      path: '/reports',
       roles: ['manager', 'admin'],
-      children: [
-        { title: 'Occupancy', path: '/reports/occupancy' },
-        { title: 'Revenue', path: '/reports/revenue' },
-        { title: 'Analytics', path: '/reports/analytics' },
-      ],
     },
     {
       title: 'Settings',

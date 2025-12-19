@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from bookings.models import Booking
+from bookings.models import Booking, CheckInRecord
 from hotels.models import Hotel, Room
 from payments.models import Payment, Invoice, BookingServiceCharge
 
@@ -26,31 +26,15 @@ class ReportsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def occupancy(self, request):
         """
-        Get occupancy rates for a hotel
+        Get occupancy rates for hotels
         Query params:
-        - hotel_id: Required
-        - period: daily, monthly, yearly (default: daily)
+        - hotel_id: Optional (if not provided, returns aggregate data for all hotels)
         - start_date: Start of period (default: 30 days ago)
         - end_date: End of period (default: today)
         """
         hotel_id = request.query_params.get('hotel_id')
-        period = request.query_params.get('period', 'daily')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
-
-        if not hotel_id:
-            return Response(
-                {'error': 'hotel_id is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            hotel = Hotel.objects.get(id=hotel_id)
-        except Hotel.DoesNotExist:
-            return Response(
-                {'error': 'Hotel not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
 
         # Parse dates
         if end_date:
@@ -61,152 +45,135 @@ class ReportsViewSet(viewsets.ViewSet):
         if start_date:
             start_date = date.fromisoformat(start_date)
         else:
-            if period == 'daily':
-                start_date = end_date - timedelta(days=30)
-            elif period == 'monthly':
-                start_date = end_date - timedelta(days=365)
-            else:  # yearly
-                start_date = end_date - timedelta(days=365 * 3)
+            start_date = end_date - timedelta(days=30)
 
-        # Get total rooms count for the hotel
-        total_rooms = Room.objects.filter(hotel=hotel, is_active=True).count()
+        # Build hotel filter
+        hotel_filter = {}
+        hotel_name = "All Hotels"
+        if hotel_id:
+            try:
+                hotel = Hotel.objects.get(id=hotel_id)
+                hotel_filter = {'hotel': hotel}
+                hotel_name = hotel.name
+            except Hotel.DoesNotExist:
+                return Response(
+                    {'error': 'Hotel not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        # Get total rooms count
+        room_filter = {'is_active': True}
+        if hotel_id:
+            room_filter['hotel_id'] = hotel_id
+        total_rooms = Room.objects.filter(**room_filter).count()
 
         if total_rooms == 0:
             return Response({
                 'hotel_id': hotel_id,
-                'hotel_name': hotel.name,
+                'hotel_name': hotel_name,
                 'total_rooms': 0,
-                'period': period,
+                'occupied_rooms': 0,
+                'available_rooms': 0,
+                'occupancy_rate': 0,
                 'start_date': start_date.isoformat(),
                 'end_date': end_date.isoformat(),
-                'data': [],
-                'summary': {
-                    'average_occupancy_rate': 0,
-                    'peak_occupancy_date': None,
-                    'lowest_occupancy_date': None,
-                }
+                'by_room_type': [],
+                'by_hotel': []
             })
 
-        # Get bookings in the date range
-        bookings = Booking.objects.filter(
-            hotel=hotel,
-            status__in=['confirmed', 'checked_in', 'checked_out', 'completed'],
-            check_in_date__lte=end_date,
-            check_out_date__gte=start_date
+        # Get current occupancy (checked_in bookings for today)
+        today = date.today()
+        booking_filter = {
+            'check_in_date__lte': today,
+            'check_out_date__gt': today,
+            'status': 'checked_in'
+        }
+        if hotel_id:
+            booking_filter['hotel_id'] = hotel_id
+
+        occupied_rooms = Booking.objects.filter(**booking_filter).count()
+        available_rooms = total_rooms - occupied_rooms
+        occupancy_rate = (occupied_rooms / total_rooms) * 100 if total_rooms > 0 else 0
+
+        # Occupancy by room type
+        room_types = Room.objects.filter(**room_filter).values('room_type_category').annotate(
+            total=Count('id')
         )
 
-        # Calculate daily occupancy
-        daily_data = {}
-        current_date = start_date
-        while current_date <= end_date:
-            occupied_rooms = bookings.filter(
-                check_in_date__lte=current_date,
-                check_out_date__gt=current_date
-            ).count()
-            occupancy_rate = (occupied_rooms / total_rooms) * 100 if total_rooms > 0 else 0
-            daily_data[current_date] = {
-                'date': current_date.isoformat(),
-                'occupied_rooms': occupied_rooms,
-                'total_rooms': total_rooms,
-                'occupancy_rate': round(occupancy_rate, 2)
+        by_room_type = []
+        for rt in room_types:
+            room_type = rt['room_type_category']
+            total_of_type = rt['total']
+
+            # Count occupied rooms of this type
+            occupied_filter = {
+                'check_in_date__lte': today,
+                'check_out_date__gt': today,
+                'status': 'checked_in',
+                'room__room_type_category': room_type
             }
-            current_date += timedelta(days=1)
+            if hotel_id:
+                occupied_filter['hotel_id'] = hotel_id
 
-        # Aggregate based on period
-        if period == 'daily':
-            data = list(daily_data.values())
-        elif period == 'monthly':
-            monthly_data = defaultdict(lambda: {'occupied_days': 0, 'total_days': 0, 'total_occupied': 0})
-            for date_key, values in daily_data.items():
-                month_key = date_key.strftime('%Y-%m')
-                monthly_data[month_key]['occupied_days'] += 1 if values['occupied_rooms'] > 0 else 0
-                monthly_data[month_key]['total_days'] += 1
-                monthly_data[month_key]['total_occupied'] += values['occupied_rooms']
-                monthly_data[month_key]['month'] = month_key
+            occupied_of_type = Booking.objects.filter(**occupied_filter).count()
+            type_occupancy = (occupied_of_type / total_of_type) * 100 if total_of_type > 0 else 0
 
-            data = []
-            for month_key, values in sorted(monthly_data.items()):
-                avg_occupancy = (values['total_occupied'] / (values['total_days'] * total_rooms)) * 100
-                data.append({
-                    'month': values['month'],
-                    'average_occupied_rooms': round(values['total_occupied'] / values['total_days'], 2),
-                    'total_rooms': total_rooms,
-                    'occupancy_rate': round(avg_occupancy, 2)
+            by_room_type.append({
+                'room_type': room_type or 'Unknown',
+                'total': total_of_type,
+                'occupied': occupied_of_type,
+                'occupancy_rate': round(type_occupancy, 1)
+            })
+
+        # Occupancy by hotel (only when showing all hotels)
+        by_hotel = []
+        if not hotel_id:
+            hotels = Hotel.objects.filter(is_active=True)
+            for h in hotels:
+                h_total = Room.objects.filter(hotel=h, is_active=True).count()
+                h_occupied = Booking.objects.filter(
+                    hotel=h,
+                    check_in_date__lte=today,
+                    check_out_date__gt=today,
+                    status='checked_in'
+                ).count()
+                h_available = h_total - h_occupied
+                h_rate = (h_occupied / h_total) * 100 if h_total > 0 else 0
+
+                by_hotel.append({
+                    'id': h.id,
+                    'name': h.name,
+                    'total_rooms': h_total,
+                    'occupied': h_occupied,
+                    'available': h_available,
+                    'occupancy_rate': round(h_rate, 1)
                 })
-        else:  # yearly
-            yearly_data = defaultdict(lambda: {'total_days': 0, 'total_occupied': 0})
-            for date_key, values in daily_data.items():
-                year_key = date_key.strftime('%Y')
-                yearly_data[year_key]['total_days'] += 1
-                yearly_data[year_key]['total_occupied'] += values['occupied_rooms']
-                yearly_data[year_key]['year'] = year_key
-
-            data = []
-            for year_key, values in sorted(yearly_data.items()):
-                avg_occupancy = (values['total_occupied'] / (values['total_days'] * total_rooms)) * 100
-                data.append({
-                    'year': values['year'],
-                    'average_occupied_rooms': round(values['total_occupied'] / values['total_days'], 2),
-                    'total_rooms': total_rooms,
-                    'occupancy_rate': round(avg_occupancy, 2)
-                })
-
-        # Calculate summary statistics
-        occupancy_rates = [d.get('occupancy_rate', 0) for d in daily_data.values()]
-        avg_occupancy = sum(occupancy_rates) / len(occupancy_rates) if occupancy_rates else 0
-
-        # Find peak and lowest days
-        sorted_by_occupancy = sorted(daily_data.items(), key=lambda x: x[1]['occupancy_rate'], reverse=True)
-        peak_day = sorted_by_occupancy[0] if sorted_by_occupancy else None
-        lowest_day = sorted_by_occupancy[-1] if sorted_by_occupancy else None
 
         return Response({
             'hotel_id': hotel_id,
-            'hotel_name': hotel.name,
+            'hotel_name': hotel_name,
             'total_rooms': total_rooms,
-            'period': period,
+            'occupied_rooms': occupied_rooms,
+            'available_rooms': available_rooms,
+            'occupancy_rate': round(occupancy_rate, 1),
             'start_date': start_date.isoformat(),
             'end_date': end_date.isoformat(),
-            'data': data,
-            'summary': {
-                'average_occupancy_rate': round(avg_occupancy, 2),
-                'peak_occupancy_date': peak_day[0].isoformat() if peak_day else None,
-                'peak_occupancy_rate': round(peak_day[1]['occupancy_rate'], 2) if peak_day else None,
-                'lowest_occupancy_date': lowest_day[0].isoformat() if lowest_day else None,
-                'lowest_occupancy_rate': round(lowest_day[1]['occupancy_rate'], 2) if lowest_day else None,
-            }
+            'by_room_type': by_room_type,
+            'by_hotel': by_hotel
         })
 
     @action(detail=False, methods=['get'])
     def revenue(self, request):
         """
-        Get revenue reports for a hotel
+        Get revenue reports
         Query params:
-        - hotel_id: Required
-        - period: daily, monthly, yearly (default: monthly)
+        - hotel_id: Optional (if not provided, returns aggregate data for all hotels)
         - start_date: Start of period
         - end_date: End of period
-        - group_by: room_type, service (default: none)
         """
         hotel_id = request.query_params.get('hotel_id')
-        period = request.query_params.get('period', 'monthly')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
-        group_by = request.query_params.get('group_by')
-
-        if not hotel_id:
-            return Response(
-                {'error': 'hotel_id is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            hotel = Hotel.objects.get(id=hotel_id)
-        except Hotel.DoesNotExist:
-            return Response(
-                {'error': 'Hotel not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
 
         # Parse dates
         if end_date:
@@ -217,117 +184,102 @@ class ReportsViewSet(viewsets.ViewSet):
         if start_date:
             start_date = date.fromisoformat(start_date)
         else:
-            if period == 'daily':
-                start_date = end_date - timedelta(days=30)
-            elif period == 'monthly':
-                start_date = end_date - timedelta(days=365)
-            else:
-                start_date = end_date - timedelta(days=365 * 3)
+            start_date = end_date - timedelta(days=30)
 
-        # Get completed/paid bookings
-        bookings = Booking.objects.filter(
-            hotel=hotel,
-            status__in=['confirmed', 'checked_out', 'completed'],
-            created_at__date__gte=start_date,
-            created_at__date__lte=end_date
+        # Build filter
+        booking_filter = {
+            'status__in': ['confirmed', 'checked_in', 'checked_out', 'completed'],
+            'created_at__date__gte': start_date,
+            'created_at__date__lte': end_date
+        }
+        if hotel_id:
+            booking_filter['hotel_id'] = hotel_id
+
+        bookings = Booking.objects.filter(**booking_filter)
+
+        # Total revenue and bookings
+        totals = bookings.aggregate(
+            total_revenue=Sum('total_price'),
+            total_bookings=Count('id'),
+            average_booking_value=Avg('total_price')
         )
 
-        # Calculate revenue by room type if requested
-        if group_by == 'room_type':
-            revenue_data = bookings.values(
-                room_type=F('room__room_type_category')
+        total_revenue = float(totals['total_revenue'] or 0)
+        total_bookings = totals['total_bookings'] or 0
+        average_booking_value = float(totals['average_booking_value'] or 0)
+
+        # Pending revenue
+        pending_filter = {
+            'payment_status': 'pending',
+            'created_at__date__gte': start_date,
+            'created_at__date__lte': end_date
+        }
+        if hotel_id:
+            pending_filter['hotel_id'] = hotel_id
+
+        pending_revenue = Booking.objects.filter(**pending_filter).aggregate(
+            total=Sum('total_price')
+        )['total'] or 0
+
+        # Revenue by payment status
+        by_payment_status = bookings.values('payment_status').annotate(
+            count=Count('id'),
+            total=Sum('total_price')
+        ).order_by('-total')
+
+        payment_status_data = [{
+            'status': item['payment_status'] or 'unknown',
+            'count': item['count'],
+            'total': float(item['total'] or 0)
+        } for item in by_payment_status]
+
+        # Revenue by room type
+        by_room_type = bookings.values(
+            room_type=F('room__room_type_category')
+        ).annotate(
+            bookings=Count('id'),
+            revenue=Sum('total_price')
+        ).order_by('-revenue')
+
+        room_type_data = [{
+            'room_type': item['room_type'] or 'Unknown',
+            'bookings': item['bookings'],
+            'revenue': float(item['revenue'] or 0)
+        } for item in by_room_type]
+
+        # Revenue by hotel (only when showing all hotels)
+        by_hotel = []
+        if not hotel_id:
+            hotel_revenue = bookings.values(
+                'hotel__id', 'hotel__name'
             ).annotate(
-                total_bookings=Count('id'),
-                total_revenue=Sum('total_price'),
-                average_booking_value=Avg('total_price')
-            ).order_by('-total_revenue')
+                bookings=Count('id'),
+                revenue=Sum('total_price'),
+                average=Avg('total_price')
+            ).order_by('-revenue')
 
-            data = []
-            for item in revenue_data:
-                data.append({
-                    'room_type': item['room_type'] or 'Unknown',
-                    'total_bookings': item['total_bookings'],
-                    'total_revenue': float(item['total_revenue'] or 0),
-                    'average_booking_value': float(item['average_booking_value'] or 0)
+            for item in hotel_revenue:
+                percentage = (float(item['revenue'] or 0) / total_revenue * 100) if total_revenue > 0 else 0
+                by_hotel.append({
+                    'id': item['hotel__id'],
+                    'name': item['hotel__name'],
+                    'bookings': item['bookings'],
+                    'revenue': float(item['revenue'] or 0),
+                    'average': float(item['average'] or 0),
+                    'percentage': round(percentage, 1)
                 })
-
-            total_revenue = sum(d['total_revenue'] for d in data)
-            total_bookings = sum(d['total_bookings'] for d in data)
-
-            return Response({
-                'hotel_id': hotel_id,
-                'hotel_name': hotel.name,
-                'period': period,
-                'start_date': start_date.isoformat(),
-                'end_date': end_date.isoformat(),
-                'group_by': 'room_type',
-                'data': data,
-                'summary': {
-                    'total_revenue': total_revenue,
-                    'total_bookings': total_bookings,
-                    'average_booking_value': total_revenue / total_bookings if total_bookings > 0 else 0
-                }
-            })
-
-        # Default: Group by period
-        if period == 'daily':
-            revenue_data = bookings.annotate(
-                period_date=TruncDate('created_at')
-            ).values('period_date').annotate(
-                total_bookings=Count('id'),
-                total_revenue=Sum('total_price')
-            ).order_by('period_date')
-
-            data = [{
-                'date': item['period_date'].isoformat(),
-                'total_bookings': item['total_bookings'],
-                'total_revenue': float(item['total_revenue'] or 0)
-            } for item in revenue_data]
-
-        elif period == 'monthly':
-            revenue_data = bookings.annotate(
-                period_month=TruncMonth('created_at')
-            ).values('period_month').annotate(
-                total_bookings=Count('id'),
-                total_revenue=Sum('total_price')
-            ).order_by('period_month')
-
-            data = [{
-                'month': item['period_month'].strftime('%Y-%m'),
-                'total_bookings': item['total_bookings'],
-                'total_revenue': float(item['total_revenue'] or 0)
-            } for item in revenue_data]
-
-        else:  # yearly
-            revenue_data = bookings.annotate(
-                period_year=TruncYear('created_at')
-            ).values('period_year').annotate(
-                total_bookings=Count('id'),
-                total_revenue=Sum('total_price')
-            ).order_by('period_year')
-
-            data = [{
-                'year': item['period_year'].strftime('%Y'),
-                'total_bookings': item['total_bookings'],
-                'total_revenue': float(item['total_revenue'] or 0)
-            } for item in revenue_data]
-
-        total_revenue = sum(d['total_revenue'] for d in data)
-        total_bookings = sum(d['total_bookings'] for d in data)
 
         return Response({
             'hotel_id': hotel_id,
-            'hotel_name': hotel.name,
-            'period': period,
             'start_date': start_date.isoformat(),
             'end_date': end_date.isoformat(),
-            'group_by': 'period',
-            'data': data,
-            'summary': {
-                'total_revenue': total_revenue,
-                'total_bookings': total_bookings,
-                'average_booking_value': total_revenue / total_bookings if total_bookings > 0 else 0
-            }
+            'total_revenue': total_revenue,
+            'total_bookings': total_bookings,
+            'average_booking_value': average_booking_value,
+            'pending_revenue': float(pending_revenue),
+            'by_payment_status': payment_status_data,
+            'by_room_type': room_type_data,
+            'by_hotel': by_hotel
         })
 
     @action(detail=False, methods=['get'])
@@ -335,27 +287,13 @@ class ReportsViewSet(viewsets.ViewSet):
         """
         Get guest booking patterns and demographics
         Query params:
-        - hotel_id: Required
+        - hotel_id: Optional (if not provided, returns aggregate data)
         - start_date: Start of period
         - end_date: End of period
         """
         hotel_id = request.query_params.get('hotel_id')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
-
-        if not hotel_id:
-            return Response(
-                {'error': 'hotel_id is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            hotel = Hotel.objects.get(id=hotel_id)
-        except Hotel.DoesNotExist:
-            return Response(
-                {'error': 'Hotel not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
 
         # Parse dates
         if end_date:
@@ -368,11 +306,60 @@ class ReportsViewSet(viewsets.ViewSet):
         else:
             start_date = end_date - timedelta(days=365)
 
-        bookings = Booking.objects.filter(
-            hotel=hotel,
-            created_at__date__gte=start_date,
-            created_at__date__lte=end_date
-        )
+        # Build filter
+        booking_filter = {
+            'created_at__date__gte': start_date,
+            'created_at__date__lte': end_date
+        }
+        if hotel_id:
+            booking_filter['hotel_id'] = hotel_id
+
+        bookings = Booking.objects.filter(**booking_filter)
+        total_bookings = bookings.count()
+
+        # Demographics by nationality (from check-in records)
+        checkin_filter = {
+            'booking__created_at__date__gte': start_date,
+            'booking__created_at__date__lte': end_date
+        }
+        if hotel_id:
+            checkin_filter['booking__hotel_id'] = hotel_id
+
+        # Get nationality from check-in records (primary guests only for accurate count)
+        by_country = CheckInRecord.objects.filter(
+            **checkin_filter,
+            guest_type='primary'
+        ).values('nationality').annotate(
+            count=Count('id')
+        ).order_by('-count')
+
+        total_checkins = sum(item['count'] for item in by_country)
+
+        country_data = []
+        for item in by_country:
+            percentage = (item['count'] / total_checkins * 100) if total_checkins > 0 else 0
+            country_data.append({
+                'country': item['nationality'] or 'Unknown',
+                'count': item['count'],
+                'percentage': round(percentage, 1)
+            })
+
+        # If no check-in records, fall back to user country
+        if not country_data:
+            by_user_country = bookings.values(
+                country=F('user__country')
+            ).annotate(
+                count=Count('id')
+            ).order_by('-count')
+
+            for item in by_user_country:
+                if item['country']:  # Only include if country is set
+                    percentage = (item['count'] / total_bookings * 100) if total_bookings > 0 else 0
+                    country_data.append({
+                        'country': item['country'],
+                        'count': item['count'],
+                        'percentage': round(percentage, 1)
+                    })
 
         # Booking patterns by day of week
         day_of_week_data = bookings.annotate(
@@ -387,43 +374,14 @@ class ReportsViewSet(viewsets.ViewSet):
             'bookings': item['count']
         } for item in day_of_week_data]
 
+        # Find peak booking day
+        peak_day = max(bookings_by_day, key=lambda x: x['bookings'])['day'] if bookings_by_day else None
+
         # Average length of stay
         stay_lengths = []
         for booking in bookings:
             stay_lengths.append(booking.number_of_nights)
         avg_stay_length = sum(stay_lengths) / len(stay_lengths) if stay_lengths else 0
-
-        # Stay length distribution
-        stay_distribution = defaultdict(int)
-        for length in stay_lengths:
-            if length <= 1:
-                stay_distribution['1 night'] += 1
-            elif length <= 3:
-                stay_distribution['2-3 nights'] += 1
-            elif length <= 7:
-                stay_distribution['4-7 nights'] += 1
-            else:
-                stay_distribution['7+ nights'] += 1
-
-        # Guest count distribution
-        guest_counts = bookings.values('guests_count').annotate(
-            count=Count('id')
-        ).order_by('guests_count')
-
-        guest_distribution = [{
-            'guests': item['guests_count'],
-            'bookings': item['count']
-        } for item in guest_counts]
-
-        # Booking source (by payment method as proxy)
-        payment_methods = bookings.values('payment_method').annotate(
-            count=Count('id')
-        ).order_by('-count')
-
-        payment_distribution = [{
-            'payment_method': item['payment_method'] or 'Not specified',
-            'bookings': item['count']
-        } for item in payment_methods]
 
         # Repeat guests
         repeat_guests = bookings.values('user').annotate(
@@ -432,33 +390,27 @@ class ReportsViewSet(viewsets.ViewSet):
 
         total_guests = bookings.values('user').distinct().count()
 
-        # Room type preferences
-        room_preferences = bookings.values(
-            room_type=F('room__room_type_category')
-        ).annotate(
-            count=Count('id')
-        ).order_by('-count')
-
-        room_type_distribution = [{
-            'room_type': item['room_type'] or 'Unknown',
-            'bookings': item['count']
-        } for item in room_preferences]
+        # Average lead time (days between booking creation and check-in)
+        lead_times = []
+        for booking in bookings:
+            lead_time = (booking.check_in_date - booking.created_at.date()).days
+            if lead_time >= 0:
+                lead_times.append(lead_time)
+        avg_lead_time = sum(lead_times) / len(lead_times) if lead_times else 0
 
         return Response({
             'hotel_id': hotel_id,
-            'hotel_name': hotel.name,
             'start_date': start_date.isoformat(),
             'end_date': end_date.isoformat(),
-            'total_bookings': bookings.count(),
-            'total_unique_guests': total_guests,
-            'repeat_guests': repeat_guests,
-            'repeat_guest_rate': round((repeat_guests / total_guests) * 100, 2) if total_guests > 0 else 0,
-            'average_stay_length': round(avg_stay_length, 2),
+            'total_bookings': total_bookings,
+            'by_country': country_data,
             'bookings_by_day_of_week': bookings_by_day,
-            'stay_length_distribution': [{'range': k, 'count': v} for k, v in stay_distribution.items()],
-            'guest_count_distribution': guest_distribution,
-            'room_type_preferences': room_type_distribution,
-            'payment_method_distribution': payment_distribution,
+            'booking_patterns': {
+                'average_stay': round(avg_stay_length, 1),
+                'repeat_guests': repeat_guests,
+                'average_lead_time': round(avg_lead_time, 0),
+                'peak_booking_day': peak_day
+            }
         })
 
     @action(detail=False, methods=['get'])
@@ -483,77 +435,98 @@ class ReportsViewSet(viewsets.ViewSet):
 
         today = date.today()
         start_of_month = today.replace(day=1)
-        start_of_year = today.replace(month=1, day=1)
 
-        # Today's stats
-        todays_checkins = Booking.objects.filter(
-            **hotel_filter,
-            check_in_date=today,
-            status__in=['confirmed', 'checked_in']
-        ).count()
+        # Total bookings and revenue
+        booking_filter = {'status__in': ['confirmed', 'checked_in', 'checked_out', 'completed']}
+        if hotel_id:
+            booking_filter['hotel_id'] = hotel_id
 
-        todays_checkouts = Booking.objects.filter(
-            **hotel_filter,
-            check_out_date=today,
-            status__in=['checked_in', 'checked_out']
-        ).count()
+        all_bookings = Booking.objects.filter(**booking_filter)
+        total_bookings = all_bookings.count()
+        total_revenue = all_bookings.aggregate(total=Sum('total_price'))['total'] or 0
+
+        # Active guests (currently checked in)
+        active_filter = {'status': 'checked_in'}
+        if hotel_id:
+            active_filter['hotel_id'] = hotel_id
+        active_guests = Booking.objects.filter(**active_filter).aggregate(
+            total=Sum('guests_count')
+        )['total'] or 0
 
         # Current occupancy
-        total_rooms = Room.objects.filter(
-            **{'hotel' if 'hotel' in hotel_filter else 'hotel__isnull': hotel_filter.get('hotel') if 'hotel' in hotel_filter else False},
-            is_active=True
-        ).count() if hotel_filter else Room.objects.filter(is_active=True).count()
+        room_filter = {'is_active': True}
+        if hotel_id:
+            room_filter['hotel_id'] = hotel_id
+        total_rooms = Room.objects.filter(**room_filter).count()
 
-        occupied_rooms = Booking.objects.filter(
-            **hotel_filter,
-            check_in_date__lte=today,
-            check_out_date__gt=today,
-            status='checked_in'
-        ).count()
+        occupied_filter = {
+            'check_in_date__lte': today,
+            'check_out_date__gt': today,
+            'status': 'checked_in'
+        }
+        if hotel_id:
+            occupied_filter['hotel_id'] = hotel_id
+        occupied_rooms = Booking.objects.filter(**occupied_filter).count()
 
-        current_occupancy = (occupied_rooms / total_rooms) * 100 if total_rooms > 0 else 0
+        occupancy_rate = (occupied_rooms / total_rooms) * 100 if total_rooms > 0 else 0
 
-        # Monthly revenue
-        monthly_revenue = Booking.objects.filter(
-            **hotel_filter,
-            status__in=['confirmed', 'checked_out', 'completed'],
-            created_at__date__gte=start_of_month
-        ).aggregate(total=Sum('total_price'))['total'] or 0
+        # Bookings by status
+        status_filter = {}
+        if hotel_id:
+            status_filter['hotel_id'] = hotel_id
 
-        # Yearly revenue
-        yearly_revenue = Booking.objects.filter(
-            **hotel_filter,
-            status__in=['confirmed', 'checked_out', 'completed'],
-            created_at__date__gte=start_of_year
-        ).aggregate(total=Sum('total_price'))['total'] or 0
+        bookings_by_status = Booking.objects.filter(**status_filter).values('status').annotate(
+            count=Count('id')
+        )
 
-        # Pending bookings
-        pending_bookings = Booking.objects.filter(
-            **hotel_filter,
-            status='pending'
-        ).count()
+        total_all = sum(item['count'] for item in bookings_by_status)
+        status_data = []
+        for item in bookings_by_status:
+            percentage = (item['count'] / total_all * 100) if total_all > 0 else 0
+            status_data.append({
+                'status': item['status'],
+                'count': item['count'],
+                'percentage': round(percentage, 1)
+            })
 
-        # Cancellations this month
-        cancellations = Booking.objects.filter(
-            **hotel_filter,
-            status='cancelled',
-            cancelled_at__date__gte=start_of_month
-        ).count()
+        # Top hotels by revenue (only when showing all hotels)
+        top_hotels = []
+        if not hotel_id:
+            hotel_stats = Booking.objects.filter(
+                status__in=['confirmed', 'checked_in', 'checked_out', 'completed']
+            ).values('hotel__id', 'hotel__name').annotate(
+                bookings=Count('id'),
+                revenue=Sum('total_price')
+            ).order_by('-revenue')[:5]
+
+            for item in hotel_stats:
+                h_id = item['hotel__id']
+                h_total_rooms = Room.objects.filter(hotel_id=h_id, is_active=True).count()
+                h_occupied = Booking.objects.filter(
+                    hotel_id=h_id,
+                    check_in_date__lte=today,
+                    check_out_date__gt=today,
+                    status='checked_in'
+                ).count()
+                h_occupancy = (h_occupied / h_total_rooms * 100) if h_total_rooms > 0 else 0
+
+                top_hotels.append({
+                    'id': h_id,
+                    'name': item['hotel__name'],
+                    'bookings': item['bookings'],
+                    'revenue': float(item['revenue'] or 0),
+                    'occupancy_rate': round(h_occupancy, 1)
+                })
 
         return Response({
             'date': today.isoformat(),
             'hotel_id': hotel_id,
-            'todays_checkins': todays_checkins,
-            'todays_checkouts': todays_checkouts,
-            'current_occupancy': {
-                'occupied_rooms': occupied_rooms,
-                'total_rooms': total_rooms,
-                'occupancy_rate': round(current_occupancy, 2)
-            },
-            'monthly_revenue': float(monthly_revenue),
-            'yearly_revenue': float(yearly_revenue),
-            'pending_bookings': pending_bookings,
-            'cancellations_this_month': cancellations
+            'total_bookings': total_bookings,
+            'total_revenue': float(total_revenue),
+            'active_guests': active_guests,
+            'occupancy_rate': round(occupancy_rate, 1),
+            'bookings_by_status': status_data,
+            'top_hotels': top_hotels
         })
 
     @action(detail=False, methods=['get'])
@@ -586,11 +559,11 @@ class ReportsViewSet(viewsets.ViewSet):
             total_revenue=Sum('total_price')
         ).order_by('-total_bookings')
 
-        data = [{
+        services = [{
             'name': item['service_name'],
-            'bookings': item['total_bookings'],
+            'booking_count': item['total_bookings'],
             'quantity': item['total_quantity'],
-            'revenue': float(item['total_revenue'] or 0)
+            'total_revenue': float(item['total_revenue'] or 0)
         } for item in service_data]
 
         # Calculate totals
@@ -598,14 +571,14 @@ class ReportsViewSet(viewsets.ViewSet):
             **filters
         ).values('booking').distinct().count()
 
-        total_service_revenue = sum(d['revenue'] for d in data)
+        total_service_revenue = sum(d['total_revenue'] for d in services)
 
         return Response({
             'hotel_id': hotel_id,
-            'data': data,
+            'services': services,
             'summary': {
                 'total_bookings_with_services': total_bookings_with_services,
                 'total_service_revenue': total_service_revenue,
-                'most_popular_service': data[0]['name'] if data else None
+                'most_popular_service': services[0]['name'] if services else None
             }
         })

@@ -52,6 +52,7 @@ import BookingConfirmation from './pages/guest/BookingConfirmation';
 import MyBookings from './pages/guest/MyBookings';
 
 // Report pages
+import ReportsDashboard from './pages/reports/ReportsDashboard';
 import OccupancyReport from './pages/reports/OccupancyReport';
 import RevenueReport from './pages/reports/RevenueReport';
 import AnalyticsDashboard from './pages/reports/AnalyticsDashboard';
@@ -220,9 +221,17 @@ function App() {
 
               {/* Reports (Manager/Admin) */}
               <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute allowedRoles={['manager', 'admin']}>
+                    <ReportsDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/reports/occupancy"
                 element={
-                  <ProtectedRoute requiredRole="manager">
+                  <ProtectedRoute allowedRoles={['manager', 'admin']}>
                     <OccupancyReport />
                   </ProtectedRoute>
                 }
@@ -230,7 +239,7 @@ function App() {
               <Route
                 path="/reports/revenue"
                 element={
-                  <ProtectedRoute requiredRole="manager">
+                  <ProtectedRoute allowedRoles={['manager', 'admin']}>
                     <RevenueReport />
                   </ProtectedRoute>
                 }
@@ -238,7 +247,7 @@ function App() {
               <Route
                 path="/reports/analytics"
                 element={
-                  <ProtectedRoute requiredRole="manager">
+                  <ProtectedRoute allowedRoles={['manager', 'admin']}>
                     <AnalyticsDashboard />
                   </ProtectedRoute>
                 }
