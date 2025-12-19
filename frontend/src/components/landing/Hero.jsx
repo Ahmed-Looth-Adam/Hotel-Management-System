@@ -112,6 +112,9 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
   const lastStateChange = useRef(Date.now());
   const ANIMATION_LOCK_MS = 400; // Prevent state changes for 400ms after each change
 
+  // Track manual expansion to prevent scroll-based auto-collapse
+  const [manuallyExpanded, setManuallyExpanded] = useState(false);
+
   // Safe state setter that respects animation lock
   const setExpandedSafe = (value) => {
     const now = Date.now();
@@ -129,8 +132,8 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 10);
 
-      // Collapse when scrolled down enough
-      if (scrollY > 80) {
+      // Collapse when scrolled down enough, but respect manual expansion
+      if (scrollY > 80 && !manuallyExpanded) {
         setActiveField(null);
         setIsExpanded(false);
       }
@@ -138,17 +141,28 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
       // Only auto-expand when at the very top on landing page (not initialCollapsed)
       if (!initialCollapsed && scrollY < 10) {
         setIsExpanded(true);
+        setManuallyExpanded(false); // Reset manual flag when at top
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [initialCollapsed]);
+  }, [initialCollapsed, manuallyExpanded]);
 
   // Handle manual expand (clicking collapsed bar)
   const handleExpandSearch = () => {
     lastStateChange.current = Date.now();
     setIsExpanded(true);
+    setManuallyExpanded(true); // Prevent scroll from auto-collapsing
+  };
+
+  // Collapse the search bar (bypasses animation lock for intentional collapses)
+  const collapseSearchBar = () => {
+    if (window.scrollY > 20) {
+      setIsExpanded(false);
+      setManuallyExpanded(false);
+      setActiveField(null);
+    }
   };
 
   // Click outside to collapse expanded search bar (only on home page)
@@ -158,8 +172,8 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
     const handleClickOutside = (event) => {
       if (searchBarRef.current && !searchBarRef.current.contains(event.target)) {
         const isPopover = event.target.closest('.MuiPopover-root');
-        if (!isPopover && isExpanded && window.scrollY > 20) {
-          setExpandedSafe(false);
+        if (!isPopover && isExpanded) {
+          collapseSearchBar();
         }
       }
     };
@@ -230,6 +244,7 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
     if (checkIn) params.set('checkIn', checkIn.format('YYYY-MM-DD'));
     if (checkOut) params.set('checkOut', checkOut.format('YYYY-MM-DD'));
     if (guests) params.set('guests', guests.toString());
+    setManuallyExpanded(false); // Reset manual flag on search
     navigate(`/guest/rooms?${params.toString()}`);
   };
 
@@ -248,7 +263,22 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
   const handleLocationSelect = (location) => {
     setSelectedLocation(location);
     setLocationAnchor(null);
-    setActiveField(null);
+    // Auto-open dates popover if dates not selected
+    if (!checkIn || !checkOut) {
+      setTimeout(() => {
+        setActiveField('dates');
+        setDateAnchor(dateFieldRef.current);
+      }, 150);
+    } else if (!guests) {
+      // If dates already selected but no guests, open guests
+      setTimeout(() => {
+        setActiveField('guests');
+        setGuestAnchor(guestFieldRef.current);
+      }, 150);
+    } else {
+      setActiveField(null);
+      collapseSearchBar();
+    }
   };
 
   // User menu handlers
@@ -678,7 +708,19 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                 px: 3,
                 '&:hover': { bgcolor: '#000000' },
               }}
-              onClick={() => setDateAnchor(null)}
+              onClick={() => {
+                setDateAnchor(null);
+                // Auto-open guests popover if not selected
+                if (!guests) {
+                  setTimeout(() => {
+                    setActiveField('guests');
+                    setGuestAnchor(guestFieldRef.current);
+                  }, 150);
+                } else {
+                  setActiveField(null);
+                  collapseSearchBar();
+                }
+              }}
             >
               Done
             </Button>
@@ -770,7 +812,11 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
             py: 1.25,
             '&:hover': { bgcolor: '#000000' },
           }}
-          onClick={() => setGuestAnchor(null)}
+          onClick={() => {
+            setGuestAnchor(null);
+            setActiveField(null);
+            collapseSearchBar(); // Collapse after final selection
+          }}
         >
           Done
         </Button>
@@ -1384,7 +1430,21 @@ const Hero = ({ initialCollapsed = false, initialParams = {}, hideBottomNav = fa
                 onClick={() => {
                   setSelectedLocation(null);
                   setLocationAnchor(null);
-                  setActiveField(null);
+                  // Auto-open dates popover if dates not selected
+                  if (!checkIn || !checkOut) {
+                    setTimeout(() => {
+                      setActiveField('dates');
+                      setDateAnchor(dateFieldRef.current);
+                    }, 150);
+                  } else if (!guests) {
+                    setTimeout(() => {
+                      setActiveField('guests');
+                      setGuestAnchor(guestFieldRef.current);
+                    }, 150);
+                  } else {
+                    setActiveField(null);
+                    collapseSearchBar();
+                  }
                 }}
                 sx={{
                   display: 'flex',
