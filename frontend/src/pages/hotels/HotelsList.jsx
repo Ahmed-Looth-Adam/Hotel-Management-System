@@ -13,6 +13,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Avatar,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add,
@@ -21,6 +26,7 @@ import {
   Visibility,
   Search,
   Hotel,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import { hotelService } from '../../services';
@@ -35,6 +41,8 @@ const HotelsList = () => {
     city: '',
     is_active: '',
   });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, name: '' });
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchHotels = async () => {
     setLoading(true);
@@ -55,16 +63,21 @@ const HotelsList = () => {
     fetchHotels();
   }, [filters]);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this hotel?')) {
-      const result = await hotelService.delete(id);
-      if (result.success) {
-        showSuccess('Hotel deleted successfully');
-        fetchHotels();
-      } else {
-        showError('Failed to delete hotel');
-      }
+  const handleDeleteClick = (id, name) => {
+    setDeleteDialog({ open: true, id, name });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    const result = await hotelService.delete(deleteDialog.id);
+    if (result.success) {
+      showSuccess('Hotel deleted successfully');
+      setDeleteDialog({ open: false, id: null, name: '' });
+      fetchHotels();
+    } else {
+      showError('Failed to delete hotel');
     }
+    setDeleteLoading(false);
   };
 
   const columns = [
@@ -119,7 +132,7 @@ const HotelsList = () => {
           </IconButton>
           <IconButton
             size="small"
-            onClick={() => handleDelete(row.id)}
+            onClick={() => handleDeleteClick(row.id, row.name)}
             title="Delete"
             color="error"
           >
@@ -182,6 +195,120 @@ const HotelsList = () => {
         data={hotels}
         emptyMessage={loading ? 'Loading hotels...' : 'No hotels found'}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null, name: '' })}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%)',
+            color: '#ffffff',
+            px: 3,
+            py: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar
+              sx={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                width: 36,
+                height: 36,
+              }}
+            >
+              <Delete fontSize="small" />
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#ffffff' }}>
+                Delete Hotel
+              </Typography>
+              {deleteDialog.name && (
+                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                  {deleteDialog.name}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+          <IconButton onClick={() => setDeleteDialog({ open: false, id: null, name: '' })} sx={{ color: '#ffffff' }} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Are you sure you want to <strong>delete</strong> this hotel? This action cannot be undone
+              and all associated rooms and data will be permanently removed.
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 1.5,
+            bgcolor: 'grey.50',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Button
+            onClick={() => setDeleteDialog({ open: false, id: null, name: '' })}
+            disabled={deleteLoading}
+            color="inherit"
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleDeleteConfirm}
+            disabled={deleteLoading}
+            sx={{
+              borderRadius: 2,
+              px: 4,
+              textTransform: 'none',
+              fontWeight: 600,
+              bgcolor: '#dc2626',
+              color: '#ffffff',
+              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35)',
+              '&:hover': {
+                bgcolor: '#b91c1c',
+              },
+              '&.Mui-disabled': {
+                bgcolor: 'grey.300',
+                color: 'grey.500',
+              },
+            }}
+          >
+            {deleteLoading ? <CircularProgress size={22} sx={{ color: 'white' }} /> : 'Delete Hotel'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

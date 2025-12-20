@@ -62,7 +62,13 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         # Also include notifications specifically targeted to this user
         queryset = queryset | Notification.objects.filter(target_user=user)
 
-        return queryset.distinct().order_by('-created_at')[:50]
+        return queryset.distinct().order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        """Override list to limit results to 50 notifications."""
+        queryset = self.filter_queryset(self.get_queryset())[:50]
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def unread_count(self, request):

@@ -132,7 +132,7 @@ const Register = () => {
   const textFieldSx = {
     mb: 2,
     '& .MuiOutlinedInput-root': {
-      borderRadius: 2,
+      borderRadius: 1,
       bgcolor: '#f8f9fa',
       '&:hover': {
         bgcolor: '#f8f9fa',
@@ -194,11 +194,13 @@ const Register = () => {
           >
             <Box
               component="img"
-              src="/logo.png"
+              src="/logo-admin.png"
               alt="LuxeStay Hotels"
               sx={{
                 height: 48,
                 width: 'auto',
+                borderRadius: 1,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
               }}
             />
           </Box>
@@ -256,11 +258,13 @@ const Register = () => {
           >
             <Box
               component="img"
-              src="/logo.png"
+              src="/logo-admin.png"
               alt="LuxeStay Hotels"
               sx={{
                 height: 48,
                 width: 'auto',
+                borderRadius: 1,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
               }}
             />
           </Box>
@@ -291,7 +295,7 @@ const Register = () => {
               severity="error"
               sx={{
                 mb: 2,
-                borderRadius: 2,
+                borderRadius: 1,
               }}
               onClose={() => setError('')}
             >
@@ -304,7 +308,7 @@ const Register = () => {
               severity="success"
               sx={{
                 mb: 2,
-                borderRadius: 2,
+                borderRadius: 1,
               }}
             >
               {success}
@@ -447,7 +451,7 @@ const Register = () => {
                 mt: 1,
                 mb: 2,
                 py: 1.5,
-                borderRadius: 2,
+                borderRadius: 1,
                 textTransform: 'none',
                 color: 'text.secondary',
                 bgcolor: '#f8f9fa',
@@ -646,7 +650,7 @@ const Register = () => {
               sx={{
                 mt: 2,
                 py: 1.5,
-                borderRadius: 2,
+                borderRadius: 1,
                 textTransform: 'none',
                 fontSize: '1rem',
                 fontWeight: 600,

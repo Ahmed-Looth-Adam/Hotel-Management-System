@@ -17,6 +17,11 @@ import {
   CardActions,
   ToggleButton,
   ToggleButtonGroup,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Avatar,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add,
@@ -27,6 +32,7 @@ import {
   ViewList,
   ViewModule,
   KingBed,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import { roomService, hotelService } from '../../services';
@@ -53,6 +59,8 @@ const RoomsList = () => {
     status: '',
     is_active: '',
   });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, roomNumber: '' });
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -83,16 +91,21 @@ const RoomsList = () => {
     fetchData();
   }, [filters]);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this room?')) {
-      const result = await roomService.delete(id);
-      if (result.success) {
-        showSuccess('Room deleted successfully');
-        fetchData();
-      } else {
-        showError('Failed to delete room');
-      }
+  const handleDeleteClick = (id, roomNumber) => {
+    setDeleteDialog({ open: true, id, roomNumber });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    const result = await roomService.delete(deleteDialog.id);
+    if (result.success) {
+      showSuccess('Room deleted successfully');
+      setDeleteDialog({ open: false, id: null, roomNumber: '' });
+      fetchData();
+    } else {
+      showError('Failed to delete room');
     }
+    setDeleteLoading(false);
   };
 
   const columns = [
@@ -141,7 +154,7 @@ const RoomsList = () => {
           <IconButton size="small" onClick={() => navigate(`/rooms/${row.id}/edit`)} title="Edit">
             <Edit />
           </IconButton>
-          <IconButton size="small" onClick={() => handleDelete(row.id)} title="Delete" color="error">
+          <IconButton size="small" onClick={() => handleDeleteClick(row.id, row.room_number)} title="Delete" color="error">
             <Delete />
           </IconButton>
         </Box>
@@ -282,6 +295,119 @@ const RoomsList = () => {
           )}
         </Grid>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null, roomNumber: '' })}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%)',
+            color: '#ffffff',
+            px: 3,
+            py: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar
+              sx={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                width: 36,
+                height: 36,
+              }}
+            >
+              <Delete fontSize="small" />
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#ffffff' }}>
+                Delete Room
+              </Typography>
+              {deleteDialog.roomNumber && (
+                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                  Room {deleteDialog.roomNumber}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+          <IconButton onClick={() => setDeleteDialog({ open: false, id: null, roomNumber: '' })} sx={{ color: '#ffffff' }} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Are you sure you want to <strong>delete</strong> this room? This action cannot be undone.
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 1.5,
+            bgcolor: 'grey.50',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Button
+            onClick={() => setDeleteDialog({ open: false, id: null, roomNumber: '' })}
+            disabled={deleteLoading}
+            color="inherit"
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleDeleteConfirm}
+            disabled={deleteLoading}
+            sx={{
+              borderRadius: 2,
+              px: 4,
+              textTransform: 'none',
+              fontWeight: 600,
+              bgcolor: '#dc2626',
+              color: '#ffffff',
+              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35)',
+              '&:hover': {
+                bgcolor: '#b91c1c',
+              },
+              '&.Mui-disabled': {
+                bgcolor: 'grey.300',
+                color: 'grey.500',
+              },
+            }}
+          >
+            {deleteLoading ? <CircularProgress size={22} sx={{ color: 'white' }} /> : 'Delete Room'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

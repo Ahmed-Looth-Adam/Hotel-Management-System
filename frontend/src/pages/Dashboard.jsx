@@ -160,8 +160,11 @@ const Dashboard = () => {
   const [allBookings, setAllBookings] = useState([]); // Store all bookings for trend calculations
   const [bookingTrends, setBookingTrends] = useState([]);
   const [revenueTrends, setRevenueTrends] = useState([]);
+  const [reservationTrends, setReservationTrends] = useState([]);
+  const [occupancyTrends, setOccupancyTrends] = useState([]);
   const [trendPeriod, setTrendPeriod] = useState('7d');
   const [revenuePeriod, setRevenuePeriod] = useState('7d');
+  const [reservationPeriod, setReservationPeriod] = useState('7d');
   const [statusDistribution, setStatusDistribution] = useState([]);
   const [servicePopularity, setServicePopularity] = useState([]);
   const [hotelPerformance, setHotelPerformance] = useState([]); // For admin hotel comparison charts
@@ -338,6 +341,173 @@ const Dashboard = () => {
     return trends;
   };
 
+  // Calculate reservation trends based on stay dates (check-in to check-out)
+  // Excludes cancelled bookings
+  const calculateReservationTrends = (period, bookings) => {
+    if (!bookings || bookings.length === 0) return [];
+
+    // Filter out cancelled bookings
+    const activeBookings = bookings.filter(b => b.status !== 'cancelled');
+
+    const trends = [];
+    const now = new Date();
+    let daysBack, daysForward, groupBy;
+
+    switch (period) {
+      case '7d':
+        daysBack = 7;
+        daysForward = 7;
+        groupBy = 'day';
+        break;
+      case '1m':
+        daysBack = 15;
+        daysForward = 15;
+        groupBy = 'day';
+        break;
+      case '3m':
+        daysBack = 45;
+        daysForward = 45;
+        groupBy = 'week';
+        break;
+      default:
+        daysBack = 7;
+        daysForward = 7;
+        groupBy = 'day';
+    }
+
+    const totalDays = daysBack + daysForward;
+
+    if (groupBy === 'day') {
+      for (let i = -daysBack; i <= daysForward; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        // Count bookings where this date falls within stay period
+        const reservations = activeBookings.filter(b => {
+          return b.check_in_date <= dateStr && b.check_out_date > dateStr;
+        }).length;
+
+        trends.push({
+          date: date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+          reservations,
+          isToday: i === 0,
+        });
+      }
+    } else if (groupBy === 'week') {
+      const weeks = Math.ceil(totalDays / 7);
+      for (let i = -Math.floor(weeks / 2); i <= Math.floor(weeks / 2); i++) {
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() + i * 7);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        const weekStartStr = weekStart.toISOString().split('T')[0];
+        const weekEndStr = weekEnd.toISOString().split('T')[0];
+
+        // Count average daily reservations for the week
+        let totalReservations = 0;
+        for (let d = 0; d < 7; d++) {
+          const dayDate = new Date(weekStart);
+          dayDate.setDate(dayDate.getDate() + d);
+          const dayStr = dayDate.toISOString().split('T')[0];
+          totalReservations += activeBookings.filter(b => {
+            return b.check_in_date <= dayStr && b.check_out_date > dayStr;
+          }).length;
+        }
+
+        trends.push({
+          date: weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+          reservations: Math.round(totalReservations / 7),
+          isToday: i === 0,
+        });
+      }
+    }
+
+    return trends;
+  };
+
+  // Calculate occupancy trends based on actual checked-in stays
+  const calculateOccupancyTrends = (period, bookings) => {
+    if (!bookings || bookings.length === 0) return [];
+
+    // Only count bookings that were actually checked in (checked_in or checked_out status)
+    const stayedBookings = bookings.filter(b =>
+      ['checked_in', 'checked_out'].includes(b.status)
+    );
+
+    const trends = [];
+    const now = new Date();
+    let daysBack, daysForward, groupBy;
+
+    switch (period) {
+      case '7d':
+        daysBack = 7;
+        daysForward = 7;
+        groupBy = 'day';
+        break;
+      case '1m':
+        daysBack = 15;
+        daysForward = 15;
+        groupBy = 'day';
+        break;
+      case '3m':
+        daysBack = 45;
+        daysForward = 45;
+        groupBy = 'week';
+        break;
+      default:
+        daysBack = 7;
+        daysForward = 7;
+        groupBy = 'day';
+    }
+
+    const totalDays = daysBack + daysForward;
+
+    if (groupBy === 'day') {
+      for (let i = -daysBack; i <= daysForward; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        // Count bookings where guest was/is occupying the room on this date
+        const occupancy = stayedBookings.filter(b => {
+          return b.check_in_date <= dateStr && b.check_out_date > dateStr;
+        }).length;
+
+        trends.push({
+          date: date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+          occupancy,
+          isToday: i === 0,
+        });
+      }
+    } else if (groupBy === 'week') {
+      const weeks = Math.ceil(totalDays / 7);
+      for (let i = -Math.floor(weeks / 2); i <= Math.floor(weeks / 2); i++) {
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() + i * 7);
+
+        let totalOccupancy = 0;
+        for (let d = 0; d < 7; d++) {
+          const dayDate = new Date(weekStart);
+          dayDate.setDate(dayDate.getDate() + d);
+          const dayStr = dayDate.toISOString().split('T')[0];
+          totalOccupancy += stayedBookings.filter(b => {
+            return b.check_in_date <= dayStr && b.check_out_date > dayStr;
+          }).length;
+        }
+
+        trends.push({
+          date: weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+          occupancy: Math.round(totalOccupancy / 7),
+          isToday: i === 0,
+        });
+      }
+    }
+
+    return trends;
+  };
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
@@ -443,6 +613,8 @@ const Dashboard = () => {
         setAllBookings(bookings);
         setBookingTrends(calculateTrends(trendPeriod, bookings));
         setRevenueTrends(calculateTrends(revenuePeriod, bookings));
+        setReservationTrends(calculateReservationTrends(reservationPeriod, bookings));
+        setOccupancyTrends(calculateOccupancyTrends(reservationPeriod, bookings));
 
         // Calculate status distribution (exclude checked_out as those are completed bookings)
         const statusCounts = {};
@@ -513,6 +685,14 @@ const Dashboard = () => {
     }
   }, [revenuePeriod]);
 
+  // Recalculate reservation and occupancy trends when period changes
+  useEffect(() => {
+    if (allBookings.length > 0) {
+      setReservationTrends(calculateReservationTrends(reservationPeriod, allBookings));
+      setOccupancyTrends(calculateOccupancyTrends(reservationPeriod, allBookings));
+    }
+  }, [reservationPeriod]);
+
   const handleHotelChange = (event) => {
     setSelectedHotel(event.target.value);
   };
@@ -529,6 +709,12 @@ const Dashboard = () => {
     }
   };
 
+  const handleReservationPeriodChange = (event, newPeriod) => {
+    if (newPeriod !== null) {
+      setReservationPeriod(newPeriod);
+    }
+  };
+
   const trendPeriodLabels = {
     '7d': 'Last 7 Days',
     '1m': 'Last Month',
@@ -536,6 +722,12 @@ const Dashboard = () => {
     '6m': 'Last 6 Months',
     '1y': 'Last Year',
     'all': 'All Time',
+  };
+
+  const reservationPeriodLabels = {
+    '7d': '±7 Days',
+    '1m': '±15 Days',
+    '3m': '±45 Days',
   };
 
   const selectedHotelName = selectedHotel === 'all'
@@ -1041,6 +1233,154 @@ const Dashboard = () => {
                       ))}
                     </Bar>
                   </BarChart>
+                </ResponsiveContainer>
+              )}
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Reservation & Occupancy Trends Row */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
+            gap: 3,
+            mb: 4,
+          }}
+        >
+          {/* Reservation Trends Chart */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+              <Typography variant="h6" fontWeight={600}>
+                Reservation Trends ({reservationPeriodLabels[reservationPeriod]})
+              </Typography>
+              <ToggleButtonGroup
+                value={reservationPeriod}
+                exclusive
+                onChange={handleReservationPeriodChange}
+                size="small"
+                sx={{
+                  '& .MuiToggleButton-root': {
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: '0.75rem',
+                    textTransform: 'none',
+                    borderColor: 'divider',
+                    '&.Mui-selected': {
+                      bgcolor: '#9c27b0',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: '#7b1fa2',
+                      },
+                    },
+                  },
+                }}
+              >
+                <ToggleButton value="7d">7D</ToggleButton>
+                <ToggleButton value="1m">1M</ToggleButton>
+                <ToggleButton value="3m">3M</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              Rooms reserved per day (excludes cancelled bookings)
+            </Typography>
+            <Box sx={{ height: 250 }}>
+              {loading ? (
+                <Skeleton variant="rounded" height="100%" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={reservationTrends}>
+                    <defs>
+                      <linearGradient id="colorReservations" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#9c27b0" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#9c27b0" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: 8,
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      }}
+                      formatter={(value) => [value, 'Reservations']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="reservations"
+                      stroke="#9c27b0"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorReservations)"
+                      name="Reservations"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </Box>
+          </Paper>
+
+          {/* Occupancy Trends Chart */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+              <Typography variant="h6" fontWeight={600}>
+                Occupancy Trends ({reservationPeriodLabels[reservationPeriod]})
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              Actual rooms occupied per day (checked-in guests only)
+            </Typography>
+            <Box sx={{ height: 250 }}>
+              {loading ? (
+                <Skeleton variant="rounded" height="100%" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={occupancyTrends}>
+                    <defs>
+                      <linearGradient id="colorOccupancy" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ed6c02" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#ed6c02" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: 8,
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      }}
+                      formatter={(value) => [value, 'Occupied Rooms']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="occupancy"
+                      stroke="#ed6c02"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorOccupancy)"
+                      name="Occupancy"
+                    />
+                  </AreaChart>
                 </ResponsiveContainer>
               )}
             </Box>

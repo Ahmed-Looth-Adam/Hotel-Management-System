@@ -140,12 +140,15 @@ const BookingDetail = () => {
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [checkOutDialog, setCheckOutDialog] = useState(false);
   const [noShowDialog, setNoShowDialog] = useState(false);
+  const [cancelDialog, setCancelDialog] = useState(false);
   const [notes, setNotes] = useState('');
   const [noShowNotes, setNoShowNotes] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
   const [additionalCharges, setAdditionalCharges] = useState(0);
   const [roomCondition, setRoomCondition] = useState('');
   const [checkOutLoading, setCheckOutLoading] = useState(false);
   const [noShowLoading, setNoShowLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const fetchBooking = async () => {
     setLoading(true);
@@ -188,15 +191,17 @@ const BookingDetail = () => {
   };
 
   const handleCancel = async () => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
-      const result = await bookingService.cancel(id, { reason: 'Cancelled by staff' });
-      if (result.success) {
-        showSuccess('Booking cancelled successfully');
-        fetchBooking();
-      } else {
-        showError(result.error?.message || 'Failed to cancel booking');
-      }
+    setCancelLoading(true);
+    const result = await bookingService.cancel(id, { reason: cancelReason || 'Cancelled by staff' });
+    if (result.success) {
+      showSuccess('Booking cancelled successfully');
+      setCancelDialog(false);
+      setCancelReason('');
+      fetchBooking();
+    } else {
+      showError(result.error?.message || 'Failed to cancel booking');
     }
+    setCancelLoading(false);
   };
 
   const handleNoShow = async () => {
@@ -323,7 +328,7 @@ const BookingDetail = () => {
                 variant="outlined"
                 color="error"
                 startIcon={<Cancel />}
-                onClick={handleCancel}
+                onClick={() => setCancelDialog(true)}
                 sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
               >
                 Cancel
@@ -1048,6 +1053,139 @@ const BookingDetail = () => {
               }}
             >
               {noShowLoading ? <CircularProgress size={22} sx={{ color: 'white' }} /> : 'Confirm No-Show'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Cancel Booking Dialog */}
+        <Dialog
+          open={cancelDialog}
+          onClose={() => setCancelDialog(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              overflow: 'hidden',
+            },
+          }}
+        >
+          <Box
+            sx={{
+              background: 'linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%)',
+              color: '#ffffff',
+              px: 3,
+              py: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar
+                sx={{
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  width: 36,
+                  height: 36,
+                }}
+              >
+                <Cancel fontSize="small" />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#ffffff' }}>
+                  Cancel Booking
+                </Typography>
+                {booking && (
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                    {booking.booking_reference} | {booking.user_name}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+            <IconButton onClick={() => setCancelDialog(false)} sx={{ color: '#ffffff' }} size="small">
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <DialogContent sx={{ px: 3, py: 2.5 }}>
+            <Box
+              sx={{
+                p: 2,
+                mb: 3,
+                borderRadius: 2,
+                bgcolor: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Are you sure you want to <strong>cancel</strong> this booking? This action cannot be undone
+                and the guest will be notified of the cancellation.
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
+              <NotesIcon sx={{ fontSize: 16, color: 'error.main' }} />
+              <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Cancellation Reason
+              </Typography>
+            </Box>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Reason (optional)"
+              placeholder="Enter a reason for cancellation..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              size="small"
+              InputProps={{ sx: { borderRadius: 2 } }}
+            />
+          </DialogContent>
+
+          <DialogActions
+            sx={{
+              px: 3,
+              py: 1.5,
+              bgcolor: 'grey.50',
+              borderTop: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Button
+              onClick={() => setCancelDialog(false)}
+              disabled={cancelLoading}
+              color="inherit"
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                textTransform: 'none',
+                fontWeight: 500,
+              }}
+            >
+              Keep Booking
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleCancel}
+              disabled={cancelLoading}
+              sx={{
+                borderRadius: 2,
+                px: 4,
+                textTransform: 'none',
+                fontWeight: 600,
+                bgcolor: '#dc2626',
+                color: '#ffffff',
+                boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35)',
+                '&:hover': {
+                  bgcolor: '#b91c1c',
+                },
+                '&.Mui-disabled': {
+                  bgcolor: 'grey.300',
+                  color: 'grey.500',
+                },
+              }}
+            >
+              {cancelLoading ? <CircularProgress size={22} sx={{ color: 'white' }} /> : 'Cancel Booking'}
             </Button>
           </DialogActions>
         </Dialog>

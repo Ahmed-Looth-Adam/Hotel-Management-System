@@ -21,7 +21,13 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Avatar,
+  CircularProgress,
+  alpha,
 } from '@mui/material';
+import {
+  Close as CloseIcon,
+} from '@mui/icons-material';
 import {
   CurrencyPound,
   Add,
@@ -45,6 +51,8 @@ const PricingDashboard = () => {
   const [selectedHotel, setSelectedHotel] = useState('');
   const [activeTab, setActiveTab] = useState('room_type');
   const [data, setData] = useState([]);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const fetchHotels = async () => {
@@ -97,8 +105,13 @@ const PricingDashboard = () => {
     fetchPricingData();
   }, [selectedHotel, activeTab]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this pricing rule?')) return;
+  const handleDeleteClick = (id) => {
+    setDeleteDialog({ open: true, id });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    const id = deleteDialog.id;
 
     let result;
     switch (activeTab) {
@@ -123,10 +136,12 @@ const PricingDashboard = () => {
 
     if (result.success) {
       showSuccess('Pricing rule deleted successfully');
+      setDeleteDialog({ open: false, id: null });
       fetchPricingData();
     } else {
       showError('Failed to delete pricing rule');
     }
+    setDeleteLoading(false);
   };
 
   const getColumns = () => {
@@ -138,7 +153,7 @@ const PricingDashboard = () => {
           { id: 'currency', label: 'Currency' },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
           { id: 'actions', label: 'Actions', sortable: false, render: (row) => (
-            <IconButton size="small" onClick={() => handleDelete(row.id)} color="error"><Delete /></IconButton>
+            <IconButton size="small" onClick={() => handleDeleteClick(row.id)} color="error"><Delete /></IconButton>
           )},
         ];
       case 'view':
@@ -148,7 +163,7 @@ const PricingDashboard = () => {
           { id: 'modifier_value', label: 'Value', render: (row) => row.modifier_type === 'percentage' ? `${row.modifier_value}%` : `£${row.modifier_value}` },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
           { id: 'actions', label: 'Actions', sortable: false, render: (row) => (
-            <IconButton size="small" onClick={() => handleDelete(row.id)} color="error"><Delete /></IconButton>
+            <IconButton size="small" onClick={() => handleDeleteClick(row.id)} color="error"><Delete /></IconButton>
           )},
         ];
       case 'seasonal':
@@ -160,7 +175,7 @@ const PricingDashboard = () => {
           { id: 'modifier_value', label: 'Value', render: (row) => row.modifier_type === 'percentage' ? `${row.modifier_value}%` : `£${row.modifier_value}` },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
           { id: 'actions', label: 'Actions', sortable: false, render: (row) => (
-            <IconButton size="small" onClick={() => handleDelete(row.id)} color="error"><Delete /></IconButton>
+            <IconButton size="small" onClick={() => handleDeleteClick(row.id)} color="error"><Delete /></IconButton>
           )},
         ];
       case 'day_type':
@@ -171,7 +186,7 @@ const PricingDashboard = () => {
           { id: 'modifier_value', label: 'Value', render: (row) => row.modifier_type === 'percentage' ? `${row.modifier_value}%` : `£${row.modifier_value}` },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
           { id: 'actions', label: 'Actions', sortable: false, render: (row) => (
-            <IconButton size="small" onClick={() => handleDelete(row.id)} color="error"><Delete /></IconButton>
+            <IconButton size="small" onClick={() => handleDeleteClick(row.id)} color="error"><Delete /></IconButton>
           )},
         ];
       case 'promotions':
@@ -184,7 +199,7 @@ const PricingDashboard = () => {
           { id: 'end_date', label: 'End', sortable: true },
           { id: 'is_active', label: 'Status', render: (row) => <Chip label={row.is_active ? 'Active' : 'Inactive'} color={row.is_active ? 'success' : 'default'} size="small" /> },
           { id: 'actions', label: 'Actions', sortable: false, render: (row) => (
-            <IconButton size="small" onClick={() => handleDelete(row.id)} color="error"><Delete /></IconButton>
+            <IconButton size="small" onClick={() => handleDeleteClick(row.id)} color="error"><Delete /></IconButton>
           )},
         ];
       default:
@@ -251,6 +266,112 @@ const PricingDashboard = () => {
           />
         )}
       </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, id: null })}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%)',
+            color: '#ffffff',
+            px: 3,
+            py: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar
+              sx={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                width: 36,
+                height: 36,
+              }}
+            >
+              <Delete fontSize="small" />
+            </Avatar>
+            <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#ffffff' }}>
+              Delete Pricing Rule
+            </Typography>
+          </Box>
+          <IconButton onClick={() => setDeleteDialog({ open: false, id: null })} sx={{ color: '#ffffff' }} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Are you sure you want to <strong>delete</strong> this pricing rule? This action cannot be undone.
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 1.5,
+            bgcolor: 'grey.50',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Button
+            onClick={() => setDeleteDialog({ open: false, id: null })}
+            disabled={deleteLoading}
+            color="inherit"
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleDeleteConfirm}
+            disabled={deleteLoading}
+            sx={{
+              borderRadius: 2,
+              px: 4,
+              textTransform: 'none',
+              fontWeight: 600,
+              bgcolor: '#dc2626',
+              color: '#ffffff',
+              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35)',
+              '&:hover': {
+                bgcolor: '#b91c1c',
+              },
+              '&.Mui-disabled': {
+                bgcolor: 'grey.300',
+                color: 'grey.500',
+              },
+            }}
+          >
+            {deleteLoading ? <CircularProgress size={22} sx={{ color: 'white' }} /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
