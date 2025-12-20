@@ -27,7 +27,6 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
-  InputBase,
   Badge,
   Tooltip,
   alpha,
@@ -191,55 +190,6 @@ const AdminLayout = ({ children }) => {
             >
               <MenuIcon />
             </IconButton>
-
-            {/* Search Bar */}
-            <Box
-              sx={{
-                display: { xs: 'none', sm: 'flex' },
-                alignItems: 'center',
-                bgcolor: '#f8f9fa',
-                borderRadius: 2,
-                px: 2,
-                py: 0.5,
-                minWidth: 280,
-                border: '1px solid',
-                borderColor: 'transparent',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  borderColor: 'divider',
-                },
-                '&:focus-within': {
-                  borderColor: 'primary.main',
-                  bgcolor: '#fff',
-                },
-              }}
-            >
-              <SearchIcon sx={{ color: 'text.secondary', fontSize: 20, mr: 1 }} />
-              <InputBase
-                placeholder="Search..."
-                sx={{
-                  flex: 1,
-                  fontSize: '0.875rem',
-                  '& input': {
-                    py: 0.75,
-                  },
-                }}
-              />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'text.disabled',
-                  bgcolor: '#e9ecef',
-                  px: 1,
-                  py: 0.25,
-                  borderRadius: 1,
-                  fontSize: '0.7rem',
-                  fontWeight: 500,
-                }}
-              >
-                /
-              </Typography>
-            </Box>
           </Box>
 
           {/* Right Section */}
