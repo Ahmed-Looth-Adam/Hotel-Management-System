@@ -6,11 +6,13 @@ A comprehensive Hotel Management System built with Django REST Framework (backen
 
 ## 👥 Team Members
 
-- **Developer 1** - Scrum Master & Backend Lead (Authentication & Security)
-- **Developer 2** - Backend Developer (Booking System & Room Management)
-- **Developer 3** - Backend Developer (Payment Processing & Reports)
-- **Developer 4** - Frontend Lead (UI/UX & Guest Portal)
-- **Developer 5** - Full-Stack Developer (Staff Panel & Integration)
+| Name | UWE ID | Role |
+|------|--------|------|
+| Ismail Wasiu Abdul Samad | 24050765 | Lead Developer |
+| Ahmed Looth Adam | 24050761 | Developer |
+| Ibrahim Waseem | 24050771 | Developer |
+| Mohamed Lujain Shakeeb Ahmed | 24050760 | Developer |
+| Awf Ibrahim Mohamed | 24047957 | Developer |
 
 ---
 
@@ -40,29 +42,30 @@ A comprehensive Hotel Management System built with Django REST Framework (backen
 ```
 Hotel-Management-System/
 ├── backend/
-│   ├── hotel_management/          # Django project settings
-│   ├── authentication/            # User management app
-│   ├── hotels/                    # Hotel & room management
-│   ├── bookings/                  # Booking system
-│   ├── payments/                  # Payment processing
-│   ├── reports/                   # Analytics & reports
-│   ├── core/                      # Shared utilities
+│   ├── hotel_management/       # Django project settings
+│   ├── authentication/         # User management & JWT auth
+│   ├── hotels/                 # Hotel & room management
+│   ├── bookings/               # Booking system
+│   ├── payments/               # Payment processing
+│   ├── reports/                # Analytics & reports
+│   ├── core/                   # Shared utilities & audit logs
 │   ├── manage.py
-│   ├── Pipfile
-│   └── Pipfile.lock
+│   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── context/
-│   │   └── utils/
+│   │   ├── components/         # Reusable UI components
+│   │   ├── pages/              # Page components
+│   │   ├── services/           # API service layer
+│   │   ├── context/            # React Context providers
+│   │   ├── hooks/              # Custom React hooks
+│   │   └── utils/              # Utility functions
 │   ├── package.json
 │   └── vite.config.js
 │
 ├── docker-compose.yml
 ├── Dockerfile.backend
+├── Pipfile
 └── .env
 ```
 
