@@ -115,9 +115,30 @@ REDIS_URL=redis://redis:6379/0
 JWT_ACCESS_TOKEN_LIFETIME=15
 JWT_REFRESH_TOKEN_LIFETIME=7
 
+# Field-level Encryption Key (Fernet key for sensitive data)
+FIELD_ENCRYPTION_KEY=your-fernet-key-here
+
 # Frontend
 FRONTEND_URL=http://localhost:5173
 ```
+
+### Generating an Encryption Key
+
+The system uses Fernet encryption (AES-128) for sensitive data at rest (passport/ID numbers, 2FA secrets). You must generate a unique encryption key:
+
+```bash
+# Generate a new Fernet encryption key
+docker-compose exec backend python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Or without Docker:
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Copy the generated key to your `.env` file as `FIELD_ENCRYPTION_KEY`.
+
+> ⚠️ **Important:** Keep your encryption key secure. Data encrypted with one key cannot be decrypted with a different key. If you lose the key, encrypted data becomes unrecoverable.
 
 ### 3. Build and Start Services
 
@@ -257,9 +278,13 @@ GET    /api/reports/revenue/
 ## 🔐 Security Features
 
 - JWT-based authentication
+- Two-Factor Authentication (2FA) for staff users
 - Password strength validation
+- Password expiration policy for staff (6 months)
 - Account lockout after 5 failed attempts (15 min)
 - Automatic session timeout (15 min)
+- Email verification for guest registration
+- **Field-level encryption for sensitive data at rest** (passport/ID numbers, 2FA secrets)
 - Audit logging for sensitive operations
 - CORS configuration
 
