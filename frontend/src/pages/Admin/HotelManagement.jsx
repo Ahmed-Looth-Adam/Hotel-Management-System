@@ -308,8 +308,8 @@ const HotelManagement = () => {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Container maxWidth="xl" disableGutters>
+    <Box sx={{ bgcolor: '#f8f9fa', minHeight: '100vh', py: 3 }}>
+      <Container maxWidth="xl">
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>

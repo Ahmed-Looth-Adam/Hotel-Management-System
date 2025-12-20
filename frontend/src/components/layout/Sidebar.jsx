@@ -185,7 +185,7 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
           width: collapsed ? 48 : 'auto',
           minHeight: 48,
           justifyContent: collapsed ? 'center' : 'flex-start',
-          transition: 'all 0.2s ease',
+          transition: 'background-color 0.2s ease',
           bgcolor: isActive || isParentActive
             ? alpha('#667eea', 0.15)
             : 'transparent',

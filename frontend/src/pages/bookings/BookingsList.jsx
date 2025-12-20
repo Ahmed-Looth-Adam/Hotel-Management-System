@@ -393,8 +393,8 @@ const BookingsList = () => {
   }
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Container maxWidth="xl" disableGutters>
+    <Box sx={{ bgcolor: '#f8f9fa', minHeight: '100vh', py: 3 }}>
+      <Container maxWidth="xl">
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -446,10 +446,10 @@ const BookingsList = () => {
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: '0.75rem',
-                  bgcolor: filterMode === mode.id ? '#1a1a2e' : 'transparent',
+                  bgcolor: filterMode === mode.id ? '#667eea' : 'transparent',
                   color: filterMode === mode.id ? 'white' : '#666',
                   '&:hover': {
-                    bgcolor: filterMode === mode.id ? '#1a1a2e' : '#f5f5f5',
+                    bgcolor: filterMode === mode.id ? '#5a6fd6' : '#f5f5f5',
                   },
                 }}
               >
@@ -468,12 +468,12 @@ const BookingsList = () => {
               onClick={() => handlePresetClick(preset.id)}
               sx={{
                 fontWeight: 500,
-                bgcolor: datePreset === preset.id && !showCustomDate ? '#1a1a2e' : 'white',
+                bgcolor: datePreset === preset.id && !showCustomDate ? '#667eea' : 'white',
                 color: datePreset === preset.id && !showCustomDate ? 'white' : '#666',
                 border: '1px solid',
-                borderColor: datePreset === preset.id && !showCustomDate ? '#1a1a2e' : '#ddd',
+                borderColor: datePreset === preset.id && !showCustomDate ? '#667eea' : '#ddd',
                 '&:hover': {
-                  bgcolor: datePreset === preset.id && !showCustomDate ? '#1a1a2e' : '#f0f0f0',
+                  bgcolor: datePreset === preset.id && !showCustomDate ? '#5a6fd6' : '#f0f0f0',
                 },
               }}
             />
@@ -485,12 +485,12 @@ const BookingsList = () => {
             onClick={handleCustomClick}
             sx={{
               fontWeight: 500,
-              bgcolor: showCustomDate ? '#1a1a2e' : 'white',
+              bgcolor: showCustomDate ? '#667eea' : 'white',
               color: showCustomDate ? 'white' : '#666',
               border: '1px solid',
-              borderColor: showCustomDate ? '#1a1a2e' : '#ddd',
+              borderColor: showCustomDate ? '#667eea' : '#ddd',
               '&:hover': {
-                bgcolor: showCustomDate ? '#1a1a2e' : '#f0f0f0',
+                bgcolor: showCustomDate ? '#5a6fd6' : '#f0f0f0',
               },
               '& .MuiChip-icon': {
                 color: showCustomDate ? 'white' : '#666',

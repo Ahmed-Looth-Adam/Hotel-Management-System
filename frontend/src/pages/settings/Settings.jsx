@@ -444,7 +444,7 @@ const Settings = () => {
 
   return (
     <Box sx={{ bgcolor: '#f8f9fa', minHeight: '100vh', py: 3 }}>
-      <Container maxWidth="lg">
+      <Container maxWidth="xl">
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" fontWeight={700} color="text.primary">

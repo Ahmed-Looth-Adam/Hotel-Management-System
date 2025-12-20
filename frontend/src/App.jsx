@@ -66,7 +66,6 @@ import LoadingExample from './examples/LoadingExample';
 
 // Profile Route Guard - redirects staff/manager/admin to settings
 import { useAuth } from './context/AuthContext';
-import { Navigate } from 'react-router-dom';
 
 const GuestProfileRoute = ({ children }) => {
   const { user } = useAuth();
