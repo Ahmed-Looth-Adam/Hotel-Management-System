@@ -164,28 +164,30 @@ const Settings = () => {
     return defaultPreferences;
   });
 
-  // Fetch profile data on mount
+  // Load profile data from user context
   useEffect(() => {
-    if (user) {
-      fetchProfileData().then(async (data) => {
+    const loadProfileData = async () => {
+      if (user) {
+        // Use user data from context directly
         setInitialValues({
-          name: data.first_name || '',
-          lastName: data.last_name || '',
-          email: data.email || '',
-          phone_number: data.phone_number || '',
+          name: user.first_name || '',
+          lastName: user.last_name || '',
+          email: user.email || '',
+          phone_number: user.phone_number || '',
         });
-        setNewUsername(data.username || '');
-        if (data.profile_picture) {
-          setPreviewUrl(data.profile_picture.startsWith('http')
-            ? data.profile_picture
-            : `http://localhost:8000${data.profile_picture}`
+        setNewUsername(user.username || '');
+
+        if (user.profile_picture) {
+          setPreviewUrl(user.profile_picture.startsWith('http')
+            ? user.profile_picture
+            : `http://localhost:8000${user.profile_picture}`
           );
         }
 
         // Fetch assigned hotel name if exists
-        if (data.assigned_hotel) {
+        if (user.assigned_hotel) {
           try {
-            const hotelResult = await hotelService.getById(data.assigned_hotel);
+            const hotelResult = await hotelService.getById(user.assigned_hotel);
             if (hotelResult.success) {
               setAssignedHotelName(hotelResult.data.name);
             }
@@ -195,26 +197,11 @@ const Settings = () => {
         }
 
         setLoading(false);
-      }).catch(error => {
-        console.error('Error fetching profile data:', error);
-        setProfileError('Failed to load profile data');
-        setLoading(false);
-      });
-    }
-  }, [user]);
-
-  const fetchProfileData = async () => {
-    try {
-      const result = await authService.getProfile();
-      if (result.success) {
-        return result.data;
-      } else {
-        throw new Error(result.error || 'Failed to fetch profile');
       }
-    } catch (error) {
-      throw error;
-    }
-  };
+    };
+
+    loadProfileData();
+  }, [user]);
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
