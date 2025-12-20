@@ -575,13 +575,19 @@ const ReportsDashboard = () => {
               icon={<CalendarIcon />}
               sx={{ bgcolor: 'white', border: '1px solid', borderColor: 'divider' }}
             />
-            <IconButton
+            <Chip
+              icon={<DownloadIcon />}
+              label="PDF"
               onClick={handleExportPDF}
-              sx={{ bgcolor: 'white', border: '1px solid', borderColor: 'divider' }}
-              title="Export PDF"
-            >
-              <DownloadIcon />
-            </IconButton>
+              sx={{
+                bgcolor: 'white',
+                border: '1px solid',
+                borderColor: 'divider',
+                cursor: 'pointer',
+                fontWeight: 600,
+                '&:hover': { bgcolor: alpha('#1976d2', 0.08) },
+              }}
+            />
             <IconButton
               onClick={handleRefresh}
               sx={{ bgcolor: 'white', border: '1px solid', borderColor: 'divider' }}
