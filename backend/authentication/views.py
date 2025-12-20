@@ -19,7 +19,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate
 from .forms import CustomUserCreationForm
-from .serializers import UserRegistrationSerializer, UserSerializer, UserLoginSerializer, PasswordChangeSerializer, AdminUserUpdateSerializer, AdminUserRegistrationSerializer
+from .serializers import (
+    UserRegistrationSerializer, UserSerializer, UserLoginSerializer,
+    PasswordChangeSerializer, AdminUserUpdateSerializer, AdminUserRegistrationSerializer,
+    TwoFactorConfirmSerializer, TwoFactorVerifySerializer, TwoFactorDisableSerializer,
+    BackupCodesSerializer
+)
+from . import two_factor
 from .utils import LoginAttemptTracker, AuditLogger
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -165,6 +171,21 @@ class LoginAPIView(APIView):
             user.account_locked_until = None
             user.last_login = timezone.now()
             user.save(update_fields=['failed_login_attempts', 'account_locked_until', 'last_login'])
+
+            # Check if 2FA is enabled for this user
+            if user.two_factor_enabled and user.two_factor_confirmed:
+                # Generate temporary token for 2FA verification
+                temp_token = two_factor.generate_temp_token(user)
+
+                return Response(
+                    {
+                        "message": "Two-factor authentication required",
+                        "two_factor_required": True,
+                        "temp_token": temp_token,
+                        "user_email": user.email[:3] + "***" + user.email[user.email.find("@"):] if user.email else None
+                    },
+                    status=status.HTTP_200_OK
+                )
 
             # Audit log: successful login
             AuditLogger.log_login_success(request, user)
@@ -697,3 +718,327 @@ class AdminUserDetailAPIView(APIView):
         target_user.delete()
 
         return Response({"message": f"User {username} has been permanently deleted."}, status=status.HTTP_204_NO_CONTENT)
+
+
+# Two-Factor Authentication Views
+
+@method_decorator(csrf_exempt, name='dispatch')
+class TwoFactorSetupAPIView(APIView):
+    """
+    Start 2FA setup - generates QR code and secret for authenticator app
+
+    POST /auth/2fa/setup/
+    Returns: QR code image (base64), secret key, and backup codes
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        # Only allow for staff, manager, admin
+        if user.role not in ['staff', 'manager', 'admin']:
+            return Response(
+                {"error": "Two-factor authentication is only available for staff users."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Check if already enabled and confirmed
+        if user.two_factor_enabled and user.two_factor_confirmed:
+            return Response(
+                {"error": "Two-factor authentication is already enabled. Disable it first to reconfigure."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Generate new secret
+        secret = two_factor.generate_totp_secret()
+
+        # Save secret (not confirmed yet)
+        user.two_factor_secret = secret
+        user.two_factor_enabled = False
+        user.two_factor_confirmed = False
+        user.save(update_fields=['two_factor_secret', 'two_factor_enabled', 'two_factor_confirmed'])
+
+        # Generate QR code
+        uri = two_factor.get_totp_uri(user, secret)
+        qr_code = two_factor.generate_qr_code(uri)
+
+        return Response({
+            "message": "Scan the QR code with your authenticator app, then verify with a code.",
+            "qr_code": qr_code,
+            "secret": secret,  # For manual entry
+            "uri": uri
+        }, status=status.HTTP_200_OK)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class TwoFactorConfirmAPIView(APIView):
+    """
+    Confirm 2FA setup by verifying a TOTP code
+
+    POST /auth/2fa/confirm/
+    Required: code (6-digit TOTP code)
+    Returns: backup codes on success
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        serializer = TwoFactorConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        code = serializer.validated_data['code']
+
+        if not user.two_factor_secret:
+            return Response(
+                {"error": "Please start 2FA setup first."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify the code
+        if not two_factor.verify_totp(user.two_factor_secret, code):
+            return Response(
+                {"error": "Invalid code. Please try again."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Generate backup codes
+        plaintext_codes, hashed_codes = two_factor.generate_backup_codes()
+
+        # Enable and confirm 2FA
+        user.two_factor_enabled = True
+        user.two_factor_confirmed = True
+        user.two_factor_backup_codes = hashed_codes
+        user.save(update_fields=['two_factor_enabled', 'two_factor_confirmed', 'two_factor_backup_codes'])
+
+        return Response({
+            "message": "Two-factor authentication enabled successfully.",
+            "backup_codes": plaintext_codes,
+            "warning": "Save these backup codes securely. They can only be viewed once."
+        }, status=status.HTTP_200_OK)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class TwoFactorVerifyAPIView(APIView):
+    """
+    Verify 2FA during login - completes authentication
+
+    POST /auth/2fa/verify/
+    Required: temp_token, code, method (totp/email/backup)
+    Returns: JWT tokens on success
+    """
+    authentication_classes = []  # No authentication required - uses temp_token
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = TwoFactorVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        temp_token = serializer.validated_data['temp_token']
+        code = serializer.validated_data['code']
+        method = serializer.validated_data['method']
+
+        # Verify temp token and get user
+        user_id, error = two_factor.verify_temp_token(temp_token)
+        if error:
+            return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+
+        User = get_user_model()
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify the code based on method
+        verified = False
+
+        if method == 'totp':
+            verified = two_factor.verify_totp(user.two_factor_secret, code)
+        elif method == 'email':
+            verified, _, error = two_factor.verify_email_otp(temp_token, code)
+            if error and not verified:
+                return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+        elif method == 'backup':
+            verified = two_factor.verify_backup_code(user, code)
+
+        if not verified:
+            # Increment attempt counter
+            remaining, error = two_factor.increment_temp_token_attempts(temp_token)
+            if error:
+                return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({
+                "error": "Invalid code.",
+                "remaining_attempts": remaining
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Success - invalidate temp token
+        two_factor.invalidate_temp_token(temp_token)
+
+        # Audit log: successful login
+        AuditLogger.log_login_success(request, user)
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "message": "Login successful",
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": UserSerializer(user).data,
+            "token_type": "Bearer"
+        }, status=status.HTTP_200_OK)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class TwoFactorDisableAPIView(APIView):
+    """
+    Disable 2FA - requires password confirmation
+
+    POST /auth/2fa/disable/
+    Required: password
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        serializer = TwoFactorDisableSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        password = serializer.validated_data['password']
+
+        # Verify password
+        if not user.check_password(password):
+            return Response(
+                {"error": "Incorrect password."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Disable 2FA
+        user.two_factor_enabled = False
+        user.two_factor_confirmed = False
+        user.two_factor_secret = None
+        user.two_factor_backup_codes = []
+        user.save(update_fields=['two_factor_enabled', 'two_factor_confirmed', 'two_factor_secret', 'two_factor_backup_codes'])
+
+        return Response({
+            "message": "Two-factor authentication has been disabled."
+        }, status=status.HTTP_200_OK)
+
+
+class TwoFactorStatusAPIView(APIView):
+    """
+    Check 2FA status for current user
+
+    GET /auth/2fa/status/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        return Response({
+            "enabled": user.two_factor_enabled,
+            "confirmed": user.two_factor_confirmed,
+            "backup_codes_remaining": len(user.two_factor_backup_codes) if user.two_factor_backup_codes else 0,
+            "can_enable": user.role in ['staff', 'manager', 'admin']
+        }, status=status.HTTP_200_OK)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class TwoFactorEmailOTPAPIView(APIView):
+    """
+    Send email OTP as fallback during login
+
+    POST /auth/2fa/email-otp/
+    Required: temp_token
+    """
+    authentication_classes = []  # No authentication required - uses temp_token
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        temp_token = request.data.get('temp_token')
+
+        if not temp_token:
+            return Response(
+                {"error": "Temporary token is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify temp token and get user
+        user_id, error = two_factor.verify_temp_token(temp_token)
+        if error:
+            return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+
+        User = get_user_model()
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.email:
+            return Response(
+                {"error": "No email address associated with this account."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Send email OTP
+        success = two_factor.send_email_otp(user, temp_token)
+
+        if not success:
+            return Response(
+                {"error": "Failed to send email. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # Mask email for response
+        masked_email = user.email[:3] + "***" + user.email[user.email.find("@"):]
+
+        return Response({
+            "message": f"Verification code sent to {masked_email}",
+            "email": masked_email
+        }, status=status.HTTP_200_OK)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class BackupCodesAPIView(APIView):
+    """
+    Regenerate backup codes - requires password
+
+    POST /auth/2fa/backup-codes/
+    Required: password
+    Returns: new backup codes
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        serializer = BackupCodesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        password = serializer.validated_data['password']
+
+        # Verify password
+        if not user.check_password(password):
+            return Response(
+                {"error": "Incorrect password."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if 2FA is enabled
+        if not user.two_factor_enabled:
+            return Response(
+                {"error": "Two-factor authentication is not enabled."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Generate new backup codes
+        plaintext_codes, hashed_codes = two_factor.generate_backup_codes()
+
+        user.two_factor_backup_codes = hashed_codes
+        user.save(update_fields=['two_factor_backup_codes'])
+
+        return Response({
+            "message": "New backup codes generated. Previous codes are now invalid.",
+            "backup_codes": plaintext_codes,
+            "warning": "Save these backup codes securely. They can only be viewed once."
+        }, status=status.HTTP_200_OK)

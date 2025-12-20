@@ -62,6 +62,16 @@ export const AuthProvider = ({ children }) => {
     const result = await authService.login(username, password);
 
     if (result.success) {
+      // Check if 2FA is required
+      if (result.data?.two_factor_required) {
+        return {
+          success: true,
+          twoFactorRequired: true,
+          tempToken: result.data.temp_token,
+          userEmail: result.data.user_email,
+        };
+      }
+
       const userData = result.data?.user || authService.getCurrentUser();
       setUser(userData);
       setIsAuthenticated(true);
@@ -77,6 +87,20 @@ export const AuthProvider = ({ children }) => {
     }
 
     return result;
+  };
+
+  // Complete login after 2FA verification
+  const completeLogin = async (data) => {
+    const userData = data.user;
+    setUser(userData);
+    setIsAuthenticated(true);
+
+    // Check password status for staff/manager/admin
+    if (['staff', 'manager', 'admin'].includes(userData.role)) {
+      await checkPasswordStatus();
+    }
+
+    return { success: true, data };
   };
 
   const register = async (userData) => {
@@ -123,6 +147,7 @@ export const AuthProvider = ({ children }) => {
     passwordExpired,
     passwordStatus,
     login,
+    completeLogin,
     register,
     logout,
     refreshToken,

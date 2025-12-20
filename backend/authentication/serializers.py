@@ -223,3 +223,68 @@ class AdminUserRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(role=role, assigned_hotel=assigned_hotel, **validated_data)
         return user
 
+
+# Two-Factor Authentication Serializers
+
+class TwoFactorSetupSerializer(serializers.Serializer):
+    """Serializer for initiating 2FA setup - returns QR code and secret"""
+    pass
+
+
+class TwoFactorConfirmSerializer(serializers.Serializer):
+    """Serializer for confirming 2FA setup with a TOTP code"""
+    code = serializers.CharField(
+        max_length=6,
+        min_length=6,
+        required=True,
+        help_text="6-digit code from authenticator app"
+    )
+
+    def validate_code(self, value):
+        """Ensure code is numeric"""
+        if not value.isdigit():
+            raise serializers.ValidationError("Code must contain only digits.")
+        return value
+
+
+class TwoFactorVerifySerializer(serializers.Serializer):
+    """Serializer for verifying 2FA during login"""
+    temp_token = serializers.CharField(required=True, help_text="Temporary token from login response")
+    code = serializers.CharField(
+        max_length=10,
+        required=True,
+        help_text="6-digit TOTP code, email OTP, or backup code"
+    )
+    method = serializers.ChoiceField(
+        choices=['totp', 'email', 'backup'],
+        default='totp',
+        help_text="Verification method: totp, email, or backup"
+    )
+
+
+class TwoFactorDisableSerializer(serializers.Serializer):
+    """Serializer for disabling 2FA - requires password confirmation"""
+    password = serializers.CharField(
+        required=True,
+        write_only=True,
+        style={'input_type': 'password'},
+        help_text="Current password for confirmation"
+    )
+
+
+class TwoFactorStatusSerializer(serializers.Serializer):
+    """Serializer for 2FA status response"""
+    enabled = serializers.BooleanField()
+    confirmed = serializers.BooleanField()
+    backup_codes_remaining = serializers.IntegerField()
+
+
+class BackupCodesSerializer(serializers.Serializer):
+    """Serializer for regenerating backup codes - requires password"""
+    password = serializers.CharField(
+        required=True,
+        write_only=True,
+        style={'input_type': 'password'},
+        help_text="Current password for confirmation"
+    )
+

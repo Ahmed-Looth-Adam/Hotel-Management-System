@@ -30,6 +30,7 @@ class PasswordExpirationMiddleware:
         '/auth/password-reset/',
         '/auth/password-reset-confirm/',
         '/auth/password-status/',
+        '/auth/2fa/',  # All 2FA endpoints are exempt
         '/api/schema/',
         '/admin/',
     ]

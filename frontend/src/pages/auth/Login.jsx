@@ -21,6 +21,7 @@ import {
   Lock as LockIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+import TwoFactorVerify from '../../components/auth/TwoFactorVerify';
 
 // Hotel background image
 const HOTEL_BG_IMAGE = '/images/login-bg.jpg';
@@ -56,9 +57,14 @@ const getRedirectPath = (user) => {
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, completeLogin } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+
+  // 2FA state
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [tempToken, setTempToken] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
 
   // If user was trying to access a specific page, redirect there after login
   // Otherwise, use role-based redirect
@@ -82,6 +88,15 @@ const Login = () => {
         const result = await login(values.username, values.password);
 
         if (result.success) {
+          // Check if 2FA is required
+          if (result.twoFactorRequired) {
+            setTempToken(result.tempToken);
+            setUserEmail(result.userEmail);
+            setShowTwoFactor(true);
+            setSubmitting(false);
+            return;
+          }
+
           // Get user from response or from localStorage as fallback
           const userFromResponse = result.data?.user;
           const userFromStorage = JSON.parse(localStorage.getItem('user'));
@@ -108,6 +123,24 @@ const Login = () => {
       }
     },
   });
+
+  // Handle successful 2FA verification
+  const handle2FASuccess = (data) => {
+    // Update auth context with verified user
+    completeLogin(data);
+
+    const loggedInUser = data.user;
+    const redirectPath = intendedPath || getRedirectPath(loggedInUser);
+    navigate(redirectPath, { replace: true });
+  };
+
+  // Handle cancel 2FA - go back to credentials
+  const handle2FACancel = () => {
+    setShowTwoFactor(false);
+    setTempToken(null);
+    setUserEmail(null);
+    setError('');
+  };
 
   return (
     <Box
@@ -235,44 +268,77 @@ const Login = () => {
             />
           </Box>
 
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: '#1a1a2e',
-              mb: 1,
-            }}
-          >
-            Sign In
-          </Typography>
+          {/* Show 2FA verification or login form */}
+          {showTwoFactor ? (
+            <>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  color: '#1a1a2e',
+                  mb: 1,
+                }}
+              >
+                Verify Identity
+              </Typography>
 
-          <Typography
-            variant="body1"
-            sx={{
-              color: 'text.secondary',
-              mb: 4,
-            }}
-          >
-            Enter your credentials to access your account
-          </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'text.secondary',
+                  mb: 4,
+                }}
+              >
+                Complete two-factor authentication to continue
+              </Typography>
 
-          {error && (
-            <Alert
-              severity="error"
-              sx={{
-                mb: 3,
-                borderRadius: 1,
-                '& .MuiAlert-icon': {
-                  alignItems: 'center',
-                },
-              }}
-              onClose={() => setError('')}
-            >
-              {error}
-            </Alert>
-          )}
+              <TwoFactorVerify
+                tempToken={tempToken}
+                userEmail={userEmail}
+                onSuccess={handle2FASuccess}
+                onCancel={handle2FACancel}
+              />
+            </>
+          ) : (
+            <>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  color: '#1a1a2e',
+                  mb: 1,
+                }}
+              >
+                Sign In
+              </Typography>
 
-          <Box component="form" onSubmit={formik.handleSubmit} noValidate>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'text.secondary',
+                  mb: 4,
+                }}
+              >
+                Enter your credentials to access your account
+              </Typography>
+
+              {error && (
+                <Alert
+                  severity="error"
+                  sx={{
+                    mb: 3,
+                    borderRadius: 1,
+                    '& .MuiAlert-icon': {
+                      alignItems: 'center',
+                    },
+                  }}
+                  onClose={() => setError('')}
+                >
+                  {error}
+                </Alert>
+              )}
+
+              <Box component="form" onSubmit={formik.handleSubmit} noValidate>
             <TextField
               fullWidth
               id="username"
@@ -450,7 +516,9 @@ const Login = () => {
                 </Link>
               </Typography>
             </Box>
-          </Box>
+              </Box>
+            </>
+          )}
 
           {/* Footer */}
           <Box sx={{ mt: 6, textAlign: 'center' }}>

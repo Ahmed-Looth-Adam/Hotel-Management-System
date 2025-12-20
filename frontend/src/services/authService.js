@@ -311,6 +311,147 @@ const authService = {
     return localStorage.getItem('refresh_token');
   },
 
+  // ============================================
+  // Two-Factor Authentication Methods
+  // ============================================
+
+  /**
+   * Start 2FA setup - get QR code and secret
+   * @returns {Promise} API response with QR code and secret
+   */
+  setup2FA: async () => {
+    try {
+      const response = await authAPI.post('/2fa/setup/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to start 2FA setup',
+      };
+    }
+  },
+
+  /**
+   * Confirm 2FA setup with TOTP code
+   * @param {string} code - 6-digit TOTP code from authenticator app
+   * @returns {Promise} API response with backup codes on success
+   */
+  confirm2FA: async (code) => {
+    try {
+      const response = await authAPI.post('/2fa/confirm/', { code });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Invalid code',
+      };
+    }
+  },
+
+  /**
+   * Verify 2FA during login
+   * @param {string} tempToken - Temporary token from login response
+   * @param {string} code - OTP code (TOTP, email, or backup)
+   * @param {string} method - Verification method: 'totp', 'email', or 'backup'
+   * @returns {Promise} API response with JWT tokens on success
+   */
+  verify2FA: async (tempToken, code, method = 'totp') => {
+    try {
+      const response = await authAPI.post('/2fa/verify/', {
+        temp_token: tempToken,
+        code,
+        method,
+      });
+
+      const { access, refresh, user } = response.data;
+
+      // Store tokens and user data
+      localStorage.setItem('access_token', access);
+      localStorage.setItem('refresh_token', refresh);
+
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Verification failed',
+        remainingAttempts: error.response?.data?.remaining_attempts,
+      };
+    }
+  },
+
+  /**
+   * Disable 2FA - requires password confirmation
+   * @param {string} password - Current password
+   * @returns {Promise} API response
+   */
+  disable2FA: async (password) => {
+    try {
+      const response = await authAPI.post('/2fa/disable/', { password });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to disable 2FA',
+      };
+    }
+  },
+
+  /**
+   * Get 2FA status for current user
+   * @returns {Promise} API response with 2FA status
+   */
+  get2FAStatus: async () => {
+    try {
+      const response = await authAPI.get('/2fa/status/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to get 2FA status',
+      };
+    }
+  },
+
+  /**
+   * Request email OTP as fallback during login
+   * @param {string} tempToken - Temporary token from login response
+   * @returns {Promise} API response
+   */
+  requestEmailOTP: async (tempToken) => {
+    try {
+      const response = await authAPI.post('/2fa/email-otp/', {
+        temp_token: tempToken,
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to send email code',
+      };
+    }
+  },
+
+  /**
+   * Regenerate backup codes - requires password
+   * @param {string} password - Current password
+   * @returns {Promise} API response with new backup codes
+   */
+  regenerateBackupCodes: async (password) => {
+    try {
+      const response = await authAPI.post('/2fa/backup-codes/', { password });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to regenerate backup codes',
+      };
+    }
+  },
+
   /**
    * Request a password reset email
    * @param {string} email - User's email address

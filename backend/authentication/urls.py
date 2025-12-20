@@ -21,4 +21,13 @@ urlpatterns = [
     path('password-status/', csrf_exempt(views.PasswordStatusAPIView.as_view()), name='password-status'),
     path('admin/users/', views.AdminUserListAPIView.as_view(), name='admin-user-list'),
     path('admin/users/<int:user_id>/', views.AdminUserDetailAPIView.as_view(), name='admin-user-detail'),
+
+    # Two-Factor Authentication endpoints
+    path('2fa/setup/', csrf_exempt(views.TwoFactorSetupAPIView.as_view()), name='2fa-setup'),
+    path('2fa/confirm/', csrf_exempt(views.TwoFactorConfirmAPIView.as_view()), name='2fa-confirm'),
+    path('2fa/verify/', csrf_exempt(views.TwoFactorVerifyAPIView.as_view()), name='2fa-verify'),
+    path('2fa/disable/', csrf_exempt(views.TwoFactorDisableAPIView.as_view()), name='2fa-disable'),
+    path('2fa/status/', csrf_exempt(views.TwoFactorStatusAPIView.as_view()), name='2fa-status'),
+    path('2fa/email-otp/', csrf_exempt(views.TwoFactorEmailOTPAPIView.as_view()), name='2fa-email-otp'),
+    path('2fa/backup-codes/', csrf_exempt(views.BackupCodesAPIView.as_view()), name='2fa-backup-codes'),
 ]

@@ -37,6 +37,12 @@ class User(AbstractUser):
     failed_login_attempts = models.IntegerField(default=0)
     account_locked_until = models.DateTimeField(null=True, blank=True)
     last_password_change = models.DateTimeField(default=timezone.now)
+
+    # Two-Factor Authentication fields
+    two_factor_enabled = models.BooleanField(default=False, help_text="Whether 2FA is enabled for this user")
+    two_factor_secret = models.CharField(max_length=32, blank=True, null=True, help_text="TOTP secret key")
+    two_factor_backup_codes = models.JSONField(default=list, blank=True, help_text="Hashed backup codes for 2FA recovery")
+    two_factor_confirmed = models.BooleanField(default=False, help_text="Whether 2FA setup has been confirmed")
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)

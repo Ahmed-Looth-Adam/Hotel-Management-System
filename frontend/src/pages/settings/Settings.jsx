@@ -71,7 +71,8 @@ import { useNotification } from '../../hooks/useNotification';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/authService';
 import { hotelService } from '../../services';
-import { Warning as WarningIcon } from '@mui/icons-material';
+import { Warning as WarningIcon, Security as TwoFaIcon, QrCode2 as QrCodeIcon, VpnKey as BackupCodesIcon } from '@mui/icons-material';
+import TwoFactorSetup from '../../components/auth/TwoFactorSetup';
 
 const TabPanel = ({ children, value, index }) => (
   <div hidden={value !== index}>
@@ -153,12 +154,89 @@ const Settings = () => {
 
   const [assignedHotelName, setAssignedHotelName] = useState('');
 
+  // 2FA state
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [twoFactorStatus, setTwoFactorStatus] = useState(null);
+  const [loading2FA, setLoading2FA] = useState(false);
+  const [show2FASection, setShow2FASection] = useState(false);
+  const [disabling2FA, setDisabling2FA] = useState(false);
+  const [disable2FAPassword, setDisable2FAPassword] = useState('');
+  const [disable2FAError, setDisable2FAError] = useState('');
+  const [regeneratingCodes, setRegeneratingCodes] = useState(false);
+  const [backupCodesPassword, setBackupCodesPassword] = useState('');
+  const [backupCodesError, setBackupCodesError] = useState('');
+  const [newBackupCodes, setNewBackupCodes] = useState([]);
+
   const [initialValues, setInitialValues] = useState({
     name: '',
     lastName: '',
     email: '',
     phone_number: '',
   });
+
+  // Load 2FA status
+  useEffect(() => {
+    const load2FAStatus = async () => {
+      if (user && ['staff', 'manager', 'admin'].includes(user.role)) {
+        setLoading2FA(true);
+        const result = await authService.get2FAStatus();
+        if (result.success) {
+          setTwoFactorStatus(result.data);
+        }
+        setLoading2FA(false);
+      }
+    };
+    load2FAStatus();
+  }, [user]);
+
+  // Handle 2FA setup completion
+  const handle2FASetupComplete = async () => {
+    const result = await authService.get2FAStatus();
+    if (result.success) {
+      setTwoFactorStatus(result.data);
+    }
+    showSuccess('Two-factor authentication enabled successfully!');
+  };
+
+  // Handle disable 2FA
+  const handleDisable2FA = async () => {
+    if (!disable2FAPassword) {
+      setDisable2FAError('Please enter your password');
+      return;
+    }
+    setDisabling2FA(true);
+    setDisable2FAError('');
+
+    const result = await authService.disable2FA(disable2FAPassword);
+    if (result.success) {
+      setTwoFactorStatus({ ...twoFactorStatus, enabled: false, confirmed: false });
+      setDisable2FAPassword('');
+      showSuccess('Two-factor authentication disabled');
+    } else {
+      setDisable2FAError(result.error);
+    }
+    setDisabling2FA(false);
+  };
+
+  // Handle regenerate backup codes
+  const handleRegenerateBackupCodes = async () => {
+    if (!backupCodesPassword) {
+      setBackupCodesError('Please enter your password');
+      return;
+    }
+    setRegeneratingCodes(true);
+    setBackupCodesError('');
+
+    const result = await authService.regenerateBackupCodes(backupCodesPassword);
+    if (result.success) {
+      setNewBackupCodes(result.data.backup_codes);
+      setBackupCodesPassword('');
+      showSuccess('New backup codes generated');
+    } else {
+      setBackupCodesError(result.error);
+    }
+    setRegeneratingCodes(false);
+  };
 
   // Load notification preferences from localStorage
   const [notificationPrefs, setNotificationPrefs] = useState(() => {
@@ -1036,10 +1114,269 @@ const Settings = () => {
                       </Box>
                     </Collapse>
                   </Paper>
+
+                  {/* Two-Factor Authentication Section - Only for staff/manager/admin */}
+                  {twoFactorStatus?.can_enable && (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        borderRadius: 3,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        overflow: 'hidden',
+                        mt: 3,
+                      }}
+                    >
+                      {/* Header - Clickable */}
+                      <Box
+                        onClick={() => setShow2FASection(!show2FASection)}
+                        sx={{
+                          p: 3,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s',
+                          '&:hover': { bgcolor: alpha('#000', 0.02) },
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Box
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: 2,
+                              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <TwoFaIcon sx={{ color: '#667eea' }} />
+                          </Box>
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="h6" fontWeight={600}>
+                                Two-Factor Authentication
+                              </Typography>
+                              {twoFactorStatus?.enabled && (
+                                <Chip
+                                  label="Enabled"
+                                  size="small"
+                                  sx={{
+                                    bgcolor: 'rgba(46, 125, 50, 0.1)',
+                                    color: '#2e7d32',
+                                    fontWeight: 600,
+                                  }}
+                                />
+                              )}
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Add an extra layer of security to your account
+                            </Typography>
+                          </Box>
+                        </Box>
+                        {show2FASection ? (
+                          <ExpandLess sx={{ color: 'text.secondary' }} />
+                        ) : (
+                          <ExpandMore sx={{ color: 'text.secondary' }} />
+                        )}
+                      </Box>
+
+                      {/* Collapsible Content */}
+                      <Collapse in={show2FASection}>
+                        <Box sx={{ px: 3, pb: 3 }}>
+                          <Divider sx={{ mb: 3 }} />
+
+                          {loading2FA ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                              <CircularProgress />
+                            </Box>
+                          ) : twoFactorStatus?.enabled ? (
+                            /* 2FA is enabled */
+                            <Box>
+                              <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
+                                Two-factor authentication is enabled. You&apos;ll need to enter a code from your authenticator app when logging in.
+                              </Alert>
+
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                Backup codes remaining: <strong>{twoFactorStatus.backup_codes_remaining}</strong>
+                              </Typography>
+
+                              {/* Regenerate Backup Codes */}
+                              <Paper
+                                elevation={0}
+                                sx={{
+                                  p: 2,
+                                  mb: 2,
+                                  bgcolor: alpha('#667eea', 0.04),
+                                  borderRadius: 2,
+                                  border: '1px solid',
+                                  borderColor: alpha('#667eea', 0.1),
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                  <BackupCodesIcon sx={{ fontSize: 20, color: '#667eea' }} />
+                                  <Typography fontWeight={600}>Regenerate Backup Codes</Typography>
+                                </Box>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                  Generate new backup codes. This will invalidate your old codes.
+                                </Typography>
+
+                                {newBackupCodes.length > 0 ? (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+                                      Save these codes now. They won&apos;t be shown again.
+                                    </Alert>
+                                    <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                                      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+                                        {newBackupCodes.map((code, i) => (
+                                          <Typography key={i} sx={{ fontFamily: 'monospace', fontSize: '0.9rem', textAlign: 'center', p: 0.5, bgcolor: 'white', borderRadius: 1 }}>
+                                            {code}
+                                          </Typography>
+                                        ))}
+                                      </Box>
+                                    </Paper>
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      sx={{ mt: 2 }}
+                                      onClick={() => setNewBackupCodes([])}
+                                    >
+                                      Done
+                                    </Button>
+                                  </Box>
+                                ) : (
+                                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                                    <TextField
+                                      size="small"
+                                      type="password"
+                                      placeholder="Enter password"
+                                      value={backupCodesPassword}
+                                      onChange={(e) => setBackupCodesPassword(e.target.value)}
+                                      error={!!backupCodesError}
+                                      helperText={backupCodesError}
+                                      sx={{ width: 200 }}
+                                    />
+                                    <Button
+                                      variant="outlined"
+                                      onClick={handleRegenerateBackupCodes}
+                                      disabled={regeneratingCodes}
+                                      startIcon={regeneratingCodes && <CircularProgress size={16} />}
+                                    >
+                                      {regeneratingCodes ? 'Generating...' : 'Generate'}
+                                    </Button>
+                                  </Box>
+                                )}
+                              </Paper>
+
+                              {/* Disable 2FA */}
+                              <Paper
+                                elevation={0}
+                                sx={{
+                                  p: 2,
+                                  bgcolor: alpha('#d32f2f', 0.04),
+                                  borderRadius: 2,
+                                  border: '1px solid',
+                                  borderColor: alpha('#d32f2f', 0.1),
+                                }}
+                              >
+                                <Typography fontWeight={600} sx={{ mb: 1, color: '#d32f2f' }}>
+                                  Disable Two-Factor Authentication
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                  This will remove the extra layer of security from your account.
+                                </Typography>
+
+                                {disable2FAError && (
+                                  <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+                                    {disable2FAError}
+                                  </Alert>
+                                )}
+
+                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                                  <TextField
+                                    size="small"
+                                    type="password"
+                                    placeholder="Enter password to confirm"
+                                    value={disable2FAPassword}
+                                    onChange={(e) => setDisable2FAPassword(e.target.value)}
+                                    sx={{ width: 200 }}
+                                  />
+                                  <Button
+                                    variant="outlined"
+                                    color="error"
+                                    onClick={handleDisable2FA}
+                                    disabled={disabling2FA}
+                                    startIcon={disabling2FA && <CircularProgress size={16} />}
+                                  >
+                                    {disabling2FA ? 'Disabling...' : 'Disable 2FA'}
+                                  </Button>
+                                </Box>
+                              </Paper>
+                            </Box>
+                          ) : (
+                            /* 2FA is not enabled */
+                            <Box>
+                              <Typography variant="body1" sx={{ mb: 2 }}>
+                                Protect your account with two-factor authentication. Once enabled, you&apos;ll need to enter
+                                a code from your authenticator app (like Google Authenticator or Authy) in addition to your
+                                password when logging in.
+                              </Typography>
+
+                              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <QrCodeIcon sx={{ color: 'text.secondary' }} />
+                                  <Typography variant="body2" color="text.secondary">
+                                    Scan QR code with app
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <EmailIcon sx={{ color: 'text.secondary' }} />
+                                  <Typography variant="body2" color="text.secondary">
+                                    Email backup option
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <BackupCodesIcon sx={{ color: 'text.secondary' }} />
+                                  <Typography variant="body2" color="text.secondary">
+                                    10 backup codes
+                                  </Typography>
+                                </Box>
+                              </Box>
+
+                              <Button
+                                variant="contained"
+                                onClick={() => setShow2FASetup(true)}
+                                startIcon={<TwoFaIcon />}
+                                sx={{
+                                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  borderRadius: 2,
+                                  textTransform: 'none',
+                                  fontWeight: 600,
+                                  px: 3,
+                                  py: 1,
+                                }}
+                              >
+                                Enable Two-Factor Authentication
+                              </Button>
+                            </Box>
+                          )}
+                        </Box>
+                      </Collapse>
+                    </Paper>
+                  )}
                 </Box>
               </Box>
             </>
           )}
+
+          {/* 2FA Setup Dialog */}
+          <TwoFactorSetup
+            open={show2FASetup}
+            onClose={() => setShow2FASetup(false)}
+            onComplete={handle2FASetupComplete}
+          />
         </TabPanel>
 
         {/* Notifications Tab */}
