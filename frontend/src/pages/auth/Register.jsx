@@ -193,23 +193,14 @@ const Register = () => {
             }}
           >
             <Box
+              component="img"
+              src="/logo.png"
+              alt="LuxeStay Hotels"
               sx={{
-                width: 48,
                 height: 48,
-                borderRadius: '12px',
-                bgcolor: 'rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(10px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid rgba(255,255,255,0.2)',
+                width: 'auto',
               }}
-            >
-              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '24px' }}>H</Typography>
-            </Box>
-            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '24px', letterSpacing: '-0.02em' }}>
-              Hotels
-            </Typography>
+            />
           </Box>
 
           <Typography
@@ -260,26 +251,18 @@ const Register = () => {
               display: { xs: 'flex', lg: 'none' },
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 1.5,
               mb: 3,
             }}
           >
             <Box
+              component="img"
+              src="/logo.png"
+              alt="LuxeStay Hotels"
               sx={{
-                width: 48,
                 height: 48,
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                width: 'auto',
               }}
-            >
-              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '24px' }}>H</Typography>
-            </Box>
-            <Typography sx={{ color: '#667eea', fontWeight: 700, fontSize: '24px', letterSpacing: '-0.02em' }}>
-              Hotels
-            </Typography>
+            />
           </Box>
 
           <Typography

@@ -129,7 +129,7 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
       title: 'Settings',
       icon: SettingsIcon,
       path: '/settings',
-      roles: ['admin'],
+      roles: ['staff', 'manager', 'admin'],
     },
   ];
 
@@ -275,19 +275,15 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 1.5 }}>
           <Box
+            component="img"
+            src="/logo-admin.png"
+            alt="LuxeStay Hotels"
             sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              height: collapsed ? 32 : 40,
+              width: 'auto',
               flexShrink: 0,
             }}
-          >
-            <HotelIcon sx={{ color: 'white', fontSize: 24 }} />
-          </Box>
+          />
           {!collapsed && (
             <Box>
               <Typography
@@ -299,7 +295,7 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
                   lineHeight: 1.2,
                 }}
               >
-                HMS
+                LuxeStay Hotels
               </Typography>
               <Typography
                 variant="caption"
@@ -310,7 +306,7 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
                   letterSpacing: '1px',
                 }}
               >
-                Hotel Management
+                Management Portal
               </Typography>
             </Box>
           )}

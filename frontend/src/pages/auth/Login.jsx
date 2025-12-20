@@ -159,23 +159,14 @@ const Login = () => {
             }}
           >
             <Box
+              component="img"
+              src="/logo.png"
+              alt="LuxeStay Hotels"
               sx={{
-                width: 48,
                 height: 48,
-                borderRadius: '12px',
-                bgcolor: 'rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(10px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid rgba(255,255,255,0.2)',
+                width: 'auto',
               }}
-            >
-              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '24px' }}>H</Typography>
-            </Box>
-            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '24px', letterSpacing: '-0.02em' }}>
-              Hotels
-            </Typography>
+            />
           </Box>
 
           <Typography
@@ -226,26 +217,18 @@ const Login = () => {
               display: { xs: 'flex', md: 'none' },
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 1.5,
               mb: 4,
             }}
           >
             <Box
+              component="img"
+              src="/logo.png"
+              alt="LuxeStay Hotels"
               sx={{
-                width: 48,
                 height: 48,
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                width: 'auto',
               }}
-            >
-              <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '24px' }}>H</Typography>
-            </Box>
-            <Typography sx={{ color: '#667eea', fontWeight: 700, fontSize: '24px', letterSpacing: '-0.02em' }}>
-              Hotels
-            </Typography>
+            />
           </Box>
 
           <Typography
@@ -468,7 +451,7 @@ const Login = () => {
           {/* Footer */}
           <Box sx={{ mt: 6, textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary">
-              &copy; {new Date().getFullYear()} Hotel Management System. All rights reserved.
+              &copy; {new Date().getFullYear()} LuxeStay Hotels. All rights reserved.
             </Typography>
           </Box>
         </Box>

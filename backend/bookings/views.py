@@ -1,5 +1,6 @@
 # Edited By
 # -> Ahmed Looth Adam, UWE ID: 24050761
+# -> Ismail Wasiu Abdul Samad, UWE ID: 24050765 (Added notification signals)
 
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
@@ -14,6 +15,7 @@ from .serializers import (
     CheckInSerializer, CheckInRecordSerializer
 )
 from .permissions import IsOwnerOrStaff
+from core.signals import booking_created, booking_cancelled, booking_checked_in, booking_checked_out
 
 
 class BookingViewSet(viewsets.ModelViewSet):
@@ -29,7 +31,9 @@ class BookingViewSet(viewsets.ModelViewSet):
         return BookingSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        booking = serializer.save(user=self.request.user)
+        # Send notification signal for new booking
+        booking_created.send(sender=self.__class__, booking=booking)
 
     def get_queryset(self):
         user = self.request.user
@@ -139,6 +143,9 @@ class BookingViewSet(viewsets.ModelViewSet):
         if booking.room:
             booking.room.status = 'available'
             booking.room.save()
+
+        # Send notification signal for cancelled booking
+        booking_cancelled.send(sender=self.__class__, booking=booking)
 
         return Response({
             'success': True,
@@ -289,6 +296,9 @@ class BookingViewSet(viewsets.ModelViewSet):
         room.status = 'occupied'
         room.save()
 
+        # Send notification signal for check-in
+        booking_checked_in.send(sender=self.__class__, booking=booking)
+
         return Response({
             'success': True,
             'message': 'Guest checked in successfully',
@@ -331,6 +341,9 @@ class BookingViewSet(viewsets.ModelViewSet):
         if booking.room:
             booking.room.status = 'cleaning'
             booking.room.save()
+
+        # Send notification signal for check-out
+        booking_checked_out.send(sender=self.__class__, booking=booking)
 
         return Response({
             'success': True,

@@ -64,6 +64,21 @@ import Settings from './pages/settings/Settings';
 import NotificationExample from './examples/NotificationExample';
 import LoadingExample from './examples/LoadingExample';
 
+// Profile Route Guard - redirects staff/manager/admin to settings
+import { useAuth } from './context/AuthContext';
+import { Navigate } from 'react-router-dom';
+
+const GuestProfileRoute = ({ children }) => {
+  const { user } = useAuth();
+
+  // Redirect staff/manager/admin to settings page
+  if (user && ['admin', 'manager', 'staff'].includes(user.role)) {
+    return <Navigate to="/settings" replace />;
+  }
+
+  return children;
+};
+
 function App() {
   return (
     <SnackbarProvider
@@ -75,8 +90,8 @@ function App() {
       autoHideDuration={3000}
     >
       <NotificationInitializer />
-      <NotificationProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <NotificationProvider>
           <Router>
           <Layout>
             <Routes>
@@ -117,7 +132,9 @@ function App() {
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    <Profile />
+                    <GuestProfileRoute>
+                      <Profile />
+                    </GuestProfileRoute>
                   </ProtectedRoute>
                 }
               />
@@ -170,11 +187,11 @@ function App() {
                 }
               />
 
-              {/* Settings (Admin) */}
+              {/* Settings (Admin/Manager/Staff) */}
               <Route
                 path="/settings"
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
                     <Settings />
                   </ProtectedRoute>
                 }
@@ -276,8 +293,8 @@ function App() {
             </Routes>
           </Layout>
           </Router>
-        </AuthProvider>
-      </NotificationProvider>
+        </NotificationProvider>
+      </AuthProvider>
     </SnackbarProvider>
   );
 }

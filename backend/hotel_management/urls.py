@@ -54,6 +54,9 @@ urlpatterns = [
     # Payments API
     path('api/payments/', include('payments.urls')),
 
+    # Core API (Notifications)
+    path('api/', include('core.urls')),
+
     # API Schema
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

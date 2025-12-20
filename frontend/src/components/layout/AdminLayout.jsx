@@ -49,6 +49,11 @@ import {
   Circle as UnreadIcon,
   AddBusiness as HotelAddIcon,
   RemoveCircle as HotelRemoveIcon,
+  EventNote as BookingIcon,
+  Cancel as CancelIcon,
+  Login as CheckInIcon,
+  Logout as CheckOutIcon,
+  Payment as PaymentIcon,
 } from '@mui/icons-material';
 
 // Helper function to format relative time
@@ -149,11 +154,6 @@ const AdminLayout = ({ children }) => {
   };
 
   const handleProfile = () => {
-    handleCloseUserMenu();
-    navigate('/profile');
-  };
-
-  const handleSettings = () => {
     handleCloseUserMenu();
     navigate('/settings');
   };
@@ -344,31 +344,41 @@ const AdminLayout = ({ children }) => {
                         sx={{
                           py: 1.5,
                           px: 2,
-                          bgcolor: notification.read ? 'transparent' : alpha(theme.palette.primary.main, 0.04),
+                          bgcolor: notification.is_read ? 'transparent' : alpha(theme.palette.primary.main, 0.04),
                           '&:hover': {
                             bgcolor: alpha(theme.palette.primary.main, 0.08),
                           },
                         }}
                       >
                         <ListItemIcon sx={{ minWidth: 36 }}>
-                          {notification.type === 'user_created' ? (
+                          {notification.notification_type === 'new_booking' ? (
+                            <BookingIcon sx={{ color: 'primary.main' }} />
+                          ) : notification.notification_type === 'booking_cancelled' ? (
+                            <CancelIcon sx={{ color: 'error.main' }} />
+                          ) : notification.notification_type === 'check_in_today' ? (
+                            <CheckInIcon sx={{ color: 'success.main' }} />
+                          ) : notification.notification_type === 'check_out_today' ? (
+                            <CheckOutIcon sx={{ color: 'warning.main' }} />
+                          ) : notification.notification_type === 'payment_received' ? (
+                            <PaymentIcon sx={{ color: 'success.main' }} />
+                          ) : notification.notification_type === 'user_created' ? (
                             <PersonAddIcon sx={{ color: 'primary.main' }} />
-                          ) : notification.type === 'user_deleted' ? (
+                          ) : notification.notification_type === 'user_deleted' ? (
                             <PersonRemoveIcon sx={{ color: 'error.main' }} />
-                          ) : notification.type === 'hotel_created' ? (
+                          ) : notification.notification_type === 'hotel_created' ? (
                             <HotelAddIcon sx={{ color: 'success.main' }} />
-                          ) : notification.type === 'hotel_deleted' ? (
+                          ) : notification.notification_type === 'hotel_deleted' ? (
                             <HotelRemoveIcon sx={{ color: 'error.main' }} />
                           ) : (
                             <NotificationsIcon sx={{ color: 'text.secondary' }} />
                           )}
                         </ListItemIcon>
                         <ListItemText
-                          primary={notification.message}
-                          secondary={formatRelativeTime(notification.timestamp)}
+                          primary={notification.title || notification.message}
+                          secondary={notification.time_ago || formatRelativeTime(notification.created_at)}
                           primaryTypographyProps={{
                             variant: 'body2',
-                            fontWeight: notification.read ? 400 : 600,
+                            fontWeight: notification.is_read ? 400 : 600,
                             noWrap: true,
                             sx: {
                               maxWidth: 220,
@@ -380,7 +390,7 @@ const AdminLayout = ({ children }) => {
                             variant: 'caption',
                           }}
                         />
-                        {!notification.read && (
+                        {!notification.is_read && (
                           <UnreadIcon sx={{ fontSize: 8, color: 'primary.main', ml: 1 }} />
                         )}
                       </MenuItem>
@@ -390,19 +400,19 @@ const AdminLayout = ({ children }) => {
               </Box>
 
               {/* Footer */}
-              {notifications.length > 0 && (
-                <Box sx={{ borderTop: '1px solid', borderColor: 'divider', p: 1 }}>
-                  <Button
-                    fullWidth
-                    size="small"
-                    startIcon={<ClearAllIcon />}
-                    onClick={handleClearAll}
-                    sx={{ textTransform: 'none', color: 'text.secondary' }}
-                  >
-                    Clear all notifications
-                  </Button>
-                </Box>
-              )}
+              <Box sx={{ borderTop: '1px solid', borderColor: 'divider', px: 1, py: 0.5 }}>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={() => {
+                    handleCloseNotifications();
+                    navigate('/settings?tab=1');
+                  }}
+                  sx={{ textTransform: 'none', fontWeight: 600, py: 0.5 }}
+                >
+                  View All Notifications
+                </Button>
+              </Box>
             </Menu>
 
             {/* Divider */}
@@ -521,24 +531,9 @@ const AdminLayout = ({ children }) => {
                   },
                 }}
               >
-                <AccountCircle sx={{ mr: 1.5, fontSize: 20, color: 'text.secondary' }} />
-                <Typography variant="body2">My Profile</Typography>
+                <SettingsIcon sx={{ mr: 1.5, fontSize: 20, color: 'text.secondary' }} />
+                <Typography variant="body2">Account Settings</Typography>
               </MenuItem>
-              {userRole === 'admin' && (
-                <MenuItem
-                  onClick={handleSettings}
-                  sx={{
-                    py: 1.25,
-                    px: 2,
-                    '&:hover': {
-                      bgcolor: alpha(theme.palette.primary.main, 0.08),
-                    },
-                  }}
-                >
-                  <SettingsIcon sx={{ mr: 1.5, fontSize: 20, color: 'text.secondary' }} />
-                  <Typography variant="body2">Settings</Typography>
-                </MenuItem>
-              )}
               <Divider sx={{ my: 0.5 }} />
               <MenuItem
                 onClick={handleLogout}

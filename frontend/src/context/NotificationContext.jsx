@@ -1,87 +1,165 @@
 /**
  * NotificationContext - Global notification state management
  *
- * Provides persistent notifications for the notification dropdown.
- * Notifications are stored in localStorage for session continuity.
+ * Fetches notifications from backend API with polling support.
+ * Notifications are filtered by user role and assigned hotel on the backend.
  *
  * Created By: Ismail Wasiu Abdul Samad, UWE ID: 24050765
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth } from './AuthContext';
+import notificationService from '../services/notificationService';
 
 const NotificationContext = createContext(null);
 
-const STORAGE_KEY = 'hms_notifications';
+// Polling interval in milliseconds (30 seconds)
+const POLLING_INTERVAL = 30000;
 
 export const NotificationProvider = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const pollingRef = useRef(null);
 
-  // Load notifications from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setNotifications(parsed);
-      } catch (e) {
-        console.error('Failed to parse stored notifications:', e);
-        localStorage.removeItem(STORAGE_KEY);
-      }
+  /**
+   * Fetch notifications from the backend
+   */
+  const fetchNotifications = useCallback(async () => {
+    if (!isAuthenticated || !user) return;
+
+    // Only fetch for staff, manager, and admin roles
+    if (!['staff', 'manager', 'admin'].includes(user.role)) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
     }
+
+    try {
+      setLoading(true);
+      const result = await notificationService.getAll();
+
+      if (result.success) {
+        const notifs = result.data.results || result.data || [];
+        setNotifications(notifs);
+
+        // Calculate unread count
+        const unread = notifs.filter(n => !n.is_read).length;
+        setUnreadCount(unread);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, user]);
+
+  /**
+   * Mark a specific notification as read
+   */
+  const markAsRead = useCallback(async (notificationId) => {
+    const result = await notificationService.markAsRead(notificationId);
+
+    if (result.success) {
+      // Update local state
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notificationId ? { ...n, is_read: true } : n
+        )
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    }
+
+    return result;
   }, []);
 
-  // Persist notifications to localStorage whenever they change
+  /**
+   * Mark all notifications as read
+   */
+  const markAllAsRead = useCallback(async () => {
+    const result = await notificationService.markAllAsRead();
+
+    if (result.success) {
+      // Update local state
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, is_read: true }))
+      );
+      setUnreadCount(0);
+    }
+
+    return result;
+  }, []);
+
+  /**
+   * Clear all notifications
+   */
+  const clearAll = useCallback(async () => {
+    const result = await notificationService.clearAll();
+
+    if (result.success) {
+      // Mark all as read in local state (backend doesn't delete, just marks read)
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, is_read: true }))
+      );
+      setUnreadCount(0);
+    }
+
+    return result;
+  }, []);
+
+  /**
+   * Manually trigger a refresh
+   */
+  const refresh = useCallback(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Fetch notifications on mount and when auth state changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
-  }, [notifications]);
+    if (isAuthenticated && user && ['staff', 'manager', 'admin'].includes(user.role)) {
+      fetchNotifications();
+    } else {
+      // Clear notifications for guests or unauthenticated users
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated, user, fetchNotifications]);
 
-  // Add a new notification
-  const addNotification = (message, type = 'info', link = null) => {
-    const newNotification = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      message,
-      type,
-      timestamp: new Date().toISOString(),
-      read: false,
-      link,
+  // Set up polling for real-time updates
+  useEffect(() => {
+    if (isAuthenticated && user && ['staff', 'manager', 'admin'].includes(user.role)) {
+      // Start polling
+      pollingRef.current = setInterval(() => {
+        fetchNotifications();
+      }, POLLING_INTERVAL);
+
+      return () => {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      };
+    }
+  }, [isAuthenticated, user, fetchNotifications]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
     };
-
-    setNotifications((prev) => [newNotification, ...prev]);
-  };
-
-  // Mark a specific notification as read
-  const markAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
-
-  // Mark all notifications as read
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  // Clear a specific notification
-  const clearNotification = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
-
-  // Clear all notifications
-  const clearAll = () => {
-    setNotifications([]);
-  };
-
-  // Calculate unread count
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  }, []);
 
   const value = {
     notifications,
     unreadCount,
-    addNotification,
+    loading,
     markAsRead,
     markAllAsRead,
-    clearNotification,
     clearAll,
+    refresh,
   };
 
   return (
