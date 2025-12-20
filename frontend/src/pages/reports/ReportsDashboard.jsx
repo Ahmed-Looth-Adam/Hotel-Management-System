@@ -1246,20 +1246,54 @@ const ReportsDashboard = () => {
 
               {/* Occupancy by Room Type */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 4, minHeight: 400 }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                    Occupancy by Room Type
-                  </Typography>
+                <Paper
+                  sx={{
+                    p: 4,
+                    minHeight: 520,
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.12)' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${CHART_COLORS.primary} 0%, ${CHART_COLORS.secondary} 100%)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MeetingRoom sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      Occupancy by Room Type
+                    </Typography>
+                  </Box>
                   <Divider sx={{ mb: 3 }} />
                   {occupancy?.by_room_type?.length > 0 ? (
                     <Box>
                       {occupancy.by_room_type.map((type, index) => (
-                        <Box key={index} sx={{ mb: 3 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body1" sx={{ textTransform: 'capitalize', fontWeight: 500 }}>
+                        <Box
+                          key={index}
+                          sx={{
+                            mb: 3,
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: alpha(CHART_COLORS.primary, 0.03),
+                            transition: 'all 0.2s ease',
+                            '&:hover': { bgcolor: alpha(CHART_COLORS.primary, 0.06) },
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                            <Typography variant="body1" sx={{ textTransform: 'capitalize', fontWeight: 600 }}>
                               {type.room_type}
                             </Typography>
-                            <Typography variant="body1" fontWeight="bold" color="primary">
+                            <Typography variant="h6" fontWeight={700} color="primary">
                               {type.occupancy_rate?.toFixed(1) || 0}%
                             </Typography>
                           </Box>
@@ -1267,55 +1301,83 @@ const ReportsDashboard = () => {
                             variant="determinate"
                             value={type.occupancy_rate || 0}
                             sx={{
-                              height: 12,
-                              borderRadius: 6,
+                              height: 14,
+                              borderRadius: 7,
                               bgcolor: alpha(CHART_COLORS.primary, 0.1),
                               '& .MuiLinearProgress-bar': {
-                                borderRadius: 6,
+                                borderRadius: 7,
                                 background: `linear-gradient(90deg, ${CHART_COLORS.primary} 0%, ${CHART_COLORS.secondary} 100%)`,
                               },
                             }}
                           />
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                            {type.occupied || 0} / {type.total || 0} rooms
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontWeight: 500 }}>
+                            {type.occupied || 0} of {type.total || 0} rooms occupied
                           </Typography>
                         </Box>
                       ))}
                     </Box>
                   ) : (
-                    <Typography color="text.secondary">No room type data available</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 350, flexDirection: 'column', gap: 2 }}>
+                      <MeetingRoom sx={{ fontSize: 48, color: 'text.disabled' }} />
+                      <Typography color="text.secondary">No room type data available</Typography>
+                    </Box>
                   )}
                 </Paper>
               </Grid>
 
               {/* Occupancy by Hotel Chart */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 4, height: '100%', minHeight: 400 }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                    Occupancy Comparison
-                  </Typography>
+                <Paper
+                  sx={{
+                    p: 4,
+                    height: '100%',
+                    minHeight: 520,
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.12)' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${CHART_COLORS.info} 0%, #2563eb 100%)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <BarChartIcon sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      Occupancy Comparison
+                    </Typography>
+                  </Box>
                   <Divider sx={{ mb: 3 }} />
                   {prepareOccupancyByHotelData().length > 0 ? (
-                    <ResponsiveContainer width="100%" height={320}>
-                      <BarChart data={prepareOccupancyByHotelData()} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                        <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                    <ResponsiveContainer width="100%" height={420}>
+                      <BarChart data={prepareOccupancyByHotelData()} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 500 }} axisLine={{ stroke: '#e0e0e0' }} />
+                        <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} axisLine={{ stroke: '#e0e0e0' }} />
                         <RechartsTooltip
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                               const data = payload[0].payload;
                               return (
-                                <Paper sx={{ p: 1.5 }}>
-                                  <Typography variant="subtitle2">{data.fullName}</Typography>
-                                  <Typography variant="body2">Occupancy: {data.occupancy.toFixed(1)}%</Typography>
+                                <Paper sx={{ p: 2, boxShadow: 3, borderRadius: 2 }}>
+                                  <Typography variant="subtitle2" fontWeight={600}>{data.fullName}</Typography>
+                                  <Typography variant="body2" sx={{ mt: 1 }}>Occupancy: <strong>{data.occupancy.toFixed(1)}%</strong></Typography>
                                 </Paper>
                               );
                             }
                             return null;
                           }}
                         />
-                        <Bar dataKey="occupancy" name="Occupancy %" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]}>
+                        <Bar dataKey="occupancy" name="Occupancy %" fill={CHART_COLORS.primary} radius={[8, 8, 0, 0]}>
                           {prepareOccupancyByHotelData().map((entry, index) => (
                             <Cell
                               key={`cell-${index}`}
@@ -1326,7 +1388,8 @@ const ReportsDashboard = () => {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 420, flexDirection: 'column', gap: 2 }}>
+                      <BarChartIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
                       <Typography color="text.secondary">No hotel data available</Typography>
                     </Box>
                   )}
@@ -1336,50 +1399,83 @@ const ReportsDashboard = () => {
               {/* Occupancy by Hotel Table */}
               {occupancy?.by_hotel?.length > 0 && (
                 <Grid item xs={12}>
-                  <Paper sx={{ p: 4 }}>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                      Detailed Occupancy by Hotel
-                    </Typography>
+                  <Paper
+                    sx={{
+                      p: 4,
+                      borderRadius: 3,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                      transition: 'box-shadow 0.3s ease',
+                      '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.12)' },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 2,
+                          background: `linear-gradient(135deg, ${CHART_COLORS.success} 0%, #059669 100%)`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Hotel sx={{ color: 'white', fontSize: 22 }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                        Detailed Occupancy by Hotel
+                      </Typography>
+                    </Box>
                     <Divider sx={{ mb: 3 }} />
                     <TableContainer>
                       <Table>
                         <TableHead>
-                          <TableRow>
-                            <TableCell>Hotel</TableCell>
-                            <TableCell align="center">Total Rooms</TableCell>
-                            <TableCell align="center">Occupied</TableCell>
-                            <TableCell align="center">Available</TableCell>
-                            <TableCell align="center">Occupancy Rate</TableCell>
+                          <TableRow sx={{ bgcolor: alpha(CHART_COLORS.primary, 0.04) }}>
+                            <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Hotel</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Total Rooms</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Occupied</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Available</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Occupancy Rate</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {occupancy.by_hotel.map((hotel, index) => (
-                            <TableRow key={index} hover>
-                              <TableCell sx={{ fontWeight: 500 }}>{hotel.name}</TableCell>
-                              <TableCell align="center">{hotel.total_rooms}</TableCell>
-                              <TableCell align="center">
-                                <Chip label={hotel.occupied} size="small" color="success" variant="outlined" />
+                            <TableRow
+                              key={index}
+                              hover
+                              sx={{
+                                '&:hover': { bgcolor: alpha(CHART_COLORS.primary, 0.04) },
+                                transition: 'background-color 0.2s ease',
+                              }}
+                            >
+                              <TableCell sx={{ fontWeight: 600, py: 2 }}>{hotel.name}</TableCell>
+                              <TableCell align="center" sx={{ py: 2 }}>
+                                <Chip label={hotel.total_rooms} size="small" variant="outlined" />
                               </TableCell>
-                              <TableCell align="center">
-                                <Chip label={hotel.available} size="small" color="info" variant="outlined" />
+                              <TableCell align="center" sx={{ py: 2 }}>
+                                <Chip label={hotel.occupied} size="small" color="success" sx={{ fontWeight: 600 }} />
                               </TableCell>
-                              <TableCell align="center">
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                              <TableCell align="center" sx={{ py: 2 }}>
+                                <Chip label={hotel.available} size="small" color="info" variant="outlined" sx={{ fontWeight: 600 }} />
+                              </TableCell>
+                              <TableCell align="center" sx={{ py: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
                                   <LinearProgress
                                     variant="determinate"
                                     value={hotel.occupancy_rate || 0}
                                     sx={{
-                                      width: 80,
-                                      height: 8,
-                                      borderRadius: 4,
+                                      width: 100,
+                                      height: 10,
+                                      borderRadius: 5,
                                       bgcolor: alpha(CHART_COLORS.primary, 0.1),
+                                      '& .MuiLinearProgress-bar': {
+                                        borderRadius: 5,
+                                        bgcolor: hotel.occupancy_rate > 70 ? CHART_COLORS.success :
+                                          hotel.occupancy_rate > 40 ? CHART_COLORS.warning : CHART_COLORS.error,
+                                      },
                                     }}
-                                    color={
-                                      hotel.occupancy_rate > 70 ? 'success' :
-                                      hotel.occupancy_rate > 40 ? 'warning' : 'error'
-                                    }
                                   />
-                                  <Typography variant="body2" sx={{ minWidth: 45, fontWeight: 600 }}>
+                                  <Typography variant="body2" sx={{ minWidth: 50, fontWeight: 700 }}>
                                     {hotel.occupancy_rate?.toFixed(1) || 0}%
                                   </Typography>
                                 </Box>
@@ -1399,39 +1495,78 @@ const ReportsDashboard = () => {
             <Grid container spacing={4}>
               {/* Demographics Summary */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 4, minHeight: 480 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Public color="primary" />
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                <Paper
+                  sx={{
+                    p: 4,
+                    minHeight: 550,
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.12)' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${CHART_COLORS.info} 0%, #2563eb 100%)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Public sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
                       Guest Demographics by Country
                     </Typography>
                   </Box>
                   <Divider sx={{ mb: 3 }} />
                   {demographics?.by_country?.length > 0 ? (
-                    <TableContainer sx={{ maxHeight: 400 }}>
-                      <Table stickyHeader size="small">
+                    <TableContainer sx={{ maxHeight: 450 }}>
+                      <Table stickyHeader size="medium">
                         <TableHead>
-                          <TableRow>
-                            <TableCell>Country</TableCell>
-                            <TableCell align="center">Guests</TableCell>
-                            <TableCell align="center">Percentage</TableCell>
+                          <TableRow sx={{ bgcolor: alpha(CHART_COLORS.primary, 0.04) }}>
+                            <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Country</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Guests</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Percentage</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {demographics.by_country.map((country, index) => (
-                            <TableRow key={index} hover>
-                              <TableCell sx={{ fontWeight: 500 }}>
+                            <TableRow
+                              key={index}
+                              hover
+                              sx={{
+                                '&:hover': { bgcolor: alpha(CHART_COLORS.primary, 0.04) },
+                                transition: 'background-color 0.2s ease',
+                              }}
+                            >
+                              <TableCell sx={{ fontWeight: 600, py: 2 }}>
                                 {country.country || 'Unknown'}
                               </TableCell>
-                              <TableCell align="center">{country.count}</TableCell>
-                              <TableCell align="center">
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
+                              <TableCell align="center" sx={{ py: 2 }}>
+                                <Chip label={country.count} size="small" color="primary" variant="outlined" />
+                              </TableCell>
+                              <TableCell align="center" sx={{ py: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center' }}>
                                   <LinearProgress
                                     variant="determinate"
                                     value={country.percentage || 0}
-                                    sx={{ width: 60, height: 6, borderRadius: 3 }}
+                                    sx={{
+                                      width: 80,
+                                      height: 8,
+                                      borderRadius: 4,
+                                      bgcolor: alpha(CHART_COLORS.primary, 0.1),
+                                      '& .MuiLinearProgress-bar': {
+                                        borderRadius: 4,
+                                        background: `linear-gradient(90deg, ${CHART_COLORS.primary} 0%, ${CHART_COLORS.secondary} 100%)`,
+                                      },
+                                    }}
                                   />
-                                  <Typography variant="body2">
+                                  <Typography variant="body2" fontWeight={600}>
                                     {country.percentage?.toFixed(1) || 0}%
                                   </Typography>
                                 </Box>
@@ -1442,43 +1577,72 @@ const ReportsDashboard = () => {
                       </Table>
                     </TableContainer>
                   ) : (
-                    <Typography color="text.secondary">No demographic data available</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400, flexDirection: 'column', gap: 2 }}>
+                      <Public sx={{ fontSize: 48, color: 'text.disabled' }} />
+                      <Typography color="text.secondary">No demographic data available</Typography>
+                    </Box>
                   )}
                 </Paper>
               </Grid>
 
               {/* Demographics Pie Chart */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 4, height: '100%', minHeight: 480 }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                    Guest Distribution
-                  </Typography>
+                <Paper
+                  sx={{
+                    p: 4,
+                    height: '100%',
+                    minHeight: 550,
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.12)' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${CHART_COLORS.primary} 0%, ${CHART_COLORS.secondary} 100%)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <PieChartIcon sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      Guest Distribution
+                    </Typography>
+                  </Box>
                   <Divider sx={{ mb: 3 }} />
                   {prepareDemographicsData().length > 0 ? (
-                    <ResponsiveContainer width="100%" height={380}>
+                    <ResponsiveContainer width="100%" height={450}>
                       <PieChart>
                         <Pie
                           data={prepareDemographicsData()}
                           cx="50%"
                           cy="45%"
-                          innerRadius={70}
-                          outerRadius={130}
-                          paddingAngle={2}
+                          innerRadius={80}
+                          outerRadius={150}
+                          paddingAngle={3}
                           dataKey="value"
                           nameKey="name"
                           label={({ name, percentage }) => `${name} (${percentage?.toFixed(0)}%)`}
-                          labelLine={{ stroke: '#666' }}
+                          labelLine={{ stroke: '#666', strokeWidth: 1 }}
                         >
                           {prepareDemographicsData().map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                           ))}
                         </Pie>
                         <RechartsTooltip />
-                        <Legend wrapperStyle={{ paddingTop: 20 }} />
+                        <Legend wrapperStyle={{ paddingTop: 30 }} />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 380 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 450, flexDirection: 'column', gap: 2 }}>
+                      <PieChartIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
                       <Typography color="text.secondary">No demographic data available</Typography>
                     </Box>
                   )}
@@ -1488,48 +1652,110 @@ const ReportsDashboard = () => {
               {/* Booking Patterns */}
               {demographics?.booking_patterns && (
                 <Grid item xs={12}>
-                  <Paper sx={{ p: 4 }}>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                      Booking Patterns
-                    </Typography>
-                    <Divider sx={{ mb: 3 }} />
+                  <Paper
+                    sx={{
+                      p: 4,
+                      borderRadius: 3,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                      background: `linear-gradient(135deg, ${alpha('#667eea', 0.03)} 0%, ${alpha('#764ba2', 0.03)} 100%)`,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 2,
+                          background: `linear-gradient(135deg, ${CHART_COLORS.warning} 0%, #d97706 100%)`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <CalendarMonth sx={{ color: 'white', fontSize: 22 }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                        Booking Patterns
+                      </Typography>
+                    </Box>
+                    <Divider sx={{ mb: 4 }} />
                     <Grid container spacing={4}>
                       <Grid item xs={12} sm={6} md={3}>
-                        <Box sx={{ textAlign: 'center', p: 2 }}>
-                          <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>
+                        <Box
+                          sx={{
+                            textAlign: 'center',
+                            p: 3,
+                            borderRadius: 3,
+                            bgcolor: 'white',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 8px 25px rgba(0,0,0,0.1)' },
+                          }}
+                        >
+                          <Typography variant="h2" color="primary" sx={{ fontWeight: 800, mb: 1 }}>
                             {demographics.booking_patterns.average_stay?.toFixed(1) || 0}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body1" color="text.secondary" fontWeight={500}>
                             Average Stay (nights)
                           </Typography>
                         </Box>
                       </Grid>
                       <Grid item xs={12} sm={6} md={3}>
-                        <Box sx={{ textAlign: 'center', p: 2 }}>
-                          <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
+                        <Box
+                          sx={{
+                            textAlign: 'center',
+                            p: 3,
+                            borderRadius: 3,
+                            bgcolor: 'white',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 8px 25px rgba(0,0,0,0.1)' },
+                          }}
+                        >
+                          <Typography variant="h2" sx={{ fontWeight: 800, mb: 1, color: CHART_COLORS.success }}>
                             {demographics.booking_patterns.repeat_guests || 0}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body1" color="text.secondary" fontWeight={500}>
                             Repeat Guests
                           </Typography>
                         </Box>
                       </Grid>
                       <Grid item xs={12} sm={6} md={3}>
-                        <Box sx={{ textAlign: 'center', p: 2 }}>
-                          <Typography variant="h4" color="info.main" sx={{ fontWeight: 700 }}>
+                        <Box
+                          sx={{
+                            textAlign: 'center',
+                            p: 3,
+                            borderRadius: 3,
+                            bgcolor: 'white',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 8px 25px rgba(0,0,0,0.1)' },
+                          }}
+                        >
+                          <Typography variant="h2" sx={{ fontWeight: 800, mb: 1, color: CHART_COLORS.info }}>
                             {demographics.booking_patterns.average_lead_time?.toFixed(0) || 0}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body1" color="text.secondary" fontWeight={500}>
                             Avg. Lead Time (days)
                           </Typography>
                         </Box>
                       </Grid>
                       <Grid item xs={12} sm={6} md={3}>
-                        <Box sx={{ textAlign: 'center', p: 2 }}>
-                          <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700 }}>
+                        <Box
+                          sx={{
+                            textAlign: 'center',
+                            p: 3,
+                            borderRadius: 3,
+                            bgcolor: 'white',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 8px 25px rgba(0,0,0,0.1)' },
+                          }}
+                        >
+                          <Typography variant="h2" sx={{ fontWeight: 800, mb: 1, color: CHART_COLORS.warning }}>
                             {demographics.booking_patterns.peak_booking_day || 'N/A'}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body1" color="text.secondary" fontWeight={500}>
                             Peak Booking Day
                           </Typography>
                         </Box>
@@ -1545,26 +1771,54 @@ const ReportsDashboard = () => {
             <Grid container spacing={4}>
               {/* Service Popularity */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 4, minHeight: 480 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <RoomService color="primary" />
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                <Paper
+                  sx={{
+                    p: 4,
+                    minHeight: 550,
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.12)' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${CHART_COLORS.primary} 0%, ${CHART_COLORS.secondary} 100%)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <RoomService sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
                       Service Popularity
                     </Typography>
                   </Box>
                   <Divider sx={{ mb: 3 }} />
                   {prepareServiceData().length > 0 ? (
-                    <ResponsiveContainer width="100%" height={380}>
-                      <BarChart data={prepareServiceData()} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                        <XAxis type="number" />
-                        <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
+                    <ResponsiveContainer width="100%" height={450}>
+                      <BarChart data={prepareServiceData()} layout="vertical" margin={{ top: 20, right: 40, left: 20, bottom: 20 }}>
+                        <defs>
+                          <linearGradient id="serviceGradient" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor={CHART_COLORS.primary} stopOpacity={1} />
+                            <stop offset="100%" stopColor={CHART_COLORS.secondary} stopOpacity={0.8} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" horizontal={false} />
+                        <XAxis type="number" axisLine={{ stroke: '#e0e0e0' }} />
+                        <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 13, fontWeight: 500 }} axisLine={{ stroke: '#e0e0e0' }} />
                         <RechartsTooltip content={<CustomTooltip />} />
-                        <Bar dataKey="bookings" name="Bookings" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="bookings" name="Bookings" fill="url(#serviceGradient)" radius={[0, 8, 8, 0]} barSize={30} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 380 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 450, flexDirection: 'column', gap: 2 }}>
+                      <RoomService sx={{ fontSize: 48, color: 'text.disabled' }} />
                       <Typography color="text.secondary">No service data available</Typography>
                     </Box>
                   )}
@@ -1573,21 +1827,46 @@ const ReportsDashboard = () => {
 
               {/* Service Revenue */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 4, height: '100%', minHeight: 480 }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                    Service Revenue Breakdown
-                  </Typography>
+                <Paper
+                  sx={{
+                    p: 4,
+                    height: '100%',
+                    minHeight: 550,
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.12)' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${CHART_COLORS.success} 0%, #059669 100%)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <CurrencyPound sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      Service Revenue Breakdown
+                    </Typography>
+                  </Box>
                   <Divider sx={{ mb: 3 }} />
                   {prepareServiceData().length > 0 ? (
-                    <ResponsiveContainer width="100%" height={380}>
+                    <ResponsiveContainer width="100%" height={450}>
                       <PieChart>
                         <Pie
                           data={prepareServiceData()}
                           cx="50%"
                           cy="45%"
-                          innerRadius={70}
-                          outerRadius={120}
-                          paddingAngle={2}
+                          innerRadius={80}
+                          outerRadius={145}
+                          paddingAngle={3}
                           dataKey="revenue"
                           nameKey="name"
                           label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
@@ -1597,11 +1876,12 @@ const ReportsDashboard = () => {
                           ))}
                         </Pie>
                         <RechartsTooltip formatter={(value) => formatCurrency(value)} />
-                        <Legend wrapperStyle={{ paddingTop: 20 }} />
+                        <Legend wrapperStyle={{ paddingTop: 30 }} />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 380 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 450, flexDirection: 'column', gap: 2 }}>
+                      <PieChartIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
                       <Typography color="text.secondary">No service revenue data available</Typography>
                     </Box>
                   )}
@@ -1611,28 +1891,62 @@ const ReportsDashboard = () => {
               {/* Service Details Table */}
               {prepareServiceData().length > 0 && (
                 <Grid item xs={12}>
-                  <Paper sx={{ p: 4 }}>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                      Ancillary Services Details
-                    </Typography>
+                  <Paper
+                    sx={{
+                      p: 4,
+                      borderRadius: 3,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                      transition: 'box-shadow 0.3s ease',
+                      '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.12)' },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 2,
+                          background: `linear-gradient(135deg, ${CHART_COLORS.info} 0%, #2563eb 100%)`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Assessment sx={{ color: 'white', fontSize: 22 }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                        Ancillary Services Details
+                      </Typography>
+                    </Box>
                     <Divider sx={{ mb: 3 }} />
                     <TableContainer>
                       <Table>
                         <TableHead>
-                          <TableRow>
-                            <TableCell>Service</TableCell>
-                            <TableCell align="center">Bookings</TableCell>
-                            <TableCell align="right">Total Revenue</TableCell>
-                            <TableCell align="right">Avg. per Booking</TableCell>
+                          <TableRow sx={{ bgcolor: alpha(CHART_COLORS.primary, 0.04) }}>
+                            <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Service</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Bookings</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Total Revenue</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Avg. per Booking</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {prepareServiceData().map((service, index) => (
-                            <TableRow key={index} hover>
-                              <TableCell sx={{ fontWeight: 500 }}>{service.name}</TableCell>
-                              <TableCell align="center">{service.bookings}</TableCell>
-                              <TableCell align="right">{formatCurrency(service.revenue)}</TableCell>
-                              <TableCell align="right">
+                            <TableRow
+                              key={index}
+                              hover
+                              sx={{
+                                '&:hover': { bgcolor: alpha(CHART_COLORS.primary, 0.04) },
+                                transition: 'background-color 0.2s ease',
+                              }}
+                            >
+                              <TableCell sx={{ fontWeight: 600, py: 2 }}>{service.name}</TableCell>
+                              <TableCell align="center" sx={{ py: 2 }}>
+                                <Chip label={service.bookings} size="small" color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600, py: 2, color: CHART_COLORS.success }}>
+                                {formatCurrency(service.revenue)}
+                              </TableCell>
+                              <TableCell align="right" sx={{ py: 2, fontWeight: 500 }}>
                                 {formatCurrency(service.bookings ? service.revenue / service.bookings : 0)}
                               </TableCell>
                             </TableRow>
