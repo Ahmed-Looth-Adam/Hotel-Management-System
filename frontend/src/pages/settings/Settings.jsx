@@ -384,7 +384,7 @@ const Settings = () => {
   const systemInfo = [
     { label: 'Version', value: '1.0.0', icon: CodeIcon, color: '#1976d2' },
     { label: 'Build', value: '2024.12.20', icon: ScheduleIcon, color: '#2e7d32' },
-    { label: 'Environment', value: 'Development', icon: StorageIcon, color: '#ed6c02' },
+    { label: 'Environment', value: 'Production', icon: StorageIcon, color: '#2e7d32' },
   ];
 
   const handleMarkAllRead = async () => {
