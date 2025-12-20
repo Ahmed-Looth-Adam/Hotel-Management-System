@@ -2043,12 +2043,14 @@ const ReportsDashboard = () => {
               borderRadius: 3,
               border: '1px solid',
               borderColor: 'divider',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             <Typography variant="h6" fontWeight={600} gutterBottom>
               Service Revenue Breakdown
             </Typography>
-            <Box sx={{ height: 300 }}>
+            <Box sx={{ flex: 1, minHeight: 300, display: 'flex', flexDirection: 'column' }}>
               {loading ? (
                 <Skeleton variant="circular" width={200} height={200} sx={{ mx: 'auto', mt: 4 }} />
               ) : servicePopularity.length === 0 ? (
@@ -2078,7 +2080,7 @@ const ReportsDashboard = () => {
                       layout="horizontal"
                       align="center"
                       verticalAlign="bottom"
-                      formatter={(value) => <span style={{ color: '#333', fontSize: 12 }}>{value}</span>}
+                      formatter={(value) => <span style={{ color: '#333', fontSize: 11 }}>{value}</span>}
                     />
                   </PieChart>
                 </ResponsiveContainer>
