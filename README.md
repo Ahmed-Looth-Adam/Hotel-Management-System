@@ -372,14 +372,6 @@ docker-compose up -d
 
 ---
 
-## 📝 Project Management
-
-- **Sprint Duration:** 2 - 3 days
-- **Daily Standups:** 15 minutes
-- **Tools:** Trello, Telegram/Discord, GitHub
-
----
-
 ## ⚠️ Important Notes
 
 - Never commit `.env` file
@@ -399,29 +391,26 @@ docker-compose up -d
 
 ---
 
-## ✅ New Team Member Checklist
+## 🔑 Creating an Admin User
 
-- [ ] Clone repository
-- [ ] Install Docker Desktop
-- [ ] Create `.env` file
-- [ ] Run `docker-compose up --build`
-- [ ] Create superuser
-- [ ] Access frontend and backend
-- [ ] Join communication channels
-- [ ] Review project board
+To access the admin panel and manage the system, create a superuser account:
 
----
+```bash
+# Create superuser
+docker-compose exec backend python manage.py createsuperuser
+```
 
-## 🔑 Default Admin Credentials
+You will be prompted to enter:
+- Username
+- Email address
+- Password
 
-**Username:** admin
-**Email:** admin@gmail.com
-**Password:** admin@123
-
-⚠️ **Change these credentials immediately in production!**
+Once created, you can log in at:
+- **Admin Panel:** http://localhost:8000/admin
+- **Frontend:** http://localhost:5173
 
 ---
 
-**Last Updated:** October 20, 2025
+**Last Updated:** December 20, 2024
 **Version:** 1.0.0
-**Status:** Active Development
+**Status:** Production
