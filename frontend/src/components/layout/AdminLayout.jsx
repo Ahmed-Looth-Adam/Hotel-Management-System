@@ -3,7 +3,7 @@
  *
  * Features:
  * - Collapsible sidebar navigation
- * - Clean top app bar with search and notifications
+ * - Clean top app bar with notifications
  * - Responsive design with mobile drawer
  * - Persisted sidebar state
  *
@@ -39,7 +39,6 @@ import {
   AccountCircle,
   Logout as LogoutIcon,
   Settings as SettingsIcon,
-  Search as SearchIcon,
   Notifications as NotificationsIcon,
   KeyboardArrowDown as ArrowDownIcon,
   PersonAdd as PersonAddIcon,
