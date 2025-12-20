@@ -5,6 +5,7 @@ import uuid
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from core.fields import EncryptedCharField
 
 
 class Booking(models.Model):
@@ -221,7 +222,7 @@ class BookingGuest(models.Model):
     date_of_birth = models.DateField(null=True, blank=True)
     nationality = models.CharField(max_length=100, blank=True)
     id_type = models.CharField(max_length=50, blank=True)  # Passport, ID Card, etc.
-    id_number = models.CharField(max_length=100, blank=True)
+    id_number = EncryptedCharField(max_length=255, blank=True)  # Encrypted passport/ID number
     relationship_to_primary = models.CharField(max_length=100, blank=True)
     special_requirements = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -258,7 +259,7 @@ class CheckInRecord(models.Model):
 
     # ID/Passport details
     id_type = models.CharField(max_length=20, choices=ID_TYPE_CHOICES, default='passport')
-    id_number = models.CharField(max_length=100)
+    id_number = EncryptedCharField(max_length=255)  # Encrypted passport/ID number
     id_expiry_date = models.DateField(null=True, blank=True)
 
     # Address as on ID document

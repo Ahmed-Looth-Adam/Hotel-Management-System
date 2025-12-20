@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+from core.fields import EncryptedCharField
 
 class User(AbstractUser):
     """Extended User model with additional fields"""
@@ -40,7 +41,7 @@ class User(AbstractUser):
 
     # Two-Factor Authentication fields
     two_factor_enabled = models.BooleanField(default=False, help_text="Whether 2FA is enabled for this user")
-    two_factor_secret = models.CharField(max_length=32, blank=True, null=True, help_text="TOTP secret key")
+    two_factor_secret = EncryptedCharField(max_length=255, blank=True, null=True, help_text="Encrypted TOTP secret key")
     two_factor_backup_codes = models.JSONField(default=list, blank=True, help_text="Hashed backup codes for 2FA recovery")
     two_factor_confirmed = models.BooleanField(default=False, help_text="Whether 2FA setup has been confirmed")
 

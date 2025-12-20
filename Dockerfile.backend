@@ -28,8 +28,8 @@ RUN pipenv install --system
 # Ensure django-redis is installed (workaround for lock file issue)
 RUN pip install django-redis
 
-# Install 2FA dependencies
-RUN pip install pyotp "qrcode[pil]"
+# Install 2FA and encryption dependencies
+RUN pip install pyotp "qrcode[pil]" cryptography
 
 # Copy backend project files
 COPY backend/ .

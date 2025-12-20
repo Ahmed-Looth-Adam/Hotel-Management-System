@@ -274,6 +274,10 @@ AUTH_USER_MODEL = 'authentication.User'
 
 PASSWORD_RESET_TIMEOUT = 60 * 60
 
+# Field-level encryption key for sensitive data (passport/ID numbers, 2FA secrets)
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY', default=None)
+
 # Security Settings
 # HSTS (HTTP Strict Transport Security) - only active in production (when DEBUG is False)
 if not DEBUG:
