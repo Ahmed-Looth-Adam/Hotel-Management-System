@@ -480,8 +480,14 @@ const Dashboard = () => {
         serviceParams.hotel_id = selectedHotel;
       }
       const serviceResult = await reportService.getServicePopularity(serviceParams);
-      if (serviceResult.success && serviceResult.data.data) {
-        setServicePopularity(serviceResult.data.data);
+      if (serviceResult.success && serviceResult.data.services) {
+        // Map backend fields to expected frontend fields
+        const mappedServices = serviceResult.data.services.map(s => ({
+          name: s.name,
+          bookings: s.booking_count || 0,
+          revenue: s.total_revenue || 0,
+        }));
+        setServicePopularity(mappedServices);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
