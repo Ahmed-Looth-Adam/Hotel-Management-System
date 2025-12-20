@@ -376,8 +376,9 @@ const Settings = () => {
   const teamMembers = [
     { name: 'Ismail Wasiu Abdul Samad', id: '24050765', role: 'Lead Developer' },
     { name: 'Ahmed Looth Adam', id: '24050761', role: 'Developer' },
-    { name: 'Ibrahim Waseem', id: '24053101', role: 'Developer' },
+    { name: 'Ibrahim Waseem', id: '24050771', role: 'Developer' },
     { name: 'Mohamed Lujain Shakeeb Ahmed', id: '24050760', role: 'Developer' },
+    { name: 'Awf Ibrahim Mohamed', id: '24047957', role: 'Developer' },
   ];
 
   const systemInfo = [
