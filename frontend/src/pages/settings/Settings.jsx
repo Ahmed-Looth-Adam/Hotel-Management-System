@@ -71,6 +71,7 @@ import { useNotification } from '../../hooks/useNotification';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/authService';
 import { hotelService } from '../../services';
+import { Warning as WarningIcon } from '@mui/icons-material';
 
 const TabPanel = ({ children, value, index }) => (
   <div hidden={value !== index}>
@@ -118,7 +119,7 @@ const Settings = () => {
   const [tabValue, setTabValue] = useState(initialTab);
   const { notifications, unreadCount, markAllAsRead, clearAll, refresh } = useNotificationContext();
   const { showSuccess } = useNotification();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, passwordExpired, passwordStatus, onPasswordChanged } = useAuth();
   const fileInputRef = useRef(null);
 
   // Account settings state
@@ -133,7 +134,15 @@ const Settings = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [showPasswordSection, setShowPasswordSection] = useState(passwordExpired || false);
+
+  // Auto-expand password section and scroll when password is expired
+  useEffect(() => {
+    if (passwordExpired) {
+      setShowPasswordSection(true);
+      setTabValue(0); // Ensure we're on the Account tab
+    }
+  }, [passwordExpired]);
 
   const [previewUrl, setPreviewUrl] = useState(null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
@@ -317,6 +326,10 @@ const Settings = () => {
         if (response.success) {
           setPasswordSuccess('Password changed successfully!');
           resetForm();
+          // Update password expiration status
+          if (onPasswordChanged) {
+            await onPasswordChanged();
+          }
           setTimeout(() => setShowPasswordSection(false), 2000);
         } else {
           setPasswordError(response.error || 'Password change failed.');
@@ -495,6 +508,42 @@ const Settings = () => {
             </Box>
           ) : (
             <>
+              {/* Password Expiration Warning */}
+              {passwordExpired && (
+                <Alert
+                  severity="warning"
+                  icon={<WarningIcon />}
+                  sx={{
+                    mb: 3,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(237, 108, 2, 0.1)',
+                    border: '1px solid rgba(237, 108, 2, 0.3)',
+                    '& .MuiAlert-icon': { color: '#ed6c02' },
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>
+                    Password Expired
+                  </Typography>
+                  <Typography variant="body2">
+                    Your password has expired. For security reasons, staff accounts must change their password every 6 months.
+                    Please update your password below to continue using the system.
+                  </Typography>
+                </Alert>
+              )}
+
+              {/* Password Expiration Warning (Soon) */}
+              {!passwordExpired && passwordStatus?.days_until_expiration <= 14 && passwordStatus?.days_until_expiration > 0 && (
+                <Alert
+                  severity="info"
+                  sx={{ mb: 3, borderRadius: 2 }}
+                >
+                  <Typography variant="body2">
+                    Your password will expire in <strong>{passwordStatus.days_until_expiration} days</strong>.
+                    Consider changing it soon to avoid interruption.
+                  </Typography>
+                </Alert>
+              )}
+
               {/* Success/Error Alerts */}
               {(profileSuccess || profileError) && (
                 <Alert

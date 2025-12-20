@@ -421,7 +421,7 @@ const authService = {
    * @param {number} userId - ID of user to update
    * @returns {Promise} API response
    */
-  deleteUser: async (userId) => { 
+  deleteUser: async (userId) => {
     try {
       const response = await authAPI.delete(`/admin/users/${userId}/`);
       return { success: true, data: response.data };
@@ -433,6 +433,33 @@ const authService = {
     }
   },
 
+  /**
+   * Get password expiration status for current user
+   * @returns {Promise} API response with password status
+   */
+  getPasswordStatus: async () => {
+    try {
+      const response = await authAPI.get('/password-status/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to get password status',
+      };
+    }
+  },
+
+  /**
+   * Check if a 403 response is due to password expiration
+   * @param {Object} error - Axios error object
+   * @returns {boolean} True if password is expired
+   */
+  isPasswordExpiredError: (error) => {
+    return (
+      error.response?.status === 403 &&
+      error.response?.data?.code === 'PASSWORD_EXPIRED'
+    );
+  },
 
 };
 

@@ -407,10 +407,11 @@ class PasswordResetConfirmAPIview(APIView):
             return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
         
         if user is not None and default_token_generator.check_token(user, token):
-            try:           
+            try:
                 validate_password(new_password, user)
                 user.set_password(new_password)
-                user.save()
+                user.last_password_change = timezone.now()
+                user.save(update_fields=['password', 'last_password_change'])
 
                 if not user.is_active:
                     user.is_active = True
@@ -447,6 +448,55 @@ class PasswordResetConfirmAPIview(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
             
+class PasswordStatusAPIView(APIView):
+    """
+    API endpoint to check password expiration status
+
+    GET /auth/password-status/
+    Returns password status information for the authenticated user
+
+    Created By: Ismail Wasiu Abdul Samad, UWE ID: 24050765
+    """
+    permission_classes = [IsAuthenticated]
+
+    PASSWORD_EXPIRATION_DAYS = 180  # 6 months
+
+    def get(self, request):
+        user = request.user
+
+        # Check if user is staff/manager/admin
+        if user.role not in ['staff', 'manager', 'admin']:
+            return Response({
+                'password_expiration_enforced': False,
+                'message': 'Password expiration is not enforced for guest users'
+            }, status=status.HTTP_200_OK)
+
+        last_change = user.last_password_change
+        if not last_change:
+            return Response({
+                'password_expiration_enforced': True,
+                'password_expired': True,
+                'last_password_change': None,
+                'expiration_date': None,
+                'days_until_expiration': 0,
+                'message': 'Password has never been set. Please change your password.'
+            }, status=status.HTTP_200_OK)
+
+        expiration_date = last_change + timedelta(days=self.PASSWORD_EXPIRATION_DAYS)
+        days_until_expiration = (expiration_date - timezone.now()).days
+        is_expired = days_until_expiration < 0
+
+        return Response({
+            'password_expiration_enforced': True,
+            'password_expired': is_expired,
+            'last_password_change': last_change.isoformat(),
+            'expiration_date': expiration_date.isoformat(),
+            'days_until_expiration': max(0, days_until_expiration),
+            'expiration_period_days': self.PASSWORD_EXPIRATION_DAYS,
+            'message': 'Password has expired. Please change your password.' if is_expired else f'Password expires in {days_until_expiration} days.'
+        }, status=status.HTTP_200_OK)
+
+
 class AdminUserListAPIView(APIView):
     """
     GET: List all users (with optional role filtering)

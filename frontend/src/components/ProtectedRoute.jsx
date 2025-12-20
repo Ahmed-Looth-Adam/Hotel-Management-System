@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Box, CircularProgress, Container } from '@mui/material';
 
 const ProtectedRoute = ({ children, requiredRole = null, allowedRoles = null }) => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, user, loading, passwordExpired } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while checking authentication
@@ -27,6 +27,12 @@ const ProtectedRoute = ({ children, requiredRole = null, allowedRoles = null }) 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Redirect staff/manager/admin with expired password to settings page
+  // (except if already on settings page)
+  if (passwordExpired && location.pathname !== '/settings') {
+    return <Navigate to="/settings" state={{ passwordExpired: true }} replace />;
   }
 
   // Check role-based access if allowedRoles array is specified

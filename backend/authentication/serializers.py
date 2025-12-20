@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate, update_session_auth_hash
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -128,9 +129,10 @@ class PasswordChangeSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         if not instance.check_password(validated_data['current_password']):
             raise serializers.ValidationError({"current_password": "Current password is incorrect."})
-        
+
         instance.set_password(validated_data['new_password'])
-        instance.save()
+        instance.last_password_change = timezone.now()
+        instance.save(update_fields=['password', 'last_password_change'])
         return instance
     
 

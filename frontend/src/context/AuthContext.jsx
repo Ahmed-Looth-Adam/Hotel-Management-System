@@ -7,6 +7,19 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordExpired, setPasswordExpired] = useState(false);
+  const [passwordStatus, setPasswordStatus] = useState(null);
+
+  // Check password expiration status for staff/manager/admin users
+  const checkPasswordStatus = async () => {
+    const result = await authService.getPasswordStatus();
+    if (result.success) {
+      setPasswordStatus(result.data);
+      setPasswordExpired(result.data.password_expired || false);
+      return result.data;
+    }
+    return null;
+  };
 
   // Load user from localStorage on mount and verify token validity
   useEffect(() => {
@@ -21,6 +34,11 @@ export const AuthProvider = ({ children }) => {
         if (result.success) {
           setUser(result.data);
           setIsAuthenticated(true);
+
+          // Check password status for staff/manager/admin
+          if (['staff', 'manager', 'admin'].includes(result.data.role)) {
+            await checkPasswordStatus();
+          }
         } else {
           // Token is invalid or expired, clear everything (without API call to avoid redirect)
           localStorage.removeItem('access_token');
@@ -47,6 +65,11 @@ export const AuthProvider = ({ children }) => {
       const userData = result.data?.user || authService.getCurrentUser();
       setUser(userData);
       setIsAuthenticated(true);
+
+      // Check password status for staff/manager/admin after login
+      if (['staff', 'manager', 'admin'].includes(userData.role)) {
+        await checkPasswordStatus();
+      }
     } else {
       // Ensure we clear auth state on failed login
       setUser(null);
@@ -87,15 +110,25 @@ export const AuthProvider = ({ children }) => {
     return result;
   };
 
+  // Call this after successful password change to clear expired state
+  const onPasswordChanged = async () => {
+    setPasswordExpired(false);
+    await checkPasswordStatus();
+  };
+
   const value = {
     user,
     loading,
     isAuthenticated,
+    passwordExpired,
+    passwordStatus,
     login,
     register,
     logout,
     refreshToken,
     updateUser,
+    checkPasswordStatus,
+    onPasswordChanged,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

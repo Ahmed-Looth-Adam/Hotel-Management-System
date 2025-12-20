@@ -68,6 +68,7 @@ MIDDLEWARE = [
     'core.middleware.disable_csrf.DisableCSRFForAPIMiddleware',  # Custom: Disable CSRF for API endpoints
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'authentication.middleware.PasswordExpirationMiddleware',  # Custom: Check password expiration for staff
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
