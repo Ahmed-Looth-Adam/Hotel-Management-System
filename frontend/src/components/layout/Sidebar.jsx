@@ -48,6 +48,7 @@ import {
   Search as SearchIcon,
   ListAlt as ListAltIcon,
   Apartment as ApartmentIcon,
+  MeetingRoom as MeetingRoomIcon,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH_EXPANDED = 260;
@@ -117,6 +118,12 @@ const Sidebar = ({ open = true, onClose, variant = 'permanent', collapsed = fals
       title: 'Bookings',
       icon: BookingIcon,
       path: '/bookings',
+      roles: ['staff', 'manager', 'admin'],
+    },
+    {
+      title: 'Room Management',
+      icon: MeetingRoomIcon,
+      path: '/staff/rooms',
       roles: ['staff', 'manager', 'admin'],
     },
     {

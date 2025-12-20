@@ -45,6 +45,9 @@ import HotelManagePage from './pages/Admin/HotelManagePage';
 import ManagerHotelView from './pages/Manager/ManagerHotelView';
 import ManagerStaffManagement from './pages/Manager/ManagerStaffManagement';
 
+// Staff pages
+import RoomManagement from './pages/Staff/RoomManagement';
+
 // Guest pages
 import BrowseRooms from './pages/guest/BrowseRooms';
 import RoomDetails from './pages/guest/RoomDetails';
@@ -283,6 +286,16 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
                     <BookingDetail />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Room Management (Staff/Manager/Admin) */}
+              <Route
+                path="/staff/rooms"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+                    <RoomManagement />
                   </ProtectedRoute>
                 }
               />
