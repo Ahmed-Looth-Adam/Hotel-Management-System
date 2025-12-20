@@ -429,59 +429,339 @@ const ReportsDashboard = () => {
   };
 
   const handleExportPDF = () => {
-    const printContent = printRef.current;
-    if (printContent) {
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Reports Dashboard - ${new Date().toLocaleDateString()}</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 20px; }
-              h1 { color: #1a1f37; border-bottom: 2px solid #1976d2; padding-bottom: 10px; }
-              .section { margin-bottom: 30px; page-break-inside: avoid; }
-              .stat-card { display: inline-block; width: 23%; margin: 1%; padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; }
-              .stat-value { font-size: 24px; font-weight: bold; color: #1a1f37; }
-              .stat-label { color: #666; font-size: 12px; }
-              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-              th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
-              th { background-color: #f5f5f5; }
-              .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #666; font-size: 12px; }
-            </style>
-          </head>
-          <body>
-            <h1>Hotel Management System - Reports Dashboard</h1>
-            <p>Generated on: ${new Date().toLocaleString()}</p>
-            <p>Period: ${dateRangeLabels[dateRange]}</p>
-            <div class="section">
-              <h2>Key Metrics Summary</h2>
+    // Build revenue by hotel table rows
+    const revenueByHotelRows = (revenue?.by_hotel || []).map(h => `
+      <tr>
+        <td>${h.name || 'Unknown'}</td>
+        <td style="text-align: right;">${formatCurrency(h.revenue || 0)}</td>
+        <td style="text-align: right;">${h.bookings || 0}</td>
+      </tr>
+    `).join('');
+
+    // Build occupancy by hotel table rows
+    const occupancyByHotelRows = (occupancy?.by_hotel || []).map(h => `
+      <tr>
+        <td>${h.name || 'Unknown'}</td>
+        <td style="text-align: right;">${h.total_rooms || 0}</td>
+        <td style="text-align: right;">${h.occupied || 0}</td>
+        <td style="text-align: right;">${(h.occupancy_rate || 0).toFixed(1)}%</td>
+      </tr>
+    `).join('');
+
+    // Build booking status distribution rows
+    const statusRows = statusDistribution.map(s => `
+      <tr>
+        <td style="text-transform: capitalize;">${(s.status || s.name || '').replace('_', ' ')}</td>
+        <td style="text-align: right;">${s.count || s.value || 0}</td>
+        <td style="text-align: right;">${((s.count || s.value || 0) / (summary?.total_bookings || 1) * 100).toFixed(1)}%</td>
+      </tr>
+    `).join('');
+
+    // Build demographics table rows
+    const demographicsRows = (demographics?.by_country || []).slice(0, 10).map(d => `
+      <tr>
+        <td>${d.country || d.guest__country || 'Unknown'}</td>
+        <td style="text-align: right;">${d.count || d.guest_count || 0}</td>
+        <td style="text-align: right;">${((d.count || d.guest_count || 0) / (demographics?.total_guests || 1) * 100).toFixed(1)}%</td>
+      </tr>
+    `).join('');
+
+    // Build service popularity rows
+    const serviceRows = servicePopularity.map(s => `
+      <tr>
+        <td>${s.name || s.service_name || 'Unknown'}</td>
+        <td style="text-align: right;">${s.booking_count || s.bookings || 0}</td>
+        <td style="text-align: right;">${formatCurrency(s.total_revenue || s.revenue || 0)}</td>
+      </tr>
+    `).join('');
+
+    // Build booking trends rows
+    const trendsRows = bookingTrends.slice(-12).map(t => `
+      <tr>
+        <td>${t.date || t.period || ''}</td>
+        <td style="text-align: right;">${t.bookings || t.count || 0}</td>
+        <td style="text-align: right;">${formatCurrency(t.revenue || 0)}</td>
+      </tr>
+    `).join('');
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>LuxeStay Hotels - Reports Dashboard</title>
+          <style>
+            @page { size: A4; margin: 15mm; }
+            * { box-sizing: border-box; }
+            body {
+              font-family: 'Segoe UI', Arial, sans-serif;
+              padding: 20px;
+              margin: 0;
+              color: #333;
+              font-size: 11px;
+              line-height: 1.4;
+            }
+            .header {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 20px 30px;
+              margin-bottom: 25px;
+              border-radius: 8px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 22px;
+              font-weight: 700;
+            }
+            .header-info {
+              text-align: right;
+              font-size: 10px;
+              opacity: 0.9;
+            }
+            .section {
+              margin-bottom: 20px;
+              page-break-inside: avoid;
+            }
+            .section-title {
+              font-size: 14px;
+              font-weight: 700;
+              color: #1a1f37;
+              margin-bottom: 12px;
+              padding-bottom: 6px;
+              border-bottom: 2px solid #667eea;
+            }
+            .stats-grid {
+              display: flex;
+              gap: 12px;
+              flex-wrap: wrap;
+              margin-bottom: 20px;
+            }
+            .stat-card {
+              flex: 1;
+              min-width: 120px;
+              padding: 14px;
+              border: 1px solid #e0e0e0;
+              border-radius: 8px;
+              background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+            }
+            .stat-value {
+              font-size: 20px;
+              font-weight: 700;
+              color: #667eea;
+              margin-bottom: 2px;
+            }
+            .stat-label {
+              color: #666;
+              font-size: 10px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .two-column {
+              display: flex;
+              gap: 20px;
+            }
+            .two-column > div {
+              flex: 1;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 8px;
+              font-size: 10px;
+            }
+            th, td {
+              padding: 8px 10px;
+              text-align: left;
+              border-bottom: 1px solid #e8e8e8;
+            }
+            th {
+              background-color: #f5f7fa;
+              font-weight: 600;
+              color: #1a1f37;
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            tr:hover { background-color: #fafbfc; }
+            .footer {
+              margin-top: 30px;
+              padding-top: 15px;
+              border-top: 1px solid #e0e0e0;
+              color: #888;
+              font-size: 9px;
+              display: flex;
+              justify-content: space-between;
+            }
+            .no-data {
+              color: #999;
+              font-style: italic;
+              padding: 15px;
+              text-align: center;
+            }
+            @media print {
+              .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .stat-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>LuxeStay Hotels</h1>
+              <div style="font-size: 12px; margin-top: 4px;">Reports Dashboard</div>
+            </div>
+            <div class="header-info">
+              <div><strong>Report Period:</strong> ${dateRangeLabels[dateRange]}</div>
+              <div><strong>Generated:</strong> ${new Date().toLocaleString('en-GB')}</div>
+              <div><strong>Generated By:</strong> ${user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user?.username || 'System'}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Key Performance Metrics</div>
+            <div class="stats-grid">
               <div class="stat-card">
-                <div class="stat-label">Total Bookings</div>
                 <div class="stat-value">${summary?.total_bookings || 0}</div>
+                <div class="stat-label">Total Bookings</div>
               </div>
               <div class="stat-card">
+                <div class="stat-value">${formatCurrency(summary?.total_revenue || revenue?.total_revenue || 0)}</div>
                 <div class="stat-label">Total Revenue</div>
-                <div class="stat-value">${formatCurrency(summary?.total_revenue || revenue?.total_revenue)}</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Occupancy Rate</div>
                 <div class="stat-value">${(occupancy?.occupancy_rate || 0).toFixed(1)}%</div>
+                <div class="stat-label">Occupancy Rate</div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Active Guests</div>
                 <div class="stat-value">${summary?.active_guests || 0}</div>
+                <div class="stat-label">Active Guests</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">${occupancy?.total_rooms || 0}</div>
+                <div class="stat-label">Total Rooms</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">${occupancy?.available_rooms || 0}</div>
+                <div class="stat-label">Available Rooms</div>
               </div>
             </div>
-            <div class="footer">
-              <p>Hotel Management System - Confidential Report</p>
-              <p>Generated by: ${user?.first_name || user?.username || 'System'}</p>
+          </div>
+
+          <div class="two-column">
+            <div class="section">
+              <div class="section-title">Revenue by Hotel</div>
+              ${revenueByHotelRows ? `
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Hotel</th>
+                      <th style="text-align: right;">Revenue</th>
+                      <th style="text-align: right;">Bookings</th>
+                    </tr>
+                  </thead>
+                  <tbody>${revenueByHotelRows}</tbody>
+                </table>
+              ` : '<div class="no-data">No revenue data available</div>'}
             </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
+
+            <div class="section">
+              <div class="section-title">Occupancy by Hotel</div>
+              ${occupancyByHotelRows ? `
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Hotel</th>
+                      <th style="text-align: right;">Total</th>
+                      <th style="text-align: right;">Occupied</th>
+                      <th style="text-align: right;">Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>${occupancyByHotelRows}</tbody>
+                </table>
+              ` : '<div class="no-data">No occupancy data available</div>'}
+            </div>
+          </div>
+
+          <div class="two-column">
+            <div class="section">
+              <div class="section-title">Booking Status Distribution</div>
+              ${statusRows ? `
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th style="text-align: right;">Count</th>
+                      <th style="text-align: right;">Percentage</th>
+                    </tr>
+                  </thead>
+                  <tbody>${statusRows}</tbody>
+                </table>
+              ` : '<div class="no-data">No status data available</div>'}
+            </div>
+
+            <div class="section">
+              <div class="section-title">Guest Demographics (Top 10)</div>
+              ${demographicsRows ? `
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Country</th>
+                      <th style="text-align: right;">Guests</th>
+                      <th style="text-align: right;">Percentage</th>
+                    </tr>
+                  </thead>
+                  <tbody>${demographicsRows}</tbody>
+                </table>
+              ` : '<div class="no-data">No demographics data available</div>'}
+            </div>
+          </div>
+
+          <div class="two-column">
+            <div class="section">
+              <div class="section-title">Ancillary Services Performance</div>
+              ${serviceRows ? `
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Service</th>
+                      <th style="text-align: right;">Bookings</th>
+                      <th style="text-align: right;">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>${serviceRows}</tbody>
+                </table>
+              ` : '<div class="no-data">No service data available</div>'}
+            </div>
+
+            <div class="section">
+              <div class="section-title">Recent Booking Trends</div>
+              ${trendsRows ? `
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Period</th>
+                      <th style="text-align: right;">Bookings</th>
+                      <th style="text-align: right;">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>${trendsRows}</tbody>
+                </table>
+              ` : '<div class="no-data">No trends data available</div>'}
+            </div>
+          </div>
+
+          <div class="footer">
+            <div>LuxeStay Hotels - Confidential Management Report</div>
+            <div>Page 1 of 1 | ${new Date().toLocaleDateString('en-GB')}</div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
     showSuccess('PDF export initiated');
   };
 
