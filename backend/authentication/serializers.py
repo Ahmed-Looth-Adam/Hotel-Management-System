@@ -8,7 +8,12 @@ User = get_user_model()
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for user registration"""
+    """Serializer for user registration
+
+    Allows re-registration with same username/email if existing account
+    is unverified (email_verified=False). This handles cases where users
+    entered wrong email during initial registration.
+    """
     password = serializers.CharField(
         write_only=True,
         required=True,
@@ -22,6 +27,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         label='Confirm Password'
     )
 
+    # Store unverified users to delete during re-registration
+    _unverified_users_to_delete = None
+
     class Meta:
         model = User
         fields = [
@@ -30,7 +38,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'date_of_birth', 'address', 'city', 'country', 'postal_code'
         ]
         extra_kwargs = {
-            'email': {'required': True},
+            # Disable built-in unique validators - we handle uniqueness manually
+            # to allow re-registration with unverified accounts
+            'username': {'validators': []},
+            'email': {'required': True, 'validators': []},
             'first_name': {'required': False},
             'last_name': {'required': False},
             'phone_number': {'required': False},
@@ -41,6 +52,34 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'postal_code': {'required': False}
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._unverified_users_to_delete = set()
+
+    def validate_username(self, value):
+        """Check if username is available or belongs to an unverified account"""
+        existing_user = User.objects.filter(username=value).first()
+        if existing_user:
+            # Allow re-registration if existing account is unverified
+            if not existing_user.email_verified and existing_user.role == 'guest':
+                # Store for deletion in create()
+                self._unverified_users_to_delete.add(existing_user.id)
+            else:
+                raise serializers.ValidationError("A user with that username already exists.")
+        return value
+
+    def validate_email(self, value):
+        """Check if email is available or belongs to an unverified account"""
+        existing_user = User.objects.filter(email=value).first()
+        if existing_user:
+            # Allow re-registration if existing account is unverified
+            if not existing_user.email_verified and existing_user.role == 'guest':
+                # Store for deletion in create()
+                self._unverified_users_to_delete.add(existing_user.id)
+            else:
+                raise serializers.ValidationError("This email is already registered.")
+        return value
+
     def validate(self, attrs):
         """Validate that passwords match"""
         if attrs['password'] != attrs['password2']:
@@ -49,16 +88,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             )
         return attrs
 
-    def validate_email(self, value):
-        """Check if email is already registered"""
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("This email is already registered.")
-        return value
-
     def create(self, validated_data):
-        """Create and return a new user"""
+        """Create and return a new user, deleting any unverified accounts first"""
         # Remove password2 as it's not needed for user creation
         validated_data.pop('password2')
+
+        # Delete unverified accounts that would conflict
+        if self._unverified_users_to_delete:
+            User.objects.filter(id__in=self._unverified_users_to_delete).delete()
+
         # Create user with the validated data
         user = User.objects.create_user(**validated_data)
         return user

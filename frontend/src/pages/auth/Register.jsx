@@ -108,10 +108,18 @@ const Register = () => {
       const result = await authService.register(cleanedValues);
 
       if (result.success) {
-        setSuccess('Registration successful! Redirecting to login...');
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
+        // Check if email verification is required
+        if (result.data?.email_verification_required) {
+          setSuccess('Registration successful! Redirecting to email verification...');
+          setTimeout(() => {
+            navigate('/verify-email', { state: { email: result.data.email } });
+          }, 1500);
+        } else {
+          setSuccess('Registration successful! Redirecting to login...');
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
+        }
       } else {
         const errors = result.error;
         if (typeof errors === 'object') {

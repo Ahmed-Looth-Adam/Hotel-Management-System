@@ -26,6 +26,7 @@ import Home from './pages/Home';
 import ComponentDemo from './components/ComponentDemo';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import EmailVerification from './pages/auth/EmailVerification';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
@@ -108,6 +109,7 @@ function App() {
               <Route path="/loading-demo" element={<LoadingExample />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<EmailVerification />} />
 
               {/* === PASSWORD RESET ROUTES (MUST BE PUBLIC) === */}
               <Route

@@ -19,6 +19,11 @@ urlpatterns = [
     path('password-reset/', csrf_exempt(views.PasswordResetRequestAPIview.as_view()), name='password-reset'),
     path('password-reset-confirm/', csrf_exempt(views.PasswordResetConfirmAPIview.as_view()), name='password-reset-confirm'),
     path('password-status/', csrf_exempt(views.PasswordStatusAPIView.as_view()), name='password-status'),
+
+    # Email verification endpoints (for guest registration)
+    path('verify-email/', csrf_exempt(views.VerifyEmailAPIView.as_view()), name='verify-email'),
+    path('resend-verification/', csrf_exempt(views.ResendVerificationEmailAPIView.as_view()), name='resend-verification'),
+
     path('admin/users/', views.AdminUserListAPIView.as_view(), name='admin-user-list'),
     path('admin/users/<int:user_id>/', views.AdminUserDetailAPIView.as_view(), name='admin-user-detail'),
 

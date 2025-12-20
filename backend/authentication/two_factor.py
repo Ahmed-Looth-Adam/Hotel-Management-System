@@ -327,3 +327,120 @@ def invalidate_temp_token(temp_token):
     # Also clear any associated email OTP
     email_otp_key = f"email_otp_{temp_token}"
     cache.delete(email_otp_key)
+
+
+# ============================================
+# Email Verification for Guest Registration
+# ============================================
+
+VERIFICATION_OTP_EXPIRY = 600  # 10 minutes for registration verification
+
+
+def send_verification_email(user):
+    """
+    Send a verification OTP code to a newly registered user.
+
+    Args:
+        user: User model instance
+
+    Returns:
+        bool: True if email was sent successfully
+    """
+    if not user.email:
+        return False
+
+    otp_code = generate_email_otp()
+
+    # Store OTP in cache with user email as key
+    cache_key = f"email_verification_{user.email}"
+    cache.set(cache_key, {
+        'code': otp_code,
+        'user_id': user.id,
+        'attempts': 0
+    }, timeout=VERIFICATION_OTP_EXPIRY)
+
+    # Send email
+    try:
+        send_mail(
+            subject='Verify Your Email - Hotel Management System',
+            message=f"""
+Hello {user.first_name or user.username},
+
+Welcome to Hotel Management System!
+
+Your email verification code is: {otp_code}
+
+This code will expire in 10 minutes.
+
+Please enter this code to verify your email and activate your account.
+
+If you did not create an account, please ignore this email.
+
+Best regards,
+Hotel Management System
+            """.strip(),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+        return True
+    except Exception:
+        # Clear the cached OTP if email fails
+        cache.delete(cache_key)
+        return False
+
+
+def verify_registration_otp(email, code):
+    """
+    Verify an email verification OTP code for registration.
+
+    Args:
+        email: User's email address
+        code: 6-digit OTP code to verify
+
+    Returns:
+        tuple: (success: bool, user_id: int or None, error: str or None)
+    """
+    cache_key = f"email_verification_{email}"
+    otp_data = cache.get(cache_key)
+
+    if not otp_data:
+        return False, None, "Verification code expired. Please request a new code."
+
+    if otp_data['attempts'] >= MAX_OTP_ATTEMPTS:
+        cache.delete(cache_key)
+        return False, None, "Too many attempts. Please request a new code."
+
+    if otp_data['code'] != code:
+        otp_data['attempts'] += 1
+        cache.set(cache_key, otp_data, timeout=VERIFICATION_OTP_EXPIRY)
+        remaining = MAX_OTP_ATTEMPTS - otp_data['attempts']
+        return False, None, f"Invalid code. {remaining} attempts remaining."
+
+    # Code is valid - clear from cache
+    cache.delete(cache_key)
+    return True, otp_data['user_id'], None
+
+
+def resend_verification_email(email):
+    """
+    Resend verification email to user.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        tuple: (success: bool, error: str or None)
+    """
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    try:
+        user = User.objects.get(email=email, email_verified=False)
+    except User.DoesNotExist:
+        return False, "User not found or already verified."
+
+    success = send_verification_email(user)
+    if success:
+        return True, None
+    return False, "Failed to send verification email. Please try again."

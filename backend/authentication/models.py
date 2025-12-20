@@ -43,7 +43,10 @@ class User(AbstractUser):
     two_factor_secret = models.CharField(max_length=32, blank=True, null=True, help_text="TOTP secret key")
     two_factor_backup_codes = models.JSONField(default=list, blank=True, help_text="Hashed backup codes for 2FA recovery")
     two_factor_confirmed = models.BooleanField(default=False, help_text="Whether 2FA setup has been confirmed")
-    
+
+    # Email verification (for guest registration)
+    email_verified = models.BooleanField(default=False, help_text="Whether email has been verified")
+
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -72,6 +72,8 @@ class RegisterAPIView(generics.CreateAPIView):
     Required fields: username, email, password, password2
     Optional fields: first_name, last_name, phone_number, date_of_birth,
                      address, city, country, postal_code
+
+    After registration, user must verify their email before logging in.
     """
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
@@ -80,6 +82,20 @@ class RegisterAPIView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        # Send verification email for guest users
+        if user.role == 'guest':
+            email_sent = two_factor.send_verification_email(user)
+            return Response(
+                {
+                    "user": UserSerializer(user).data,
+                    "message": "Registration successful! Please check your email for verification code.",
+                    "email_verification_required": True,
+                    "email": user.email,
+                    "email_sent": email_sent
+                },
+                status=status.HTTP_201_CREATED
+            )
 
         return Response(
             {
@@ -156,6 +172,17 @@ class LoginAPIView(APIView):
 
             return Response(
                 {"error": "Account is disabled"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Check if guest email is verified
+        if user.role == 'guest' and not user.email_verified:
+            return Response(
+                {
+                    "error": "Please verify your email before logging in.",
+                    "email_verification_required": True,
+                    "email": user.email
+                },
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -516,6 +543,84 @@ class PasswordStatusAPIView(APIView):
             'expiration_period_days': self.PASSWORD_EXPIRATION_DAYS,
             'message': 'Password has expired. Please change your password.' if is_expired else f'Password expires in {days_until_expiration} days.'
         }, status=status.HTTP_200_OK)
+
+
+# Email Verification Endpoints for Guest Registration
+
+@method_decorator(csrf_exempt, name='dispatch')
+class VerifyEmailAPIView(APIView):
+    """
+    Verify guest email with OTP code
+
+    POST /auth/verify-email/
+    Required: email, code
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        code = request.data.get('code')
+
+        if not email or not code:
+            return Response(
+                {"error": "Email and verification code are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify the OTP
+        success, user_id, error = two_factor.verify_registration_otp(email, code)
+
+        if not success:
+            return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Mark email as verified
+        User = get_user_model()
+        try:
+            user = User.objects.get(id=user_id)
+            user.email_verified = True
+            user.save(update_fields=['email_verified'])
+
+            return Response({
+                "message": "Email verified successfully! You can now log in.",
+                "verified": True
+            }, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ResendVerificationEmailAPIView(APIView):
+    """
+    Resend verification email to user
+
+    POST /auth/resend-verification/
+    Required: email
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+
+        if not email:
+            return Response(
+                {"error": "Email is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        success, error = two_factor.resend_verification_email(email)
+
+        if success:
+            return Response({
+                "message": "Verification code sent to your email.",
+                "sent": True
+            }, status=status.HTTP_200_OK)
+
+        return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminUserListAPIView(APIView):

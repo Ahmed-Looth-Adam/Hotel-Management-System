@@ -25,7 +25,7 @@ const Layout = ({ children }) => {
   const currentPath = location.pathname;
 
   // Auth pages - no layout wrapper
-  const authPages = ['/login', '/register', '/auth/password-reset'];
+  const authPages = ['/login', '/register', '/verify-email', '/auth/password-reset'];
   const isAuthPage = authPages.some(page => currentPath.startsWith(page));
 
   // Home page - uses its own Airbnb-style header

@@ -452,6 +452,45 @@ const authService = {
     }
   },
 
+  // ============================================
+  // Email Verification Methods (Guest Registration)
+  // ============================================
+
+  /**
+   * Verify email with OTP code
+   * @param {string} email - User's email address
+   * @param {string} code - 6-digit verification code
+   * @returns {Promise} API response
+   */
+  verifyEmail: async (email, code) => {
+    try {
+      const response = await authAPI.post('/verify-email/', { email, code });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Verification failed',
+      };
+    }
+  },
+
+  /**
+   * Resend verification email
+   * @param {string} email - User's email address
+   * @returns {Promise} API response
+   */
+  resendVerificationEmail: async (email) => {
+    try {
+      const response = await authAPI.post('/resend-verification/', { email });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to resend verification email',
+      };
+    }
+  },
+
   /**
    * Request a password reset email
    * @param {string} email - User's email address

@@ -18,6 +18,8 @@ drf-spectacular = "*"
 celery = "*"
 redis = "*"
 django-redis = "*"
+pyotp = "*"
+qrcode = {extras = ["pil"], version = "*"}
 
 [dev-packages]
 pytest = "*"
