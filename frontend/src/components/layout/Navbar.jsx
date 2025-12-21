@@ -13,6 +13,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useRoomCart } from '../../context/RoomCartContext';
 import LoginModal from '../auth/LoginModal';
 import {
   AppBar,
@@ -43,6 +44,7 @@ import {
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { roomCount } = useRoomCart();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -196,9 +198,17 @@ const Navbar = () => {
                   </Typography>
                 </Box>
                 <Divider />
-                <MenuItem onClick={() => navigate('/guest/rooms')}>Browse Rooms</MenuItem>
-                <MenuItem onClick={() => navigate('/guest/my-bookings')}>My Bookings</MenuItem>
-                <MenuItem onClick={() => navigate('/guest/profile')}>Account</MenuItem>
+                <MenuItem onClick={() => { navigate('/guest/rooms'); handleCloseUserMenu(); }}>Browse Rooms</MenuItem>
+                {roomCount > 0 && (
+                  <MenuItem
+                    onClick={() => { navigate('/guest/reservation'); handleCloseUserMenu(); }}
+                    sx={{ color: '#667eea', fontWeight: 500 }}
+                  >
+                    Reservation ({roomCount})
+                  </MenuItem>
+                )}
+                <MenuItem onClick={() => { navigate('/guest/my-bookings'); handleCloseUserMenu(); }}>My Bookings</MenuItem>
+                <MenuItem onClick={() => { navigate('/guest/profile'); handleCloseUserMenu(); }}>Account</MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>Log out</MenuItem>
               </Menu>
@@ -220,6 +230,14 @@ const Navbar = () => {
           <List>
             <ListItemButton onClick={() => { navigate('/'); setMobileMenuOpen(false); }}><ListItemText primary="Home" /></ListItemButton>
             <ListItemButton onClick={() => { navigate('/guest/rooms'); setMobileMenuOpen(false); }}><ListItemText primary="Browse Rooms" /></ListItemButton>
+            {roomCount > 0 && (
+              <ListItemButton onClick={() => { navigate('/guest/reservation'); setMobileMenuOpen(false); }}>
+                <ListItemText
+                  primary={`Reservation (${roomCount})`}
+                  primaryTypographyProps={{ sx: { color: '#667eea', fontWeight: 500 } }}
+                />
+              </ListItemButton>
+            )}
             {isAuthenticated && (
               <ListItemButton onClick={() => { navigate('/guest/my-bookings'); setMobileMenuOpen(false); }}><ListItemText primary="My Bookings" /></ListItemButton>
             )}

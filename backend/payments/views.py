@@ -10,11 +10,12 @@ from django.utils import timezone
 from decimal import Decimal
 import uuid
 
-from .models import Payment, Invoice, InvoiceItem, BookingServiceCharge, CancellationFee
+from .models import Payment, Invoice, InvoiceItem, BookingServiceCharge, CancellationFee, SavedCard
 from .serializers import (
     PaymentSerializer, InvoiceSerializer, InvoiceItemSerializer,
     BookingServiceChargeSerializer, CancellationFeeSerializer,
-    CreateInvoiceSerializer
+    CreateInvoiceSerializer, SavedCardSerializer, SavedCardCreateSerializer,
+    SavedCardUpdateSerializer
 )
 from bookings.models import Booking
 from hotels.models import AncillaryService
@@ -280,3 +281,60 @@ class BookingServiceChargeViewSet(viewsets.ModelViewSet):
         )
 
         return Response(list(services))
+
+
+class SavedCardViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing saved payment cards.
+
+    Users can:
+    - List their saved cards
+    - Add a new card
+    - Update card preferences (nickname, default)
+    - Delete a saved card
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Return only cards belonging to the current user"""
+        return SavedCard.objects.filter(
+            user=self.request.user,
+            is_active=True
+        ).order_by('-is_default', '-created_at')
+
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action"""
+        if self.action == 'create':
+            return SavedCardCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return SavedCardUpdateSerializer
+        return SavedCardSerializer
+
+    def perform_destroy(self, instance):
+        """Soft delete by marking as inactive"""
+        instance.is_active = False
+        instance.save()
+
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        """Set a card as the default payment method"""
+        card = self.get_object()
+        card.is_default = True
+        card.save()
+        return Response(SavedCardSerializer(card).data)
+
+    @action(detail=False, methods=['get'])
+    def default(self, request):
+        """Get the user's default card"""
+        try:
+            card = SavedCard.objects.get(
+                user=request.user,
+                is_default=True,
+                is_active=True
+            )
+            return Response(SavedCardSerializer(card).data)
+        except SavedCard.DoesNotExist:
+            return Response(
+                {'error': 'No default card set'},
+                status=status.HTTP_404_NOT_FOUND
+            )

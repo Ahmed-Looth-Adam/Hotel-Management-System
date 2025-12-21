@@ -16,6 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from './Navbar';
 import GuestLayout from './GuestLayout';
 import AdminLayout from './AdminLayout';
+import RoomCart from '../RoomCart';
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -79,6 +80,7 @@ const Layout = ({ children }) => {
         <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
           {children}
         </Box>
+        <RoomCart />
       </Box>
     );
   }

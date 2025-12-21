@@ -44,10 +44,18 @@ def create_booking_notification(sender, booking, **kwargs):
     guest_name = f"{booking.user.first_name} {booking.user.last_name}".strip() or booking.user.username
     hotel_name = booking.hotel.name if booking.hotel else "Unknown Hotel"
 
+    # Handle multi-room bookings where booking.room may be None
+    if booking.room:
+        room_info = booking.room.room_number
+    elif booking.number_of_rooms and booking.number_of_rooms > 1:
+        room_info = f"{booking.number_of_rooms} rooms"
+    else:
+        room_info = "room"
+
     Notification.objects.create(
         notification_type='new_booking',
         title='New Booking',
-        message=f'{guest_name} booked {booking.room.room_number} at {hotel_name} ({booking.check_in_date} - {booking.check_out_date})',
+        message=f'{guest_name} booked {room_info} at {hotel_name} ({booking.check_in_date} - {booking.check_out_date})',
         link=f'/bookings/{booking.id}',
         target_role='all',
         target_hotel=booking.hotel,
@@ -60,10 +68,18 @@ def create_cancellation_notification(sender, booking, **kwargs):
     guest_name = f"{booking.user.first_name} {booking.user.last_name}".strip() or booking.user.username
     hotel_name = booking.hotel.name if booking.hotel else "Unknown Hotel"
 
+    # Handle multi-room bookings where booking.room may be None
+    if booking.room:
+        room_info = booking.room.room_number
+    elif booking.number_of_rooms and booking.number_of_rooms > 1:
+        room_info = f"{booking.number_of_rooms} rooms"
+    else:
+        room_info = "room"
+
     Notification.objects.create(
         notification_type='booking_cancelled',
         title='Booking Cancelled',
-        message=f'{guest_name} cancelled booking for {booking.room.room_number} at {hotel_name} ({booking.check_in_date})',
+        message=f'{guest_name} cancelled booking for {room_info} at {hotel_name} ({booking.check_in_date})',
         link=f'/bookings/{booking.id}',
         target_role='all',
         target_hotel=booking.hotel,

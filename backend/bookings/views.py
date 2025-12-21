@@ -9,10 +9,10 @@ from django.utils import timezone
 from django.db.models import Q
 from datetime import datetime
 from decimal import Decimal
-from .models import Booking, CheckInRecord
+from .models import Booking, CheckInRecord, Order
 from .serializers import (
     BookingSerializer, BookingListSerializer, BookingDetailSerializer,
-    CheckInSerializer, CheckInRecordSerializer
+    CheckInSerializer, CheckInRecordSerializer, OrderSerializer, OrderCreateSerializer
 )
 from .permissions import IsOwnerOrStaff
 from core.signals import booking_created, booking_cancelled, booking_checked_in, booking_checked_out
@@ -401,3 +401,38 @@ class BookingViewSet(viewsets.ModelViewSet):
             'no_show_at': booking.no_show_at,
             'marked_by': request.user.get_full_name() or request.user.username,
         })
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing orders (grouped bookings from cart checkout).
+    """
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_staff and user.role == 'admin':
+            return Order.objects.all()
+
+        # Regular users and staff see only their own orders
+        return Order.objects.filter(user=user)
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return OrderCreateSerializer
+        return OrderSerializer
+
+    def create(self, request, *args, **kwargs):
+        """Create an order with multiple rooms from cart"""
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        order = serializer.save()
+
+        # Return the full order details
+        return Response(
+            OrderSerializer(order, context={'request': request}).data,
+            status=status.HTTP_201_CREATED
+        )

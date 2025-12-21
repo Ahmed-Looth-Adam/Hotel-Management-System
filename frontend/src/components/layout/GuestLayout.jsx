@@ -9,6 +9,7 @@
  */
 
 import { Box } from '@mui/material';
+import RoomCart from '../RoomCart';
 
 const GuestLayout = ({ children }) => {
   return (
@@ -23,6 +24,8 @@ const GuestLayout = ({ children }) => {
       >
         {children}
       </Box>
+      {/* Floating Room Cart for multi-room bookings */}
+      <RoomCart />
     </Box>
   );
 };

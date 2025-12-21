@@ -8,6 +8,62 @@ from django.utils import timezone
 from core.fields import EncryptedCharField
 
 
+class Order(models.Model):
+    """
+    Groups multiple bookings from a single checkout session.
+    Allows guests to book rooms from different hotels in one transaction.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending Payment'),
+        ('confirmed', 'Confirmed'),
+        ('partially_cancelled', 'Partially Cancelled'),
+        ('cancelled', 'Cancelled'),
+        ('completed', 'Completed'),
+    ]
+
+    order_reference = models.CharField(max_length=20, unique=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='confirmed')
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Order {self.order_reference or self.id} - {self.user}"
+
+    def save(self, *args, **kwargs):
+        if not self.order_reference:
+            self.order_reference = self.generate_order_reference()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_order_reference():
+        """Generate a unique order reference"""
+        while True:
+            reference = f"ORD-{uuid.uuid4().hex[:8].upper()}"
+            if not Order.objects.filter(order_reference=reference).exists():
+                return reference
+
+    @property
+    def booking_count(self):
+        return self.bookings.count()
+
+    @property
+    def room_count(self):
+        return sum(b.booking_rooms.count() for b in self.bookings.all())
+
+    def update_total(self):
+        """Recalculate total from all bookings"""
+        total = sum(b.total_price for b in self.bookings.all())
+        self.total_amount = total
+        self.save(update_fields=['total_amount'])
+
+
 class Booking(models.Model):
     STATUS_CHOICES = [
         ('confirmed', 'Confirmed'),
@@ -31,6 +87,7 @@ class Booking(models.Model):
     ]
 
     # Core booking information
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bookings')
     hotel = models.ForeignKey('hotels.Hotel', on_delete=models.CASCADE, related_name='bookings', null=True)
     room = models.ForeignKey('hotels.Room', on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
@@ -284,6 +341,76 @@ class CheckInRecord(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.guest_type}) - Booking {self.booking.booking_reference}"
+
+
+class BookingRoom(models.Model):
+    """
+    Intermediate model to support multiple rooms per booking.
+    Each BookingRoom represents one room in a multi-room booking.
+    Now includes its own dates and ancillary services for flexibility.
+    """
+    ANCILLARY_SERVICE_CHOICES = [
+        ('airport_transfer', 'Airport Transfer (One-way)'),
+        ('breakfast', 'Full English Breakfast'),
+        ('spa', 'Spa Access'),
+        ('late_checkout', 'Late Check-out (until 2 PM)'),
+    ]
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='booking_rooms')
+    room = models.ForeignKey('hotels.Room', on_delete=models.CASCADE, related_name='booking_room_entries')
+    room_type_category = models.CharField(max_length=20, blank=True)  # Snapshot of room type
+    guests_count = models.PositiveIntegerField(default=2)  # Guests for this specific room
+
+    # Room-specific dates (allows different check-in/out dates per room)
+    check_in_date = models.DateField(null=True, blank=True)
+    check_out_date = models.DateField(null=True, blank=True)
+
+    # Pricing
+    price_per_night = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    services_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    # Ancillary services for this specific room (stored as JSON list)
+    ancillary_services = models.JSONField(default=list, blank=True)
+
+    special_requests = models.TextField(blank=True)  # Room-specific requests
+
+    # Check-in/out status for this specific room
+    is_checked_in = models.BooleanField(default=False)
+    checked_in_at = models.DateTimeField(null=True, blank=True)
+    is_checked_out = models.BooleanField(default=False)
+    checked_out_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        unique_together = ['booking', 'room']  # Prevent duplicate room in same booking
+
+    def __str__(self):
+        return f"Room {self.room.room_number} in Booking {self.booking.booking_reference}"
+
+    @property
+    def number_of_nights(self):
+        """Calculate nights for this room"""
+        if self.check_in_date and self.check_out_date:
+            return (self.check_out_date - self.check_in_date).days
+        # Fall back to booking dates
+        if self.booking:
+            return self.booking.number_of_nights
+        return 0
+
+    def save(self, *args, **kwargs):
+        if not self.room_type_category and self.room:
+            self.room_type_category = self.room.room_type.category if self.room.room_type else ''
+        if not self.price_per_night and self.room:
+            self.price_per_night = self.room.price_per_night
+        # Use booking dates as defaults if room dates not set
+        if self.booking and not self.check_in_date:
+            self.check_in_date = self.booking.check_in_date
+        if self.booking and not self.check_out_date:
+            self.check_out_date = self.booking.check_out_date
+        super().save(*args, **kwargs)
 
 
 class RoomReassignment(models.Model):

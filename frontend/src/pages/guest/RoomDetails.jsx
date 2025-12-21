@@ -18,6 +18,11 @@ import {
   FormControlLabel,
   FormGroup,
   Skeleton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
 } from '@mui/material';
 import {
   Hotel as HotelIcon,
@@ -35,10 +40,16 @@ import {
   LocationOn,
   Star as StarIcon,
   ArrowBack,
+  CheckCircle,
+  EventNote,
+  Add,
+  Remove,
+  Payment,
 } from '@mui/icons-material';
 import { roomService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { useAuth } from '../../context/AuthContext';
+import { useRoomCart } from '../../context/RoomCartContext';
 import Hero from '../../components/landing/Hero';
 
 // Room types and base prices from CLAUDE.md
@@ -71,12 +82,27 @@ const RoomDetails = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated } = useAuth();
-  const { showError } = useNotification();
+  const { showError, showSuccess } = useNotification();
+  const {
+    addToCart,
+    getQuantityInCart,
+    updateQuantity,
+    generateCartKey,
+    getCartHotel,
+    canAddToCart,
+    clearCart,
+    roomCount,
+    reservationDates,
+    isInCart,
+  } = useRoomCart();
 
   const [room, setRoom] = useState(null);
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [availableCount, setAvailableCount] = useState(10); // Default max available
+  const [showDifferentHotelDialog, setShowDifferentHotelDialog] = useState(false);
+  const [showDateWarning, setShowDateWarning] = useState(false);
 
   const [formData, setFormData] = useState({
     checkIn: searchParams.get('checkIn') || '',
@@ -204,6 +230,131 @@ const RoomDetails = () => {
     }
 
     navigate(`/guest/booking/${id}/confirm?${params.toString()}`);
+  };
+
+  // Get current quantity in cart for this room type (shared dates)
+  const quantityInCart = hotel ? getQuantityInCart(hotel.id, roomTypeCategory) : 0;
+
+  const cartKey = hotel ? generateCartKey(hotel.id, roomTypeCategory) : null;
+
+  const canAddMore = quantityInCart < availableCount;
+
+  // Check if this room type is already in cart
+  const isRoomInCart = hotel ? isInCart(hotel.id, roomTypeCategory) : false;
+
+  // Check if cart has rooms from a different hotel
+  const cartHotel = getCartHotel();
+  const isDifferentHotel = hotel && cartHotel && cartHotel.hotel_id !== hotel.id;
+
+  // Determine button states based on requirements
+  // Show "Proceed to Confirmation" if any room is in cart, "Book Now" only when cart is empty
+  const showProceedToConfirmation = roomCount >= 1;
+  const showAddToReservation = !isRoomInCart && !isDifferentHotel;
+  const showAddMoreRooms = isRoomInCart;
+
+  // Check if form dates differ from reservation dates
+  const datesAreDifferent = reservationDates.checkIn && reservationDates.checkOut &&
+    (formData.checkIn !== reservationDates.checkIn || formData.checkOut !== reservationDates.checkOut);
+
+  const handleAddToReservation = () => {
+    if (!formData.checkIn || !formData.checkOut) {
+      showError('Please select check-in and check-out dates');
+      return;
+    }
+
+    if (new Date(formData.checkOut) <= new Date(formData.checkIn)) {
+      showError('Check-out date must be after check-in date');
+      return;
+    }
+
+    if (formData.guests > typeInfo.capacity) {
+      showError(`Maximum ${typeInfo.capacity} guests allowed for this room type`);
+      return;
+    }
+
+    if (!canAddMore) {
+      showError(`Maximum ${availableCount} rooms available for these dates`);
+      return;
+    }
+
+    // Add room type to cart with selected services
+    const result = addToCart({
+      hotel_id: hotel?.id,
+      hotel_name: hotel?.name,
+      hotel_city: hotel?.city,
+      hotel_country: hotel?.country,
+      room_type_category: roomTypeCategory,
+      room_type_label: typeInfo.label,
+      price_per_night: typeInfo.price,
+      image: images.length > 0 ? images[0] : null,
+    }, formData.checkIn, formData.checkOut, formData.guests, 1, availableCount, selectedServices);
+
+    if (result.success) {
+      if (result.datesUpdated) {
+        // Show info that dates were adjusted to match reservation
+        showSuccess(`${typeInfo.label} added to reservation! Using reservation dates: ${reservationDates.checkIn} to ${reservationDates.checkOut}`);
+      } else {
+        showSuccess(`${typeInfo.label} added to reservation!`);
+      }
+    } else if (result.error === 'different_hotel') {
+      // Show dialog to ask user if they want to clear cart
+      setShowDifferentHotelDialog(true);
+    }
+  };
+
+  const handleClearCartAndAdd = () => {
+    clearCart();
+    setShowDifferentHotelDialog(false);
+    // Now add the room with selected services
+    addToCart({
+      hotel_id: hotel?.id,
+      hotel_name: hotel?.name,
+      hotel_city: hotel?.city,
+      hotel_country: hotel?.country,
+      room_type_category: roomTypeCategory,
+      room_type_label: typeInfo.label,
+      price_per_night: typeInfo.price,
+      image: images.length > 0 ? images[0] : null,
+    }, formData.checkIn, formData.checkOut, formData.guests, 1, availableCount, selectedServices);
+    showSuccess(`Reservation cleared. ${typeInfo.label} added to reservation!`);
+  };
+
+  const handleRemoveFromReservation = () => {
+    if (cartKey && quantityInCart > 0) {
+      updateQuantity(cartKey, quantityInCart - 1);
+      if (quantityInCart === 1) {
+        showSuccess(`${typeInfo.label} removed from reservation`);
+      }
+    }
+  };
+
+  const handleIncrement = () => {
+    if (canAddMore) {
+      handleAddToReservation();
+    }
+  };
+
+  const handleDecrement = () => {
+    handleRemoveFromReservation();
+  };
+
+  const handleAddMoreRooms = () => {
+    // Navigate to browse rooms page for same hotel with reservation dates
+    const params = new URLSearchParams();
+    if (hotel?.id) {
+      params.set('hotel', hotel.id);
+    }
+    if (reservationDates.checkIn) {
+      params.set('checkIn', reservationDates.checkIn);
+    }
+    if (reservationDates.checkOut) {
+      params.set('checkOut', reservationDates.checkOut);
+    }
+    navigate(`/guest/rooms${params.toString() ? '?' + params.toString() : ''}`);
+  };
+
+  const handleProceedToConfirmation = () => {
+    navigate('/guest/reservation');
   };
 
   const containerSx = { px: { xs: 2, sm: 4, md: 12, lg: 20, xl: 28 } };
@@ -542,25 +693,220 @@ const RoomDetails = () => {
                 sx={{ mb: { xs: 1.5, sm: 2 }, '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: { xs: '12px', sm: '14px' } } }}
               />
 
-              {/* Book Button */}
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={handleBooking}
-                disabled={!formData.checkIn || !formData.checkOut}
-                sx={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  borderRadius: '8px',
-                  py: { xs: 1, sm: 1.5 },
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: { xs: '14px', sm: '16px' },
-                  '&:hover': { background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)' },
-                  '&.Mui-disabled': { background: '#DDDDDD', color: '#999999' },
-                }}
-              >
-                Book
-              </Button>
+              {/* Different Hotel Warning - shown above primary button */}
+              {isDifferentHotel && (
+                <Alert
+                  severity="warning"
+                  sx={{
+                    mb: 1.5,
+                    borderRadius: '8px',
+                    fontSize: { xs: '12px', sm: '13px' },
+                    '& .MuiAlert-message': { width: '100%' },
+                  }}
+                >
+                  Your reservation has rooms from <strong>{cartHotel?.hotel_name}</strong>. Adding this room will clear your current reservation. The "Proceed to Confirmation" button will take you to your reservation at that hotel.
+                </Alert>
+              )}
+
+              {/* Primary Button - Book Now or Proceed to Confirmation */}
+              {showProceedToConfirmation ? (
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleProceedToConfirmation}
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: '8px',
+                    py: { xs: 1, sm: 1.5 },
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 0.25,
+                    '&:hover': { background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'white' }}>
+                    <Payment sx={{ fontSize: { xs: 18, sm: 20 } }} />
+                    <Typography sx={{ fontSize: { xs: '14px', sm: '16px' }, fontWeight: 600, color: 'white' }}>
+                      Proceed to Confirmation
+                    </Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: { xs: '11px', sm: '12px' }, fontWeight: 400, opacity: 0.9, color: 'white' }}>
+                    {roomCount} room{roomCount !== 1 ? 's' : ''} in reservation
+                  </Typography>
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleBooking}
+                  disabled={!formData.checkIn || !formData.checkOut}
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: '8px',
+                    py: { xs: 1, sm: 1.5 },
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: { xs: '14px', sm: '16px' },
+                    '&:hover': { background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)' },
+                    '&.Mui-disabled': { background: '#DDDDDD', color: '#999999' },
+                  }}
+                >
+                  Book Now
+                </Button>
+              )}
+
+              {/* Secondary Buttons */}
+              {isRoomInCart ? (
+                // Room already in cart - show quantity message with +/- controls
+                <Box sx={{ mt: 1.5 }}>
+                  {/* Reserved Message with Quantity Controls */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      py: 1,
+                    }}
+                  >
+                    <Box>
+                      <Typography sx={{ fontSize: { xs: '14px', sm: '16px' }, fontWeight: 600, color: '#22c55e' }}>
+                        {quantityInCart} room{quantityInCart !== 1 ? 's' : ''} reserved
+                      </Typography>
+                      <Typography sx={{ fontSize: { xs: '11px', sm: '12px' }, color: '#717171' }}>
+                        {canAddMore ? `${availableCount - quantityInCart} more available` : 'Maximum reached'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <IconButton
+                        onClick={handleDecrement}
+                        size="small"
+                        sx={{
+                          border: '1px solid #DDDDDD',
+                          borderRadius: '8px',
+                          width: { xs: 32, sm: 36 },
+                          height: { xs: 32, sm: 36 },
+                          '&:hover': { borderColor: '#667eea', bgcolor: 'rgba(102, 126, 234, 0.04)' },
+                        }}
+                      >
+                        <Remove sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                      </IconButton>
+                      <Typography sx={{ fontSize: { xs: '16px', sm: '18px' }, fontWeight: 600, color: '#222222', minWidth: 24, textAlign: 'center' }}>
+                        {quantityInCart}
+                      </Typography>
+                      <IconButton
+                        onClick={handleIncrement}
+                        disabled={!canAddMore}
+                        size="small"
+                        sx={{
+                          border: '1px solid #DDDDDD',
+                          borderRadius: '8px',
+                          width: { xs: 32, sm: 36 },
+                          height: { xs: 32, sm: 36 },
+                          '&:hover': { borderColor: '#667eea', bgcolor: 'rgba(102, 126, 234, 0.04)' },
+                          '&.Mui-disabled': { borderColor: '#EBEBEB', color: '#CCCCCC' },
+                        }}
+                      >
+                        <Add sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                      </IconButton>
+                    </Box>
+                  </Box>
+
+                  {/* Add Different Room Type Link */}
+                  <Typography
+                    onClick={handleAddMoreRooms}
+                    sx={{
+                      mt: 1,
+                      fontSize: { xs: '13px', sm: '14px' },
+                      color: '#667eea',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      '&:hover': { color: '#5a6fd6' },
+                    }}
+                  >
+                    Add different type of room
+                  </Typography>
+
+                  {/* View Reservation Link */}
+                  <Button
+                    variant="text"
+                    fullWidth
+                    onClick={() => navigate('/guest/reservation')}
+                    startIcon={<EventNote sx={{ fontSize: { xs: 16, sm: 18 } }} />}
+                    sx={{
+                      mt: 1,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: { xs: '13px', sm: '14px' },
+                      color: '#717171',
+                      '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' },
+                    }}
+                  >
+                    View Reservation
+                  </Button>
+                </Box>
+              ) : showAddToReservation ? (
+                // Room not in cart and can add - show Add to Reservation button
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={handleAddToReservation}
+                  disabled={!formData.checkIn || !formData.checkOut}
+                  startIcon={<EventNote />}
+                  sx={{
+                    mt: 1.5,
+                    borderRadius: '8px',
+                    py: { xs: 1, sm: 1.5 },
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: { xs: '14px', sm: '16px' },
+                    borderColor: '#667eea',
+                    color: '#667eea',
+                    '&:hover': {
+                      borderColor: '#5a6fd6',
+                      bgcolor: 'rgba(102, 126, 234, 0.04)',
+                    },
+                    '&.Mui-disabled': {
+                      borderColor: '#DDDDDD',
+                      color: '#999999',
+                    },
+                  }}
+                >
+                  Add to Reservation
+                </Button>
+              ) : isDifferentHotel ? (
+                // Different hotel - show button to clear and add
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => setShowDifferentHotelDialog(true)}
+                  disabled={!formData.checkIn || !formData.checkOut}
+                  startIcon={<EventNote />}
+                  sx={{
+                    mt: 1.5,
+                    borderRadius: '8px',
+                    py: { xs: 1, sm: 1.5 },
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: { xs: '14px', sm: '16px' },
+                    borderColor: '#667eea',
+                    color: '#667eea',
+                    '&:hover': {
+                      borderColor: '#5a6fd6',
+                      bgcolor: 'rgba(102, 126, 234, 0.04)',
+                    },
+                    '&.Mui-disabled': {
+                      borderColor: '#DDDDDD',
+                      color: '#999999',
+                    },
+                  }}
+                >
+                  Add to Reservation
+                </Button>
+              ) : null}
 
               {!isAuthenticated && (
                 <Typography sx={{ fontSize: { xs: '11px', sm: '12px' }, color: '#717171', textAlign: 'center', mt: 1 }}>
@@ -633,6 +979,54 @@ const RoomDetails = () => {
           </Box>
         </Box>
       </Container>
+
+      {/* Different Hotel Dialog */}
+      <Dialog
+        open={showDifferentHotelDialog}
+        onClose={() => setShowDifferentHotelDialog(false)}
+        PaperProps={{
+          sx: { borderRadius: '16px', p: 1, maxWidth: 400 }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#222222' }}>
+            Different Hotel
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: '14px', color: '#717171', mb: 2 }}>
+            Your reservation contains rooms from <strong>{cartHotel?.hotel_name}</strong>.
+          </Typography>
+          <Typography sx={{ fontSize: '14px', color: '#717171' }}>
+            You can only book rooms from one hotel per reservation. Would you like to clear your reservation and add this room from <strong>{hotel?.name}</strong>?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button
+            onClick={() => setShowDifferentHotelDialog(false)}
+            sx={{
+              textTransform: 'none',
+              color: '#717171',
+              '&:hover': { bgcolor: '#F7F7F7' },
+            }}
+          >
+            Keep Current Reservation
+          </Button>
+          <Button
+            onClick={handleClearCartAndAdd}
+            variant="contained"
+            sx={{
+              textTransform: 'none',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)',
+              },
+            }}
+          >
+            Clear & Add New
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

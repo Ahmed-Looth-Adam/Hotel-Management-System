@@ -16,6 +16,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { RoomCartProvider } from './context/RoomCartContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestOnlyRoute from './components/GuestOnlyRoute';
 import { Layout } from './components/layout';
@@ -53,7 +54,10 @@ import RoomManagement from './pages/Staff/RoomManagement';
 import BrowseRooms from './pages/guest/BrowseRooms';
 import RoomDetails from './pages/guest/RoomDetails';
 import BookingConfirmation from './pages/guest/BookingConfirmation';
+import Checkout from './pages/guest/Checkout';
+import Reservation from './pages/guest/Reservation';
 import MyBookings from './pages/guest/MyBookings';
+import BookingDetails from './pages/guest/BookingDetails';
 
 // Report pages
 import ReportsDashboard from './pages/reports/ReportsDashboard';
@@ -95,6 +99,7 @@ function App() {
       <NotificationInitializer />
       <AuthProvider>
         <NotificationProvider>
+          <RoomCartProvider>
           <Router>
           <Layout>
             <Routes>
@@ -215,6 +220,34 @@ function App() {
               } />
 
               {/* Guest Portal Routes - Protected (login required) */}
+              {/* Reservation page (multi-room cart management) */}
+              <Route
+                path="/guest/reservation"
+                element={
+                  <ProtectedRoute>
+                    <Reservation />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Legacy cart-based checkout (deprecated - redirects to reservation) */}
+              <Route
+                path="/guest/checkout"
+                element={
+                  <ProtectedRoute>
+                    <Checkout />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Booking confirmation / payment page */}
+              <Route
+                path="/guest/booking-confirmation"
+                element={
+                  <ProtectedRoute>
+                    <BookingConfirmation />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Single room booking confirmation (immediate book flow) */}
               <Route
                 path="/guest/booking/:id/confirm"
                 element={
@@ -228,6 +261,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <MyBookings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/guest/booking/:id"
+                element={
+                  <ProtectedRoute>
+                    <BookingDetails />
                   </ProtectedRoute>
                 }
               />
@@ -307,6 +348,7 @@ function App() {
             </Routes>
           </Layout>
           </Router>
+          </RoomCartProvider>
         </NotificationProvider>
       </AuthProvider>
     </SnackbarProvider>

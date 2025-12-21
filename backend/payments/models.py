@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from core.fields import EncryptedCharField
 
 
 class Payment(models.Model):
@@ -411,3 +412,114 @@ class CancellationFee(models.Model):
             booking=booking,
             **fee_data
         )
+
+
+class SavedCard(models.Model):
+    """
+    Saved payment cards for guests.
+
+    For security (PCI compliance), we store:
+    - Last 4 digits only (for display purposes)
+    - Card type (for icon display)
+    - Encrypted cardholder name
+    - Encrypted expiry date
+    - A unique token identifier (encrypted)
+
+    We NEVER store:
+    - Full card number
+    - CVV/CVC
+    """
+    CARD_TYPE_CHOICES = [
+        ('visa', 'Visa'),
+        ('mastercard', 'Mastercard'),
+        ('amex', 'American Express'),
+        ('discover', 'Discover'),
+        ('unknown', 'Unknown'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='saved_cards'
+    )
+
+    # Card display info (not sensitive)
+    card_type = models.CharField(max_length=20, choices=CARD_TYPE_CHOICES, default='unknown')
+    last_four = models.CharField(max_length=4)
+    card_nickname = models.CharField(max_length=50, blank=True)
+
+    # Encrypted sensitive data (max_length must accommodate encrypted values ~150+ chars)
+    cardholder_name = EncryptedCharField(max_length=255)
+    expiry_month = EncryptedCharField(max_length=255)  # Stored as "01"-"12"
+    expiry_year = EncryptedCharField(max_length=255)   # Stored as "25", "26", etc.
+    card_token = EncryptedCharField(max_length=500)    # Unique token for this card
+
+    # Status
+    is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_default', '-created_at']
+
+    def __str__(self):
+        return f"{self.get_card_type_display()} ending in {self.last_four}"
+
+    def save(self, *args, **kwargs):
+        # If this card is set as default, unset any other default cards for this user
+        if self.is_default:
+            SavedCard.objects.filter(
+                user=self.user,
+                is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+
+        # Generate card token if not provided
+        if not self.card_token:
+            self.card_token = str(uuid.uuid4())
+
+        super().save(*args, **kwargs)
+
+    @property
+    def display_name(self):
+        """Return a display-friendly name for the card"""
+        if self.card_nickname:
+            return self.card_nickname
+        return f"{self.get_card_type_display()} ****{self.last_four}"
+
+    @property
+    def expiry_display(self):
+        """Return formatted expiry date for display"""
+        return f"{self.expiry_month}/{self.expiry_year}"
+
+    @property
+    def is_expired(self):
+        """Check if the card has expired"""
+        from datetime import datetime
+        try:
+            exp_month = int(self.expiry_month)
+            exp_year = int('20' + self.expiry_year)
+            now = datetime.now()
+            # Card expires at the end of the expiry month
+            return (exp_year < now.year) or (exp_year == now.year and exp_month < now.month)
+        except (ValueError, TypeError):
+            return True
+
+    @classmethod
+    def detect_card_type(cls, card_number):
+        """Detect card type from card number prefix"""
+        num = card_number.replace(' ', '').replace('-', '')
+        if num.startswith('4'):
+            return 'visa'
+        elif num.startswith(('51', '52', '53', '54', '55')) or (
+            len(num) >= 4 and 2221 <= int(num[:4]) <= 2720
+        ):
+            return 'mastercard'
+        elif num.startswith(('34', '37')):
+            return 'amex'
+        elif num.startswith(('6011', '65')) or (
+            len(num) >= 6 and 622126 <= int(num[:6]) <= 622925
+        ):
+            return 'discover'
+        return 'unknown'

@@ -2,7 +2,7 @@
 # -> Ismail Wasiu Abdul Samad, UWE ID: 24050765
 
 from rest_framework import serializers
-from .models import Payment, Invoice, InvoiceItem, BookingServiceCharge, CancellationFee
+from .models import Payment, Invoice, InvoiceItem, BookingServiceCharge, CancellationFee, SavedCard
 
 
 class PaymentSerializer(serializers.ModelSerializer):
@@ -72,3 +72,99 @@ class CreateInvoiceSerializer(serializers.Serializer):
     booking_id = serializers.IntegerField()
     include_service_charges = serializers.BooleanField(default=True)
     notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class SavedCardSerializer(serializers.ModelSerializer):
+    """Serializer for displaying saved cards (read-only sensitive fields)"""
+    display_name = serializers.CharField(read_only=True)
+    expiry_display = serializers.CharField(read_only=True)
+    is_expired = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = SavedCard
+        fields = [
+            'id', 'card_type', 'last_four', 'card_nickname',
+            'cardholder_name', 'expiry_display', 'is_default',
+            'is_active', 'is_expired', 'display_name', 'created_at'
+        ]
+        read_only_fields = ['id', 'card_type', 'last_four', 'created_at']
+
+
+class SavedCardCreateSerializer(serializers.Serializer):
+    """
+    Serializer for saving a new card.
+
+    Accepts full card details (for validation only), then stores only safe data.
+    CVV is validated but NEVER stored.
+    """
+    card_number = serializers.CharField(max_length=19, write_only=True)
+    expiry_date = serializers.CharField(max_length=5, write_only=True)  # MM/YY
+    cvv = serializers.CharField(max_length=4, write_only=True)
+    cardholder_name = serializers.CharField(max_length=100)
+    card_nickname = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    is_default = serializers.BooleanField(default=False)
+
+    def validate_card_number(self, value):
+        """Validate card number format"""
+        clean_number = value.replace(' ', '').replace('-', '')
+        if not clean_number.isdigit():
+            raise serializers.ValidationError("Card number must contain only digits")
+        if len(clean_number) < 13 or len(clean_number) > 19:
+            raise serializers.ValidationError("Card number must be 13-19 digits")
+        return clean_number
+
+    def validate_expiry_date(self, value):
+        """Validate expiry date format and ensure card is not expired"""
+        import re
+        from datetime import datetime
+
+        if not re.match(r'^\d{2}/\d{2}$', value):
+            raise serializers.ValidationError("Expiry date must be in MM/YY format")
+
+        month, year = value.split('/')
+        month = int(month)
+        year = int('20' + year)
+
+        if month < 1 or month > 12:
+            raise serializers.ValidationError("Invalid month")
+
+        now = datetime.now()
+        if year < now.year or (year == now.year and month < now.month):
+            raise serializers.ValidationError("Card has expired")
+
+        return value
+
+    def validate_cvv(self, value):
+        """Validate CVV format (we validate but never store)"""
+        if not value.isdigit():
+            raise serializers.ValidationError("CVV must contain only digits")
+        if len(value) < 3 or len(value) > 4:
+            raise serializers.ValidationError("CVV must be 3-4 digits")
+        return value
+
+    def create(self, validated_data):
+        """Create a saved card from validated data"""
+        user = self.context['request'].user
+        card_number = validated_data['card_number']
+        expiry_date = validated_data['expiry_date']
+        month, year = expiry_date.split('/')
+
+        saved_card = SavedCard.objects.create(
+            user=user,
+            card_type=SavedCard.detect_card_type(card_number),
+            last_four=card_number[-4:],
+            cardholder_name=validated_data['cardholder_name'],
+            expiry_month=month,
+            expiry_year=year,
+            card_nickname=validated_data.get('card_nickname', ''),
+            is_default=validated_data.get('is_default', False),
+        )
+
+        return saved_card
+
+
+class SavedCardUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating saved card preferences"""
+    class Meta:
+        model = SavedCard
+        fields = ['card_nickname', 'is_default', 'is_active']
