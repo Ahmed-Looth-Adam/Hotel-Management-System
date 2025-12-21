@@ -410,13 +410,23 @@ class BookingSerializer(serializers.ModelSerializer):
                 try:
                     room = Room.objects.get(id=room_id)
                     guests_count = room_info.get('guests_count', 2)
-                    price_per_night = room_info.get('price_per_night') or room.price_per_night
+
+                    # Get price from request data or lookup from RoomTypePricing
+                    price_per_night = room_info.get('price_per_night')
+                    if not price_per_night:
+                        from hotels.models import RoomTypePricing
+                        pricing = RoomTypePricing.objects.filter(
+                            hotel=room.hotel,
+                            room_type=room.room_type_category
+                        ).first()
+                        price_per_night = float(pricing.off_peak_price) if pricing else 100.0
+
                     total_price = float(price_per_night) * nights
 
                     BookingRoom.objects.create(
                         booking=booking,
                         room=room,
-                        room_type_category=room.room_type.category if room.room_type else '',
+                        room_type_category=room.room_type_category or '',
                         guests_count=guests_count,
                         price_per_night=price_per_night,
                         total_price=total_price,
@@ -426,11 +436,23 @@ class BookingSerializer(serializers.ModelSerializer):
                     continue
         # For single room booking (backwards compatibility)
         elif booking.room:
-            price_per_night = booking.room.price_per_night
+            # Get price from RoomTypePricing or use booking.total_price/nights
+            from hotels.models import RoomTypePricing
+            pricing = RoomTypePricing.objects.filter(
+                hotel=booking.room.hotel,
+                room_type=booking.room.room_type_category
+            ).first()
+            if pricing:
+                price_per_night = float(pricing.off_peak_price)
+            elif booking.total_price and nights > 0:
+                price_per_night = float(booking.total_price) / nights
+            else:
+                price_per_night = 100.0
+
             BookingRoom.objects.create(
                 booking=booking,
                 room=booking.room,
-                room_type_category=booking.room.room_type.category if booking.room.room_type else '',
+                room_type_category=booking.room.room_type_category or '',
                 guests_count=booking.guests_count,
                 price_per_night=price_per_night,
                 total_price=float(price_per_night) * nights

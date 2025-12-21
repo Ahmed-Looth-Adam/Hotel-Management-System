@@ -16,6 +16,11 @@ import {
   Divider,
   Collapse,
   Autocomplete,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -35,10 +40,22 @@ import {
   ExpandLess,
   Shield as ShieldIcon,
   ArrowBack,
+  CreditCard as CreditCardIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Star as StarIcon,
 } from '@mui/icons-material';
 import { ProfileSchema, PasswordChangeSchema } from './validationSchema';
 import authService from '../../services/authService';
+import { savedCardService } from '../../services';
 import Hero from '../../components/landing/Hero';
+
+// Card type logos
+const CARD_LOGOS = {
+  visa: '/images/cards/visa.svg',
+  mastercard: '/images/cards/mastercard.svg',
+  amex: '/images/cards/amex.svg',
+};
 
 // Complete countries list with flags
 const COUNTRIES = [
@@ -269,6 +286,23 @@ const Profile = () => {
   const [newUsername, setNewUsername] = useState('');
   const [savingUsername, setSavingUsername] = useState(false);
 
+  // Saved cards state
+  const [savedCards, setSavedCards] = useState([]);
+  const [loadingSavedCards, setLoadingSavedCards] = useState(true);
+  const [showPaymentSection, setShowPaymentSection] = useState(false);
+  const [showAddCardDialog, setShowAddCardDialog] = useState(false);
+  const [addingCard, setAddingCard] = useState(false);
+  const [deletingCardId, setDeletingCardId] = useState(null);
+  const [cardError, setCardError] = useState('');
+  const [cardSuccess, setCardSuccess] = useState('');
+  const [newCardData, setNewCardData] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cvv: '',
+    cardholderName: '',
+    isDefault: false,
+  });
+
   const [initialValues, setInitialValues] = useState({
     name: '',
     lastName: '',
@@ -321,6 +355,134 @@ const Profile = () => {
       }
     } catch (error) {
       throw error;
+    }
+  };
+
+  // Fetch saved cards
+  useEffect(() => {
+    fetchSavedCards();
+  }, []);
+
+  const fetchSavedCards = async () => {
+    setLoadingSavedCards(true);
+    const result = await savedCardService.getAll();
+    if (result.success) {
+      setSavedCards(result.data || []);
+    }
+    setLoadingSavedCards(false);
+  };
+
+  // Card form helpers
+  const formatCardNumber = (value) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = (matches && matches[0]) || '';
+    const parts = [];
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    return parts.length ? parts.join(' ') : v;
+  };
+
+  const formatExpiryDate = (value) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    if (v.length >= 2) {
+      return v.substring(0, 2) + '/' + v.substring(2, 4);
+    }
+    return v;
+  };
+
+  const getCardType = (cardNumber) => {
+    const num = cardNumber.replace(/\s/g, '');
+    if (/^4/.test(num)) return 'visa';
+    if (/^5[1-5]/.test(num)) return 'mastercard';
+    if (/^3[47]/.test(num)) return 'amex';
+    return '';
+  };
+
+  const handleCardDataChange = (field) => (e) => {
+    let value = e.target.value;
+
+    if (field === 'cardNumber') {
+      value = formatCardNumber(value);
+    } else if (field === 'expiryDate') {
+      value = formatExpiryDate(value.replace('/', ''));
+    } else if (field === 'cvv') {
+      value = value.replace(/[^0-9]/g, '').substring(0, 4);
+    }
+
+    setNewCardData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddCard = async () => {
+    setCardError('');
+
+    // Validate
+    const cardNum = newCardData.cardNumber.replace(/\s/g, '');
+    if (!cardNum || cardNum.length < 13) {
+      setCardError('Please enter a valid card number');
+      return;
+    }
+    if (!newCardData.expiryDate || !/^\d{2}\/\d{2}$/.test(newCardData.expiryDate)) {
+      setCardError('Please enter a valid expiry date (MM/YY)');
+      return;
+    }
+    if (!newCardData.cvv || newCardData.cvv.length < 3) {
+      setCardError('Please enter a valid CVV');
+      return;
+    }
+    if (!newCardData.cardholderName.trim()) {
+      setCardError('Please enter the cardholder name');
+      return;
+    }
+
+    setAddingCard(true);
+    const result = await savedCardService.create({
+      card_number: newCardData.cardNumber,
+      expiry_date: newCardData.expiryDate,
+      cvv: newCardData.cvv,
+      cardholder_name: newCardData.cardholderName,
+      is_default: newCardData.isDefault,
+    });
+
+    if (result.success) {
+      setCardSuccess('Card saved successfully');
+      setShowAddCardDialog(false);
+      setNewCardData({
+        cardNumber: '',
+        expiryDate: '',
+        cvv: '',
+        cardholderName: '',
+        isDefault: false,
+      });
+      fetchSavedCards();
+      setTimeout(() => setCardSuccess(''), 3000);
+    } else {
+      setCardError(result.error?.message || result.error?.detail || 'Failed to save card');
+    }
+    setAddingCard(false);
+  };
+
+  const handleDeleteCard = async (cardId) => {
+    setDeletingCardId(cardId);
+    const result = await savedCardService.delete(cardId);
+    if (result.success) {
+      setCardSuccess('Card removed successfully');
+      fetchSavedCards();
+      setTimeout(() => setCardSuccess(''), 3000);
+    } else {
+      setCardError('Failed to remove card');
+      setTimeout(() => setCardError(''), 3000);
+    }
+    setDeletingCardId(null);
+  };
+
+  const handleSetDefaultCard = async (cardId) => {
+    const result = await savedCardService.setDefault(cardId);
+    if (result.success) {
+      setCardSuccess('Default card updated');
+      fetchSavedCards();
+      setTimeout(() => setCardSuccess(''), 3000);
     }
   };
 
@@ -1122,9 +1284,421 @@ const Profile = () => {
                 </Box>
               </Collapse>
             </Box>
+
+            {/* Saved Payment Methods Section */}
+            <Box
+              sx={{
+                bgcolor: '#FFFFFF',
+                borderRadius: { xs: '12px', sm: '16px' },
+                border: '1px solid #EBEBEB',
+                overflow: 'hidden',
+                mt: { xs: 2, sm: 3 },
+              }}
+            >
+              {/* Header - Clickable */}
+              <Box
+                onClick={() => setShowPaymentSection(!showPaymentSection)}
+                sx={{
+                  p: { xs: 2, sm: 4 },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                  '&:hover': { bgcolor: '#F7F7F7' },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
+                  <Box
+                    sx={{
+                      width: { xs: 36, sm: 44 },
+                      height: { xs: 36, sm: 44 },
+                      borderRadius: { xs: '10px', sm: '12px' },
+                      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <CreditCardIcon sx={{ color: '#667eea', fontSize: { xs: 20, sm: 24 } }} />
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontSize: { xs: '16px', sm: '20px' }, fontWeight: 600, color: '#222222' }}>
+                      Payment Methods
+                    </Typography>
+                    <Typography sx={{ fontSize: { xs: '12px', sm: '14px' }, color: '#717171' }}>
+                      {savedCards.length > 0 ? `${savedCards.length} saved card${savedCards.length > 1 ? 's' : ''}` : 'Manage your saved cards'}
+                    </Typography>
+                  </Box>
+                </Box>
+                {showPaymentSection ? (
+                  <ExpandLess sx={{ color: '#717171', fontSize: { xs: 22, sm: 24 } }} />
+                ) : (
+                  <ExpandMore sx={{ color: '#717171', fontSize: { xs: 22, sm: 24 } }} />
+                )}
+              </Box>
+
+              {/* Collapsible Content */}
+              <Collapse in={showPaymentSection}>
+                <Box sx={{ px: { xs: 2, sm: 4 }, pb: { xs: 2, sm: 4 } }}>
+                  <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
+
+                  {(cardError || cardSuccess) && (
+                    <Alert
+                      severity={cardError ? "error" : "success"}
+                      sx={{ mb: { xs: 2, sm: 3 }, borderRadius: { xs: '10px', sm: '12px' } }}
+                      onClose={() => { setCardError(''); setCardSuccess(''); }}
+                    >
+                      {cardError || cardSuccess}
+                    </Alert>
+                  )}
+
+                  {loadingSavedCards ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                      <CircularProgress size={24} sx={{ color: '#667eea' }} />
+                    </Box>
+                  ) : savedCards.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <CreditCardIcon sx={{ fontSize: 48, color: '#DDDDDD', mb: 1 }} />
+                      <Typography sx={{ fontSize: '15px', color: '#717171', mb: 2 }}>
+                        No saved cards yet
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => setShowAddCardDialog(true)}
+                        sx={{
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          borderRadius: '10px',
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          px: 3,
+                          py: 1,
+                        }}
+                      >
+                        Add a Card
+                      </Button>
+                    </Box>
+                  ) : (
+                    <>
+                      {/* Saved Cards List */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        {savedCards.map((card) => (
+                          <Box
+                            key={card.id}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 2,
+                              p: { xs: 1.5, sm: 2 },
+                              borderRadius: '12px',
+                              border: card.is_default ? '2px solid #667eea' : '1px solid #EBEBEB',
+                              bgcolor: card.is_default ? 'rgba(102, 126, 234, 0.03)' : 'transparent',
+                            }}
+                          >
+                            {/* Card Logo */}
+                            <Box
+                              sx={{
+                                width: 50,
+                                height: 32,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: '#F7F7F7',
+                                borderRadius: '6px',
+                              }}
+                            >
+                              {CARD_LOGOS[card.card_type] ? (
+                                <Box
+                                  component="img"
+                                  src={CARD_LOGOS[card.card_type]}
+                                  alt={card.card_type}
+                                  sx={{ width: 36, height: 24, objectFit: 'contain' }}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentNode.innerHTML = '<span style="font-size: 12px; color: #717171; text-transform: uppercase;">' + card.card_type + '</span>';
+                                  }}
+                                />
+                              ) : (
+                                <CreditCardIcon sx={{ fontSize: 20, color: '#717171' }} />
+                              )}
+                            </Box>
+
+                            {/* Card Details */}
+                            <Box sx={{ flex: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography sx={{ fontSize: { xs: '14px', sm: '15px' }, fontWeight: 600, color: '#222222' }}>
+                                  •••• •••• •••• {card.last_four}
+                                </Typography>
+                                {card.is_default && (
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                      px: 1,
+                                      py: 0.25,
+                                      bgcolor: '#667eea',
+                                      borderRadius: '4px',
+                                    }}
+                                  >
+                                    <StarIcon sx={{ fontSize: 10, color: 'white' }} />
+                                    <Typography sx={{ fontSize: '10px', color: 'white', fontWeight: 600 }}>
+                                      Default
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                              <Typography sx={{ fontSize: { xs: '12px', sm: '13px' }, color: '#717171' }}>
+                                {card.cardholder_name} · Expires {card.expiry_display}
+                              </Typography>
+                            </Box>
+
+                            {/* Actions */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              {!card.is_default && (
+                                <Button
+                                  size="small"
+                                  onClick={() => handleSetDefaultCard(card.id)}
+                                  sx={{
+                                    fontSize: '12px',
+                                    textTransform: 'none',
+                                    color: '#667eea',
+                                    minWidth: 'auto',
+                                    px: 1,
+                                  }}
+                                >
+                                  Set default
+                                </Button>
+                              )}
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteCard(card.id)}
+                                disabled={deletingCardId === card.id}
+                                sx={{ color: '#EF4444', '&:hover': { bgcolor: '#FEE2E2' } }}
+                              >
+                                {deletingCardId === card.id ? (
+                                  <CircularProgress size={16} sx={{ color: '#EF4444' }} />
+                                ) : (
+                                  <DeleteIcon sx={{ fontSize: 18 }} />
+                                )}
+                              </IconButton>
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+
+                      {/* Add New Card Button */}
+                      <Button
+                        startIcon={<AddIcon />}
+                        onClick={() => setShowAddCardDialog(true)}
+                        sx={{
+                          mt: 2,
+                          color: '#667eea',
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          fontSize: '14px',
+                          '&:hover': { bgcolor: 'rgba(102, 126, 234, 0.05)' },
+                        }}
+                      >
+                        Add another card
+                      </Button>
+                    </>
+                  )}
+                </Box>
+              </Collapse>
+            </Box>
           </Box>
         </Box>
       </Container>
+
+      {/* Add Card Dialog */}
+      <Dialog
+        open={showAddCardDialog}
+        onClose={() => {
+          setShowAddCardDialog(false);
+          setCardError('');
+          setNewCardData({
+            cardNumber: '',
+            expiryDate: '',
+            cvv: '',
+            cardholderName: '',
+            isDefault: false,
+          });
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '16px', overflow: 'hidden' } }}
+      >
+        <Box
+          sx={{
+            bgcolor: '#222222',
+            px: 3,
+            py: 2.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#FFFFFF' }}>
+            Add Payment Card
+          </Typography>
+          <IconButton
+            onClick={() => {
+              setShowAddCardDialog(false);
+              setCardError('');
+            }}
+            sx={{ color: '#FFFFFF', p: 0.5 }}
+            size="small"
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ p: 3 }}>
+          {cardError && (
+            <Alert severity="error" sx={{ mb: 2, borderRadius: '10px' }}>
+              {cardError}
+            </Alert>
+          )}
+
+          {/* Card Number */}
+          <TextField
+            fullWidth
+            label="Card number"
+            value={newCardData.cardNumber}
+            onChange={handleCardDataChange('cardNumber')}
+            placeholder="1234 5678 9012 3456"
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <CreditCardIcon sx={{ color: '#717171', fontSize: 20 }} />
+                </InputAdornment>
+              ),
+              endAdornment: getCardType(newCardData.cardNumber) && CARD_LOGOS[getCardType(newCardData.cardNumber)] && (
+                <Box
+                  component="img"
+                  src={CARD_LOGOS[getCardType(newCardData.cardNumber)]}
+                  alt=""
+                  sx={{ width: 32, height: 20, objectFit: 'contain' }}
+                />
+              ),
+            }}
+            inputProps={{ maxLength: 19 }}
+            sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+          />
+
+          {/* Expiry and CVV */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+            <TextField
+              fullWidth
+              label="Expiry date"
+              value={newCardData.expiryDate}
+              onChange={handleCardDataChange('expiryDate')}
+              placeholder="MM/YY"
+              size="small"
+              inputProps={{ maxLength: 5 }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+            />
+            <TextField
+              fullWidth
+              label="CVV"
+              value={newCardData.cvv}
+              onChange={handleCardDataChange('cvv')}
+              placeholder="123"
+              type="password"
+              size="small"
+              inputProps={{ maxLength: 4 }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+            />
+          </Box>
+
+          {/* Cardholder Name */}
+          <TextField
+            fullWidth
+            label="Cardholder name"
+            value={newCardData.cardholderName}
+            onChange={handleCardDataChange('cardholderName')}
+            placeholder="Name as shown on card"
+            size="small"
+            sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+          />
+
+          {/* Set as default */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={newCardData.isDefault}
+                onChange={(e) => setNewCardData(prev => ({ ...prev, isDefault: e.target.checked }))}
+                size="small"
+                sx={{ '&.Mui-checked': { color: '#667eea' } }}
+              />
+            }
+            label={
+              <Typography sx={{ fontSize: '13px', color: '#222222' }}>
+                Set as default payment method
+              </Typography>
+            }
+          />
+
+          {/* Security note */}
+          <Box
+            sx={{
+              mt: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              p: 1.5,
+              bgcolor: '#F7F7F7',
+              borderRadius: '8px',
+            }}
+          >
+            <LockIcon sx={{ fontSize: 16, color: '#008A05' }} />
+            <Typography sx={{ fontSize: '12px', color: '#717171' }}>
+              Your card information is encrypted and secure
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2.5, borderTop: '1px solid #EBEBEB', gap: 1 }}>
+          <Button
+            onClick={() => {
+              setShowAddCardDialog(false);
+              setCardError('');
+            }}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              px: 3,
+              py: 1,
+              color: '#222222',
+              border: '1px solid #222222',
+              '&:hover': { bgcolor: '#F7F7F7' },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAddCard}
+            disabled={addingCard}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)',
+              },
+            }}
+          >
+            {addingCard ? <CircularProgress size={20} sx={{ color: 'white' }} /> : 'Save Card'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

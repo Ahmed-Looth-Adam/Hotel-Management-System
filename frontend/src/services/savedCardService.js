@@ -7,7 +7,11 @@ const savedCardService = {
   getAll: async () => {
     try {
       const response = await bookingsApi.get('/payments/saved-cards/');
-      return { success: true, data: response.data };
+      // Handle paginated response from DRF
+      const data = Array.isArray(response.data)
+        ? response.data
+        : response.data?.results || [];
+      return { success: true, data };
     } catch (error) {
       return {
         success: false,

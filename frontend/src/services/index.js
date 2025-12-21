@@ -9,4 +9,5 @@ export { default as policyService } from './policyService';
 export { default as galleryService } from './galleryService';
 export { default as reportService } from './reportService';
 export { default as savedCardService } from './savedCardService';
+export { default as paymentService } from './paymentService';
 export { api, bookingsApi, API_BASE_URL } from './api';
