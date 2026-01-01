@@ -37,12 +37,20 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        user_role = getattr(user, 'role', None)
 
-        if user.is_staff:
+        # Admin and staff can see all bookings (or filtered by assigned_hotel)
+        if user.is_staff or user_role == 'admin':
             queryset = Booking.objects.all()
-            # Staff/managers with assigned hotel can only see their hotel's bookings
-            if user.role in ['staff', 'manager'] and user.assigned_hotel:
+            # Staff with assigned hotel can only see their hotel's bookings
+            if user_role == 'staff' and user.assigned_hotel:
                 queryset = queryset.filter(hotel=user.assigned_hotel)
+        # Managers can see bookings for hotels they manage
+        elif user_role == 'manager':
+            from hotels.models import Hotel
+            managed_hotels = Hotel.objects.filter(manager=user)
+            queryset = Booking.objects.filter(hotel__in=managed_hotels)
+        # Guests can only see their own bookings
         else:
             queryset = Booking.objects.filter(user=user)
 

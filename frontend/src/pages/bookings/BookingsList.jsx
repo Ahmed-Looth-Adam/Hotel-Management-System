@@ -118,10 +118,11 @@ const BookingsList = () => {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is staff/manager and needs hotel assignment
-  const isStaffOrManager = user?.role === 'staff' || user?.role === 'manager';
+  // Check if user is staff and needs hotel assignment
+  // Note: Managers don't have assigned_hotel - they manage hotels via Hotel.manager relationship
+  const isStaff = user?.role === 'staff';
   const hasAssignedHotel = user?.assigned_hotel;
-  const showNoHotelAssigned = isStaffOrManager && !hasAssignedHotel;
+  const showNoHotelAssigned = isStaff && !hasAssignedHotel;
 
   const [filters, setFilters] = useState({
     hotel: hasAssignedHotel ? user.assigned_hotel : (searchParams.get('hotel') || ''),
@@ -250,8 +251,8 @@ const BookingsList = () => {
         </Box>
       ),
     },
-    // Only show hotel column for admin users (not for staff/manager with assigned hotel)
-    ...(!isStaffOrManager || !hasAssignedHotel ? [{
+    // Only show hotel column for admin/manager users (not for staff with assigned hotel)
+    ...(!isStaff || !hasAssignedHotel ? [{
       id: 'hotel_name',
       label: 'Hotel',
       sortable: true,
@@ -573,8 +574,8 @@ const BookingsList = () => {
           }}
         />
 
-        {/* Show hotel dropdown only for admin, show assigned hotel name for staff/manager */}
-        {isStaffOrManager && hasAssignedHotel ? (
+        {/* Show hotel dropdown for admin/manager, show assigned hotel chip for staff with assigned hotel */}
+        {isStaff && hasAssignedHotel ? (
           <Chip
             icon={<BusinessIcon />}
             label={assignedHotelName || 'Assigned Hotel'}

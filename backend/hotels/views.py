@@ -45,6 +45,14 @@ class HotelViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Hotel.objects.all()
 
+        # Filter by manager role - managers can only see hotels they manage
+        if self.request.user.is_authenticated:
+            user_role = getattr(self.request.user, 'role', None)
+            if user_role == 'manager':
+                # Managers can only see hotels assigned to them
+                queryset = queryset.filter(manager=self.request.user)
+            # Admins and staff can see all hotels (no filter)
+
         # Filter by active status
         is_active = self.request.query_params.get('is_active')
         if is_active is not None:

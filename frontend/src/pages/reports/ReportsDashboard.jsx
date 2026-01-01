@@ -227,11 +227,10 @@ const ReportsDashboard = () => {
     const result = await hotelService.getAll({ is_active: true });
     if (result.success) {
       let hotelList = result.data.results || result.data || [];
-      if ((isManager) && hasAssignedHotel) {
-        hotelList = hotelList.filter(h => h.id === user.assigned_hotel);
-        if (hotelList.length === 1) {
-          setSelectedHotel(user.assigned_hotel);
-        }
+      // Note: Managers don't need client-side filtering - backend already filters by manager
+      // Auto-select first hotel for managers if they have managed hotels
+      if (isManager && hotelList.length > 0) {
+        setSelectedHotel(hotelList[0].id);
       }
       setHotels(hotelList);
     }

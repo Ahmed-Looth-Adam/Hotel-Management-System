@@ -126,20 +126,21 @@ const RoomManagement = () => {
     if (hotelsResult.success) {
       let hotelList = hotelsResult.data.results || hotelsResult.data;
 
-      // For manager, filter to hotels they manage
-      if (isManager && hasAssignedHotel) {
-        hotelList = hotelList.filter(h => h.id === user.assigned_hotel);
-      }
       // For staff, filter to their assigned hotel
+      // Note: Managers don't need client-side filtering - backend already filters by manager
       if (isStaff && hasAssignedHotel) {
         hotelList = hotelList.filter(h => h.id === user.assigned_hotel);
       }
 
       setHotels(hotelList);
 
-      // Auto-select hotel for staff/manager with assigned hotel
-      if (!selectedHotel && (isStaff || isManager) && hasAssignedHotel) {
+      // Auto-select hotel for staff with assigned hotel
+      if (!selectedHotel && isStaff && hasAssignedHotel) {
         setSelectedHotel(user.assigned_hotel);
+      }
+      // Auto-select first hotel for managers (they manage hotels, not assigned to one)
+      else if (!selectedHotel && isManager && hotelList.length > 0) {
+        setSelectedHotel(hotelList[0].id);
       }
     }
     setLoading(false);
