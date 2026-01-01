@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Box,
   Container,
@@ -43,17 +42,6 @@ import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { useAuth } from '../../context/AuthContext';
 import hotelService from '../../services/hotelService';
-
-// Framer Motion configurations - smooth easing
-const smoothTransition = {
-  duration: 0.3,
-  ease: [0.4, 0, 0.2, 1], // Material Design standard easing
-};
-
-const quickTransition = {
-  duration: 0.2,
-  ease: [0.4, 0, 0.2, 1],
-};
 
 // CSS transitions for hover effects
 const springTransition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
