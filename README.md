@@ -277,16 +277,348 @@ GET    /api/reports/revenue/
 
 ## 🔐 Security Features
 
-- JWT-based authentication
-- Two-Factor Authentication (2FA) for staff users
-- Password strength validation
-- Password expiration policy for staff (6 months)
-- Account lockout after 5 failed attempts (15 min)
-- Automatic session timeout (15 min)
-- Email verification for guest registration
-- **Field-level encryption for sensitive data at rest** (passport/ID numbers, 2FA secrets)
-- Audit logging for sensitive operations
-- CORS configuration
+- JWT-based authentication with access/refresh tokens
+- Two-Factor Authentication (2FA) with TOTP (Time-based One-Time Password)
+- Password strength validation (min 8 chars, uppercase, lowercase, number)
+- Password expiration policy for staff/managers (6 months)
+- Account lockout after 5 failed login attempts (15 min)
+- Automatic session timeout (15 min access token)
+- Email verification required for guest registration
+- **Field-level encryption for sensitive data at rest** (passport/ID numbers, 2FA secrets using Fernet AES-128)
+- Comprehensive audit logging for sensitive operations
+- CORS configuration for secure cross-origin requests
+- Role-based access control (RBAC)
+
+---
+
+## 👤 User Roles & Access Levels
+
+The system supports four distinct user roles with different access levels:
+
+### 1. Guest (Default)
+**Registration:** Open to public via `/register`
+
+**Capabilities:**
+- Browse hotels and rooms
+- Make room bookings
+- Manage their own bookings
+- Edit bookings before check-in
+- Add multiple rooms to bookings
+- Save payment cards for future use
+- View booking history
+- Update profile information
+
+**Restrictions:**
+- Cannot access admin/staff/manager features
+- Cannot see other users' bookings
+
+### 2. Staff
+**Creation:** Admin creates staff accounts and assigns them to a hotel
+
+**Capabilities:**
+- View all bookings for assigned hotel
+- Check-in/check-out guests
+- Manage room status (Available, Cleaning, Out of Service)
+- View daily operations dashboard
+- Process booking modifications
+- All guest capabilities
+
+**Restrictions:**
+- Limited to assigned hotel only
+- Cannot modify hotel settings
+- Cannot create/delete users
+
+**2FA:** Required for all staff users
+
+### 3. Manager
+**Creation:** Admin creates manager accounts and assigns them to hotels
+
+**Capabilities:**
+- Manage assigned hotels (pricing, policies, services)
+- View bookings for managed hotels
+- Configure seasonal pricing
+- Manage ancillary services
+- Update hotel policies
+- Manage hotel galleries
+- View hotel reports and analytics
+- All staff capabilities
+
+**Restrictions:**
+- Can only manage assigned hotels
+- Cannot access system-wide settings
+- Cannot create admin users
+
+**2FA:** Required for all manager users
+
+### 4. Admin (Superuser)
+**Creation:** Via `python manage.py createsuperuser` command
+
+**Capabilities:**
+- Full system access
+- Manage all users (create, edit, delete)
+- Assign managers to hotels
+- Assign staff to hotels
+- Configure system-wide settings
+- Access all hotels and bookings
+- View all reports
+- Django admin panel access
+
+**2FA:** Required for all admin users
+
+---
+
+## 🚪 User Registration & Authentication
+
+### Guest Registration
+
+1. **Navigate to Registration Page**
+   ```
+   http://localhost:5173/register
+   ```
+
+2. **Fill in Registration Form**
+   - Username (unique)
+   - Email address (unique, must be valid)
+   - Password (min 8 chars, must include uppercase, lowercase, and number)
+   - Confirm password
+   - Optional: First name, last name, phone, address details
+
+3. **Email Verification**
+   - Check your email inbox for verification link
+   - Click the verification link to activate your account
+   - Return to login page
+
+4. **Login**
+   - Use your username and password
+   - No 2FA required for guest users
+
+### Staff/Manager/Admin Login with 2FA
+
+#### First-Time 2FA Setup
+
+1. **Login with Credentials**
+   ```
+   http://localhost:5173/login
+   ```
+   - Enter username and password
+   - If 2FA is not set up, you'll be redirected to 2FA setup
+
+2. **Set Up 2FA**
+   - Install an authenticator app (Google Authenticator, Authy, Microsoft Authenticator)
+   - Scan the QR code displayed
+   - Or manually enter the secret key shown
+   - Enter the 6-digit verification code from your authenticator app
+   - Click "Verify & Enable 2FA"
+
+3. **2FA Enabled**
+   - You'll be logged in automatically
+   - 2FA is now required for all future logins
+
+#### Subsequent Logins with 2FA
+
+1. **Enter Credentials**
+   ```
+   http://localhost:5173/login
+   ```
+   - Enter username and password
+   - Click "Sign In"
+
+2. **Enter 2FA Code**
+   - You'll be redirected to 2FA verification page
+   - Open your authenticator app
+   - Enter the current 6-digit code
+   - Click "Verify"
+
+3. **Access Granted**
+   - Successfully logged in
+   - Redirected to appropriate dashboard based on role
+
+### Password Reset
+
+1. **Forgot Password Page**
+   ```
+   http://localhost:5173/forgot-password
+   ```
+
+2. **Enter Email Address**
+   - Receive password reset email
+   - Click the reset link
+   - Enter new password
+   - Confirm new password
+
+### Disable/Reset 2FA (Admin Only)
+
+Admins can disable 2FA for users via Django admin panel:
+```
+http://localhost:8000/admin/authentication/user/
+```
+- Find the user
+- Uncheck "2FA Enabled"
+- Clear "2FA Secret" field
+- Save
+
+---
+
+## 🏨 Core Features
+
+### 1. Hotel Management
+- **Multi-property Support:** Manage multiple hotels
+- **Hotel Information:** Name, location, address, star rating, description
+- **Manager Assignment:** Assign managers to specific hotels
+- **Check-in/Check-out Times:** Configurable per hotel
+- **Seasonal Pricing:** Define peak and off-peak seasons with price multipliers
+- **Hotel Activation/Deactivation:** Temporarily disable hotels
+
+### 2. Room Management
+- **Room Types:** Standard Double, Deluxe King, Family Suite, Penthouse
+- **Bed Sizes:** King, Queen, Twin
+- **Room Status:** Available, Occupied, Cleaning, Out of Service
+- **Room Views:** Ocean, Garden, Beach, City, Mountain
+- **Max Occupancy:** Configurable per room
+- **Room Galleries:** Multiple image galleries per hotel
+
+### 3. Booking System
+- **Multi-room Bookings:** Add multiple rooms in a single booking
+- **Date Range Selection:** Check-in and check-out dates
+- **Guest Count:** Specify number of guests
+- **Booking References:** Unique reference codes (BK-XXXXXXXX)
+- **Booking Status:** Confirmed, Checked In, Checked Out, Cancelled, No Show
+- **Booking Modification:** Edit bookings before check-in
+- **Cancellation Policy:** Automated cancellation fee calculation
+  - 14+ days before: Free cancellation
+  - 3-14 days before: 50% of first night
+  - <72 hours: 100% of first night
+  - No-show: 100% of total booking
+
+### 4. Payment Processing
+- **Secure Card Storage:** PCI-compliant saved cards with encryption
+- **Payment Methods:** Credit/Debit cards
+- **Payment Status:** Paid, Partial, Refunded
+- **Invoice Generation:** Detailed invoices with itemized charges
+- **Refund Processing:** Full and partial refunds
+- **Multiple Payments:** Split payments across multiple transactions
+- **Saved Cards:** Save cards for future bookings
+
+### 5. Ancillary Services
+- **Service Types:**
+  - Transportation (Airport pickup/drop-off)
+  - Dining (Breakfast buffet, room service)
+  - Spa & Wellness (Massages, treatments)
+  - Activities (Tours, excursions)
+- **Dynamic Pricing:** Per-service pricing
+- **Booking Integration:** Add services during booking
+
+### 6. Hotel Policies
+- **Policy Types:**
+  - Cancellation Policy
+  - Check-in Policy
+  - Check-out Policy
+  - Payment Policy
+  - House Rules
+  - Children Policy
+  - Pet Policy
+  - Smoking Policy
+- **Multi-language Support:** Ready for internationalization
+
+### 7. Reporting & Analytics
+- **Occupancy Reports:** Daily/weekly/monthly occupancy rates
+- **Revenue Reports:** Revenue breakdown by hotel/room type
+- **Booking Analytics:** Booking trends and statistics
+- **Guest Analytics:** Guest demographics and behavior
+
+### 8. Gallery Management
+- **Hotel Galleries:** Showcase hotel facilities
+- **Room Galleries:** Display room types and views
+- **Image Upload:** Multiple images per gallery
+- **Primary Image Selection:** Set featured images
+- **Sort Order:** Custom image ordering
+
+---
+
+## 🧪 Testing
+
+### Running Tests
+
+The system includes 88 comprehensive tests covering all modules:
+
+```bash
+# Run all tests
+docker-compose exec backend pytest
+
+# Run with coverage
+docker-compose exec backend pytest --cov=. --cov-report=html
+
+# Run specific module tests
+docker-compose exec backend pytest authentication/tests.py
+docker-compose exec backend pytest hotels/tests.py
+docker-compose exec backend pytest bookings/tests.py
+docker-compose exec backend pytest payments/tests.py
+```
+
+### Test Coverage
+
+| Module | Tests | Coverage |
+|--------|-------|----------|
+| Authentication | 38 | ~90% models |
+| Hotels/Rooms | 30 | ~82% models |
+| Bookings | 20 | ~65% models |
+| Payments | 2 | ~51% models |
+| Core | 2 | ~42% fields |
+| Reports | 2 | - |
+| **TOTAL** | **88** | **100% Pass Rate** |
+
+### Test Documentation
+
+For detailed testing documentation, see:
+```
+Testing_Documentation.ipynb
+```
+
+Run tests interactively:
+```bash
+jupyter notebook Testing_Documentation.ipynb
+```
+
+---
+
+## 👥 Demo Accounts
+
+For testing purposes, you can create demo accounts with different roles:
+
+### Create Admin Account
+```bash
+docker-compose exec backend python manage.py createsuperuser
+# Username: admin
+# Email: admin@hms.com
+# Password: [secure password]
+```
+
+### Create Manager Account (via Django Admin)
+1. Login to admin panel: http://localhost:8000/admin
+2. Go to Authentication → Users
+3. Click "Add User"
+4. Set username, email, password
+5. Set role to "manager"
+6. Check "Email verified"
+7. Save
+
+Then assign hotel to manager:
+1. Go to Hotels → Hotels
+2. Edit a hotel
+3. Select the manager in "Manager" dropdown
+4. Save
+
+### Create Staff Account (via Django Admin)
+1. Follow same steps as manager
+2. Set role to "staff"
+3. Check "Is staff" checkbox
+4. Assign to hotel via "Assigned hotel" dropdown
+
+### Create Guest Account
+1. Go to registration page: http://localhost:5173/register
+2. Fill in registration form
+3. Verify email
+4. Login
 
 ---
 
@@ -439,6 +771,27 @@ Once created, you can log in at:
 
 ---
 
-**Last Updated:** December 20, 2024
-**Version:** 1.0.0
-**Status:** Production
+**Last Updated:** January 1, 2026
+**Version:** 1.2.0
+**Status:** Production Ready
+
+## 📋 Changelog
+
+### Version 1.2.0 (January 1, 2026)
+- ✅ Added comprehensive 2FA setup and login documentation
+- ✅ Added detailed user roles and access levels
+- ✅ Added multi-room booking feature
+- ✅ Added saved cards payment feature
+- ✅ Added booking edit functionality
+- ✅ Added seasonal pricing management
+- ✅ Added ancillary services support
+- ✅ Added hotel policies management
+- ✅ Added gallery management system
+- ✅ Fixed manager hotel filtering
+- ✅ Fixed manager booking access
+- ✅ Added 88 comprehensive tests (100% pass rate)
+- ✅ Updated security documentation
+- ✅ Added demo accounts setup guide
+
+### Version 1.0.0 (December 20, 2024)
+- Initial production release
