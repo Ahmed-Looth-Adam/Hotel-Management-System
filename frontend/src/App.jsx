@@ -39,7 +39,7 @@ import PasswordResetConfirm from './pages/profile/PasswordResetConfirm';
 import { BookingsList, BookingDetail } from './pages/bookings';
 
 // Admin pages
-import UserManagement from './pages/admin/UserManagement';
+import UserManagement from './pages/Admin/UserManagement';
 import HotelManagement from './pages/Admin/HotelManagement';
 import HotelManagePage from './pages/Admin/HotelManagePage';
 
