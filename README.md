@@ -13,6 +13,7 @@ A comprehensive Hotel Management System built with Django REST Framework (backen
 | Ibrahim Waseem | 24050771 | Developer |
 | Mohamed Lujain Shakeeb Ahmed | 24050760 | Developer |
 | Awf Ibrahim Mohamed | 24047957 | Developer |
+| Ismail Vishal | 24050734 | Developer |
 
 ---
 
